@@ -1,0 +1,11 @@
+interface:
+  display_name: "OpenCode Delegation"
+  short_description: "Delegate coding work to local opencode CLI"
+  default_prompt: "Use $opencode-delegation to delegate implementation to local opencode, then review and verify the result."
+
+# 当用户用自然语言明确要求把实现工作委托给本地 opencode/OpenCode 时，
+# 可以自动触发这个 skill，例如："让 opencode 写代码"、"让 opencode 修 bug"、
+# "指挥 OpenCode 开发"。
+# 普通编码任务不应自动使用此 skill，除非用户清楚表达了 OpenCode 委托意图。
+policy:
+  allow_implicit_invocation: true
