@@ -80,6 +80,38 @@
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
+    },
+    {
+      "name": "document-governance",
+      "package_dir": "document-governance",
+      "readme": "document-governance/SKILL.md",
+      "skill_dir": "document-governance",
+      "description": "Govern project documentation layers, templates, archives, validation, and code-document consistency.",
+      "implicit_invocation": true,
+      "has_tests": false,
+      "checks": [
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "document-governance/scripts/validate_docs.py"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "document-governance/scripts/validate_docs.py"
+          ]
+        }
+      ]
     }
   ]
 }
