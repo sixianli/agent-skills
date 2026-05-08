@@ -63,7 +63,14 @@ Codex should not silently take coding work away from OpenCode. Direct Codex edit
 
 ## Usage
 
-Install or expose the `opencode-delegation` folder as a Codex skill, then invoke it when the user explicitly asks to delegate implementation work to OpenCode.
+Copy the installable skill folder into Codex's user skill directory:
+
+```bash
+mkdir -p "$HOME/.agents/skills"
+cp -R opencode-delegation "$HOME/.agents/skills/"
+```
+
+Restart Codex if the skill does not appear immediately. Then invoke it when the user explicitly asks to delegate implementation work to OpenCode.
 
 Example requests:
 

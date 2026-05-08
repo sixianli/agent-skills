@@ -21,7 +21,7 @@ Do **not** trigger for routine bug fixes, narrow implementation troubleshooting,
 
 ### Step 1 — Determine Project (deterministic)
 
-Infer the project name from the current working project's repository or folder name. The skill itself is installed under `~/.codex/skills/capture-idea/`, but the output target is still the current working project. If ambiguous, ask the user before proceeding.
+Infer the project name from the current working project's repository or folder name. The skill itself is usually installed under `$HOME/.agents/skills/capture-idea/`, but the output target is still the current working project. If ambiguous, ask the user before proceeding.
 
 ### Step 2 — Distill the Idea (latent — this is the core judgment step)
 
@@ -37,10 +37,10 @@ Review the current conversation and produce exactly four sections:
 
 ### Step 3 — Write Files (deterministic)
 
-Run the helper script installed under `~/.codex/skills/capture-idea/` to handle all file operations while keeping the shell's current working directory inside the target project:
+Run the helper script installed under `$HOME/.agents/skills/capture-idea/` to handle all file operations while keeping the shell's current working directory inside the target project:
 
 ```bash
-python ~/.codex/skills/capture-idea/scripts/capture_idea.py \
+python "$HOME/.agents/skills/capture-idea/scripts/capture_idea.py" \
   --title "..." \
   --project "..." \
   --core-ideas "..." \

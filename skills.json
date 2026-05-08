@@ -1,0 +1,85 @@
+{
+  "repository_checks": [
+    {
+      "name": "validate-all-py-compile",
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "scripts/validate_all.py"
+      ]
+    },
+    {
+      "name": "validate-all-ruff",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "ruff",
+        "ruff",
+        "check",
+        "scripts/validate_all.py"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "capture-idea",
+      "package_dir": "capture-idea-skill",
+      "readme": "capture-idea-skill/README.md",
+      "skill_dir": "capture-idea-skill/capture-idea",
+      "description": "Preserve product ideas, original wording, thinking shifts, and open questions from an AI conversation.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "pytest",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "pytest",
+            "python",
+            "-m",
+            "pytest",
+            "capture-idea-skill/capture-idea/tests",
+            "-q"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "capture-idea-skill/capture-idea/scripts",
+            "capture-idea-skill/capture-idea/tests"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "project-status",
+      "package_dir": "project-status-skill",
+      "readme": "project-status-skill/README.md",
+      "skill_dir": "project-status-skill/project-status",
+      "description": "Maintain project-level current.md working-state notes for resumable agent sessions.",
+      "implicit_invocation": true,
+      "has_tests": false,
+      "checks": []
+    },
+    {
+      "name": "opencode-delegation",
+      "package_dir": "codex-delegate-to-opencode-skill",
+      "readme": "codex-delegate-to-opencode-skill/README.md",
+      "skill_dir": "codex-delegate-to-opencode-skill/opencode-delegation",
+      "description": "Delegate coding work to local OpenCode while Codex supervises, reviews, and verifies.",
+      "implicit_invocation": true,
+      "has_tests": false,
+      "checks": []
+    }
+  ]
+}

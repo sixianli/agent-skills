@@ -1,0 +1,7 @@
+interface:
+  display_name: "Capture Idea"
+  short_description: "Preserve product ideas and thinking shifts"
+  default_prompt: "Use $capture-idea to preserve this idea with original wording, thought trajectory, and open questions."
+
+policy:
+  allow_implicit_invocation: true

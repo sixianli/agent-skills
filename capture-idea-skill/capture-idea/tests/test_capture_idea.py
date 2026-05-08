@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 
@@ -142,20 +143,63 @@ class TestAppendIndexRow:
         result = append_index_row(
             index_path, today="2026-04-14", project="test",
             title="Test Idea", status="captured",
-            relative_link="ideas/2026-04-14-test.md",
+            relative_link="2026-04-14-test.md",
         )
         assert result is True
         assert "Test Idea" in index_path.read_text()
 
     def test_prevents_duplicate(self, tmp_path):
         index_path = tmp_path / "INDEX.md"
-        index_path.write_text(INDEX_HEADER + "| ... | [X](ideas/2026-04-14-test.md) |\n")
+        index_path.write_text(INDEX_HEADER + "| ... | [X](2026-04-14-test.md) |\n")
         result = append_index_row(
             index_path, today="2026-04-14", project="test",
             title="Test", status="captured",
-            relative_link="ideas/2026-04-14-test.md",
+            relative_link="2026-04-14-test.md",
         )
         assert result is False
+
+
+# ---------------------------------------------------------------------------
+# end-to-end write flow
+# ---------------------------------------------------------------------------
+
+class TestWriteFlow:
+    def test_main_writes_index_link_relative_to_ideas_directory(self, tmp_path):
+        project_root = tmp_path / "demo-project"
+        project_root.mkdir()
+        (project_root / ".git").mkdir()
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(_script),
+                "--title",
+                "Test Link",
+                "--core-ideas",
+                "- idea",
+                "--thought-trajectory",
+                "- shift",
+                "--quotes",
+                '["quote one", "quote two"]',
+                "--open-questions",
+                "- question",
+            ],
+            cwd=project_root,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr
+        ideas_dir = project_root / "docs" / "ideas"
+        note_paths = [path for path in ideas_dir.glob("*.md") if path.name != "INDEX.md"]
+        assert len(note_paths) == 1
+
+        note_path = note_paths[0]
+        index_content = (ideas_dir / "INDEX.md").read_text(encoding="utf-8")
+        assert f"]({note_path.name})" in index_content
+        assert f"](ideas/{note_path.name})" not in index_content
+        assert (ideas_dir / note_path.name).exists()
 
 
 # ---------------------------------------------------------------------------

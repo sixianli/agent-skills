@@ -1,9 +1,8 @@
-*
-!capture-idea/
-!capture-idea/**
-!readme-zh.md
-!readme.md
-
+.DS_Store
+current.md
 capture-idea/.DS_Store
 capture-idea/**/__pycache__/
 capture-idea/**/*.py[cod]
+.pytest_cache/
+.ruff_cache/
+docs/superpowers/

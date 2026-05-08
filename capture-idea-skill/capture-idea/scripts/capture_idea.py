@@ -293,7 +293,7 @@ def main() -> int:
     file_path.write_text(content, encoding="utf-8")
 
     index_path = ensure_index_file(ideas_dir)
-    relative_link = file_path.relative_to(ideas_dir.parent).as_posix()
+    relative_link = file_path.relative_to(ideas_dir).as_posix()
     row_appended = append_index_row(
         index_path,
         today=today,

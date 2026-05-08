@@ -39,7 +39,8 @@ Each entry only includes the fields relevant to its type, without empty values o
 **1. Copy the skill directory:**
 
 ```bash
-cp -r project-status ~/.agents/skills/
+mkdir -p "$HOME/.agents/skills"
+cp -R project-status "$HOME/.agents/skills/"
 ```
 
 **2. Add write triggers to your global `AGENTS.md`:**
@@ -128,7 +129,7 @@ project-status/
 
 ## Retention
 
-`current.md` keeps the 5 most recent log entries. Older entries are moved to `current-archive.md` in the same directory. Both files should be committed to git — they're part of your project's working state.
+`current.md` keeps the 5 most recent log entries. Older entries are moved to `current-archive.md` in the same directory. These files are working-state artifacts; commit them only when the project intentionally treats status history as shared documentation.
 
 ## Boundaries
 
