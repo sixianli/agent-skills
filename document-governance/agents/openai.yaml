@@ -1,0 +1,6 @@
+interface:
+  display_name: "Document Governance"
+  short_description: "Project documentation governance SOP"
+  default_prompt: "Use $document-governance to create, update, archive, or validate project documentation."
+policy:
+  allow_implicit_invocation: true
