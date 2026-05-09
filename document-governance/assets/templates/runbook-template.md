@@ -14,15 +14,15 @@ Explain what operational task this runbook covers.
 
 ## Prerequisites
 
--
+- 
 
 ## Procedure
 
-1.
+1. 
 
 ## Verification
 
--
+- 
 
 ## Troubleshooting
 
@@ -33,3 +33,4 @@ Explain what operational task this runbook covers.
 ## Rollback
 
 Describe how to undo or safely stop the procedure.
+

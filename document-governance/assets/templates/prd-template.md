@@ -1,7 +1,7 @@
 ---
 status: active
 document_type: prd
-version: "0.1"
+version: "X.Y"   # set on creation, e.g. "0.1"
 supersedes: ""
 superseded_by: ""
 date: "YYYY-MM-DD"
@@ -11,11 +11,11 @@ date: "YYYY-MM-DD"
 
 ## Goals
 
--
+- 
 
 ## Target Users
 
--
+- 
 
 ## Scope
 
@@ -24,8 +24,9 @@ date: "YYYY-MM-DD"
 
 ## Business Rules
 
--
+- 
 
 ## Acceptance Boundaries
 
--
+- 
+

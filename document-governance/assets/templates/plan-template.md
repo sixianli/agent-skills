@@ -42,3 +42,4 @@ date: "YYYY-MM-DD"
 - [ ] Long-lived documents are updated.
 - [ ] Tracking Ledgers are updated.
 - [ ] This Plan is moved to `docs/archive/plans/` when closed.
+

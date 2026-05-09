@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""验证项目文档是否符合 document-governance SOP。"""
+"""验证项目文档是否符合 document-governance SOP。
+
+详细规则参见 references/validation-rules.md。
+"""
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -17,11 +21,13 @@ REQUIRED_DIRS = [
     "docs/archive/specs",
     "docs/archive/plans",
     "docs/runbooks",
+    "docs/tracking",
 ]
 
 REQUIRED_FRONTMATTER = {"status", "supersedes", "superseded_by", "date"}
 VALID_STATUSES = {"active", "superseded", "archived"}
-TRACKING_PATHS = {"docs/TODO.md", "docs/lessons.md"}
+LEGACY_TRACKING_FILES = {"docs/TODO.md", "docs/lessons.md"}
+TRACKING_DIR = "docs/tracking"
 PLAN_LIKE_MARKERS = [
     "## File Boundaries",
     "## Implementation Tasks",
@@ -29,22 +35,37 @@ PLAN_LIKE_MARKERS = [
     "### Task ",
 ]
 SOURCE_PATTERN = re.compile(r"\[SOURCE:\s*([^\]#]+)(?:#[^\]]+)?\]")
+TEMPLATE_PLACEHOLDER_TOKENS = ("YYYY", "NNNN", "<", ">", "{{", "X.Y")
 
 
 def parse_args() -> argparse.Namespace:
     """解析命令行参数。"""
 
-    parser = argparse.ArgumentParser(description="Validate project document governance.")
+    parser = argparse.ArgumentParser(
+        description="Validate project document governance.",
+    )
     parser.add_argument(
         "root",
         nargs="?",
         default=".",
-        help="Target project root to validate. This script lives in the document-governance skill directory.",
+        help=(
+            "Target project root to validate. This script lives in the "
+            "document-governance skill directory and operates on the project "
+            "root passed here."
+        ),
     )
     parser.add_argument(
         "--strict",
+        "--ci",
+        dest="strict",
         action="store_true",
-        help="Treat legacy compatibility warnings as errors.",
+        help="Treat legacy compatibility warnings as errors. --ci is an alias.",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format. JSON is suitable for piping into other agents.",
     )
     return parser.parse_args()
 
@@ -65,6 +86,7 @@ def iter_markdown_files(root: Path) -> list[Path]:
     for path in docs.rglob("*.md"):
         if not path.is_file():
             continue
+        # 跳过项目本地的模板副本（如果用户拷贝过）。
         if is_under(path, root, "docs/templates"):
             continue
         files.append(path)
@@ -73,6 +95,8 @@ def iter_markdown_files(root: Path) -> list[Path]:
 
 def read_frontmatter(path: Path) -> tuple[dict[str, str], str, str | None]:
     """读取简单 YAML frontmatter。
+
+    SOP 要求 frontmatter 仅使用单行 key: value 形式，因此此处只解析单行字段。
 
     Returns:
         三元组：frontmatter 字典、正文文本、错误信息。错误信息为 None 表示成功。
@@ -83,7 +107,7 @@ def read_frontmatter(path: Path) -> tuple[dict[str, str], str, str | None]:
     if not lines or lines[0].strip() != "---":
         return {}, text, "missing frontmatter"
 
-    end_index = None
+    end_index: int | None = None
     for index, line in enumerate(lines[1:], start=1):
         if line.strip() == "---":
             end_index = index
@@ -116,21 +140,49 @@ def is_under(path: Path, root: Path, relative_dir: str) -> bool:
     return True
 
 
-def validate_required_dirs(root: Path, errors: list[str]) -> None:
-    """校验必需目录是否存在。"""
+def validate_required_dirs(
+    root: Path,
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    """校验必需目录是否存在。默认模式下作为 warning，--strict 升为 error。"""
 
     for relative_dir in REQUIRED_DIRS:
         if not (root / relative_dir).is_dir():
-            errors.append(f"missing required directory: {relative_dir}")
+            report_compat(
+                f"missing required directory: {relative_dir}",
+                strict,
+                warnings,
+                errors,
+            )
 
 
-def report_compat(message: str, strict: bool, warnings: list[str], errors: list[str]) -> None:
+def report_compat(
+    message: str,
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> None:
     """根据 strict 模式把兼容性问题记录为 warning 或 error。"""
 
     if strict:
         errors.append(message)
     else:
         warnings.append(message)
+
+
+def is_tracking_doc(path: Path, root: Path, fields: dict[str, str]) -> bool:
+    """判断一个文档是否属于 Tracking Ledger。"""
+
+    if fields.get("document_type") == "tracking":
+        return True
+    relative = rel_path(path, root)
+    if relative in LEGACY_TRACKING_FILES:
+        return True
+    if is_under(path, root, TRACKING_DIR):
+        return True
+    return False
 
 
 def validate_frontmatter(
@@ -169,9 +221,13 @@ def validate_frontmatter(
     in_active_specs = is_under(path, root, "docs/execution/specs")
     in_active_plans = is_under(path, root, "docs/execution/plans")
     if (in_active_specs or in_active_plans) and status == "archived":
-        errors.append(f"{relative}: active execution directory contains archived document")
+        errors.append(
+            f"{relative}: active execution directory contains archived document"
+        )
     elif (in_active_specs or in_active_plans) and status == "superseded":
-        warnings.append(f"{relative}: superseded execution document should usually move to archive")
+        warnings.append(
+            f"{relative}: superseded execution document should usually move to archive"
+        )
 
     if is_under(path, root, "docs/adr") and fields.get("document_type") == "adr":
         if "decision_status" not in fields:
@@ -180,23 +236,37 @@ def validate_frontmatter(
     return fields, body
 
 
-def validate_tracking_ledger(root: Path, path: Path, fields: dict[str, str], body: str, warnings: list[str]) -> None:
+def validate_tracking_ledger(
+    root: Path,
+    path: Path,
+    fields: dict[str, str],
+    body: str,
+    warnings: list[str],
+) -> None:
     """检查 Tracking Ledger 是否混入 Plan 式内容。"""
 
-    relative = rel_path(path, root)
-    is_tracking = fields.get("document_type") == "tracking" or relative in TRACKING_PATHS
-    if not is_tracking:
+    if not is_tracking_doc(path, root, fields):
         return
+    relative = rel_path(path, root)
     for marker in PLAN_LIKE_MARKERS:
         if marker in body:
-            warnings.append(f"{relative}: tracking ledger contains plan-like marker {marker!r}")
+            warnings.append(
+                f"{relative}: tracking ledger contains plan-like marker {marker!r}"
+            )
 
 
-def validate_plan(root: Path, path: Path, body: str, warnings: list[str]) -> None:
+def validate_plan(
+    root: Path,
+    path: Path,
+    body: str,
+    warnings: list[str],
+) -> None:
     """检查 Plan 是否具有 Source Spec 入口。"""
 
     relative = rel_path(path, root)
-    is_plan = is_under(path, root, "docs/execution/plans") or is_under(path, root, "docs/archive/plans")
+    is_plan = is_under(path, root, "docs/execution/plans") or is_under(
+        path, root, "docs/archive/plans"
+    )
     if not is_plan:
         return
     if "Source Spec" not in body and "[SOURCE:" not in body:
@@ -208,7 +278,7 @@ def source_target_exists(root: Path, target: str) -> bool:
 
     if target in {"...", ""}:
         return True
-    if any(token in target for token in ("YYYY", "NNNN", "<", ">")):
+    if any(token in target for token in TEMPLATE_PLACEHOLDER_TOKENS):
         return True
 
     candidates = [root / target]
@@ -220,18 +290,29 @@ def source_target_exists(root: Path, target: str) -> bool:
             return True
 
     if target.startswith("docs/execution/specs/"):
-        archived = root / target.replace("docs/execution/specs/", "docs/archive/specs/", 1)
+        archived = root / target.replace(
+            "docs/execution/specs/", "docs/archive/specs/", 1
+        )
         if archived.exists():
             return True
     if target.startswith("docs/execution/plans/"):
-        archived = root / target.replace("docs/execution/plans/", "docs/archive/plans/", 1)
+        archived = root / target.replace(
+            "docs/execution/plans/", "docs/archive/plans/", 1
+        )
         if archived.exists():
             return True
 
     return False
 
 
-def validate_source_links(root: Path, path: Path, body: str, strict: bool, warnings: list[str], errors: list[str]) -> None:
+def validate_source_links(
+    root: Path,
+    path: Path,
+    body: str,
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> None:
     """校验本地 SOURCE 引用指向的文件是否存在。"""
 
     for match in SOURCE_PATTERN.finditer(body):
@@ -247,6 +328,49 @@ def validate_source_links(root: Path, path: Path, body: str, strict: bool, warni
             )
 
 
+def emit_text(warnings: list[str], errors: list[str]) -> None:
+    """以人类可读格式输出结果。"""
+
+    for warning in warnings:
+        print(f"WARNING: {warning}")
+    for error in errors:
+        print(f"ERROR: {error}", file=sys.stderr)
+
+    if errors:
+        print(
+            f"Document governance validation failed: "
+            f"{len(errors)} error(s), {len(warnings)} warning(s).",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            f"Document governance validation passed: "
+            f"{len(warnings)} warning(s)."
+        )
+
+
+def emit_json(
+    root: Path,
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    """以 JSON 格式输出结果，便于上层 agent 消费。"""
+
+    payload = {
+        "root": str(root),
+        "strict": strict,
+        "ok": not errors,
+        "errors": errors,
+        "warnings": warnings,
+        "summary": {
+            "errors": len(errors),
+            "warnings": len(warnings),
+        },
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+
 def main() -> int:
     """执行文档治理校验。"""
 
@@ -255,25 +379,22 @@ def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
 
-    validate_required_dirs(root, errors)
+    validate_required_dirs(root, args.strict, warnings, errors)
 
     for path in iter_markdown_files(root):
-        fields, body = validate_frontmatter(root, path, args.strict, warnings, errors)
+        fields, body = validate_frontmatter(
+            root, path, args.strict, warnings, errors
+        )
         validate_tracking_ledger(root, path, fields, body, warnings)
         validate_plan(root, path, body, warnings)
         validate_source_links(root, path, body, args.strict, warnings, errors)
 
-    for warning in warnings:
-        print(f"WARNING: {warning}")
-    for error in errors:
-        print(f"ERROR: {error}", file=sys.stderr)
+    if args.format == "json":
+        emit_json(root, args.strict, warnings, errors)
+    else:
+        emit_text(warnings, errors)
 
-    if errors:
-        print(f"Document governance validation failed: {len(errors)} error(s), {len(warnings)} warning(s).", file=sys.stderr)
-        return 1
-
-    print(f"Document governance validation passed: {len(warnings)} warning(s).")
-    return 0
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":

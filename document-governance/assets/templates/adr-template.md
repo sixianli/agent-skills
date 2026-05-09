@@ -37,4 +37,5 @@ State the chosen option.
 
 ## Links
 
-- [SOURCE: docs/architecture-v0.1.md#section]
+- [SOURCE: docs/architecture-vX.Y.md#section]
+

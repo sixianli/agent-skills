@@ -1,56 +1,61 @@
 # Validation Rules
 
-Use this file before running or modifying this skill's `scripts/validate_docs.py`.
-
-## How To Run
-
-Run the validator from the skill folder, not from the target project. Pass the
-target project root as the script argument.
-
-```bash
-python3 <skill-dir>/scripts/validate_docs.py <target-project-root>
-```
-
-If your shell is already in the target project root:
-
-```bash
-python3 <skill-dir>/scripts/validate_docs.py .
-```
+Read this file before running or modifying `scripts/validate_docs.py`.
+For invocation syntax see `SKILL.md` (the `Resolving the Skill Directory`
+section). This file only documents what the validator checks.
 
 ## Modes
 
-Default mode is migration-friendly: legacy documents and moved archive links are
-reported as warnings so the validator can be introduced into existing projects.
+The validator runs in **default (migration-friendly)** mode unless told
+otherwise. In default mode most structural problems are reported as
+`WARNING` so the script can be introduced into existing projects without
+forcing immediate rework.
 
-Use `--strict` for CI or final hardening when warnings should become failures.
+- `--strict` (alias: `--ci`) — promotes legacy / soft warnings to errors.
+  Use this in CI or when hardening a project.
+- `--format=json` — emit a single JSON object instead of human-readable
+  output. The exit code is unchanged. Suitable for piping into higher-level
+  review agents.
 
-## Error-Level Checks In Default Mode
+## Always-Error Checks
 
-- Required document directories are missing.
-- `status` is not one of `active`, `superseded`, or `archived`.
+These conditions always exit non-zero, even in default mode:
+
+- `status` is set but is not one of `active`, `superseded`, `archived`.
 - A document under `docs/archive/**` has `status: active`.
-- A document under `docs/execution/specs/` or `docs/execution/plans/` has `status: archived`.
+- A document under `docs/execution/specs/` or `docs/execution/plans/`
+  has `status: archived` (it should already have been moved).
 
-## Warning-Level Checks
+## Warning-Level Checks (default mode) / Errors in `--strict`
 
-- A project document lacks frontmatter.
-- Frontmatter lacks `status`, `supersedes`, `superseded_by`, or `date`.
+- A required directory listed in `references/sop.md` is missing.
+- A project document lacks frontmatter or has unterminated frontmatter.
+- Frontmatter lacks any of `status`, `supersedes`, `superseded_by`, `date`.
 - A document in archive is not marked `status: archived`.
-- A document in active execution is marked `status: superseded`.
-- A Tracking Ledger contains Plan-like headings such as `File Boundaries`,
-  `Implementation Tasks`, or `Verification`.
+- A document in active execution is marked `status: superseded`
+  (it should usually be archived instead).
+- A Tracking Ledger contains Plan-like headings such as `## File Boundaries`,
+  `## Implementation Tasks`, `## Verification`, or `### Task ...`.
 - An ADR lacks `decision_status`.
-- A Plan lacks a `Source Spec` section or a local source reference.
-- A local `[SOURCE: ...]` reference points to a missing file or a document that
-  has likely moved to archive.
+- A Plan lacks a `Source Spec` section or a `[SOURCE: ...]` reference.
+- A `[SOURCE: ...]` reference points to a path that does not exist
+  (anchors and template placeholders like `NNNN`/`YYYY-MM-DD` are skipped;
+  paths that have moved into `docs/archive/**` are recognized in default
+  mode).
 
-## Strict Mode Escalation
+## Files Considered
 
-With `--strict`, missing frontmatter, missing required frontmatter fields, and
-missing local SOURCE targets become errors.
+- All `*.md` under the target project's `docs/` tree.
+- `docs/templates/**` is skipped — that subtree is reserved for project-local
+  copies of skill templates and is not subject to governance checks.
+- The skill's own `assets/templates/**` is never scanned (it lives outside
+  the target project).
 
-## Required Manual Review
+## What The Validator Cannot Prove
 
-The validator cannot prove semantic consistency between code and documentation.
-Before completion, manually check whether code changes require PRD, Architecture,
-ADR, README, Runbook, Tracking Ledger, Spec, or Plan updates.
+- Semantic consistency between code and documentation.
+- Whether a Spec's design actually matches the Plan that implements it.
+- Whether a PRD update should have been made for a given code change.
+
+These require human review. Use the Closure Checklist in
+`references/workflows.md` before declaring a change complete.
