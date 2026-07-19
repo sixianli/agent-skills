@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
-"""把已关闭的 Spec / Plan / ADR 归档到 docs/archive/ 下。
+"""把已关闭的 Spec 或 Plan 归档到 docs/archive/ 下。
 
-行为：
-1. 校验目标文档当前位于活动目录（docs/execution/specs|plans 或 docs/adr）。
-2. 把 frontmatter 的 ``status`` 改写为 ``archived``。
-3. 如指定 ``--superseded-by``，写入 ``superseded_by`` 字段。
-4. 把文件移动到对应的 ``docs/archive/...`` 目录。
-
-不会自动创建反向链接、不会改 PRD/Architecture/Runbook —— 这些仍由人或上层 agent
-按 references/workflows.md 的关闭清单处理。
+此脚本不归档 ADR。ADR 必须留在 docs/adr/ 并按 references/workflows.md
+中的 ADR Supersession 流程原地更新生命周期元数据与双向关系。
 """
 
 from __future__ import annotations
@@ -16,14 +10,12 @@ from __future__ import annotations
 import argparse
 import re
 import shutil
-import sys
 from pathlib import Path
 
 
 ACTIVE_TO_ARCHIVE = {
     "docs/execution/specs": "docs/archive/specs",
     "docs/execution/plans": "docs/archive/plans",
-    "docs/adr": "docs/archive/adr",
 }
 
 
@@ -31,17 +23,17 @@ def parse_args() -> argparse.Namespace:
     """解析命令行参数。"""
 
     parser = argparse.ArgumentParser(
-        description="Archive a closed Spec / Plan / ADR document.",
+        description="Archive a closed Spec or Plan document.",
     )
     parser.add_argument("root", help="Target project root.")
     parser.add_argument(
         "doc",
-        help="Document path. Either repo-relative or absolute.",
+        help="Spec or Plan path. Either repo-relative or absolute.",
     )
     parser.add_argument(
         "--superseded-by",
         default=None,
-        help="Optional path of the document that supersedes this one.",
+        help="Optional repo-relative docs path that supersedes this document.",
     )
     parser.add_argument(
         "--dry-run",
@@ -52,25 +44,65 @@ def parse_args() -> argparse.Namespace:
 
 
 def resolve_doc(root: Path, doc: str) -> Path:
-    """解析文档绝对路径，未指定则按 repo 相对解析。"""
+    """解析文档路径并拒绝项目根目录之外的目标。"""
 
     candidate = Path(doc)
     if not candidate.is_absolute():
-        candidate = root / doc
-    return candidate.resolve()
+        candidate = root / candidate
+    candidate = candidate.resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise SystemExit(
+            f"refusing to archive: document is outside project root: {candidate}"
+        ) from exc
+    return candidate
 
 
 def detect_archive_target(root: Path, doc_path: Path) -> Path:
-    """根据当前路径推断归档目标位置。"""
+    """根据活动 Spec/Plan 路径推断归档目标。"""
 
-    rel = doc_path.relative_to(root).as_posix()
+    relative = doc_path.relative_to(root).as_posix()
+    if relative.startswith("docs/adr/"):
+        raise SystemExit(
+            "refusing to archive ADR: supersede it in place under docs/adr/"
+        )
     for active_prefix, archive_prefix in ACTIVE_TO_ARCHIVE.items():
-        if rel.startswith(active_prefix + "/"):
-            return root / rel.replace(active_prefix, archive_prefix, 1)
+        if relative.startswith(active_prefix + "/"):
+            return root / relative.replace(active_prefix, archive_prefix, 1)
     raise SystemExit(
-        f"refusing to archive: {rel} is not under "
+        f"refusing to archive: {relative} is not under "
         f"{', '.join(ACTIVE_TO_ARCHIVE.keys())}"
     )
+
+
+def validate_superseded_by(root: Path, value: str | None) -> None:
+    """校验 superseded_by 是 docs/ 内的单行项目相对路径。"""
+
+    if value is None:
+        return
+    if "\n" in value or "\r" in value or '"' in value:
+        raise SystemExit("invalid --superseded-by: expected a single safe path")
+    target = Path(value)
+    if target.is_absolute() or ".." in target.parts:
+        raise SystemExit(
+            "invalid --superseded-by: path must be repository-relative and must not traverse '..'"
+        )
+    normalized = target.as_posix()
+    if not normalized.startswith("docs/"):
+        target = Path("docs") / target
+    resolved = (root / target).resolve()
+    docs_root = (root / "docs").resolve()
+    try:
+        resolved.relative_to(docs_root)
+    except ValueError as exc:
+        raise SystemExit(
+            "invalid --superseded-by: path must remain inside project docs/"
+        ) from exc
+    if not resolved.is_file():
+        raise SystemExit(
+            f"invalid --superseded-by: target does not exist: {resolved}"
+        )
 
 
 def rewrite_frontmatter(text: str, superseded_by: str | None) -> str:
@@ -88,41 +120,45 @@ def rewrite_frontmatter(text: str, superseded_by: str | None) -> str:
     if end_index is None:
         raise SystemExit("refusing to archive: unterminated frontmatter")
 
-    fm = lines[1:end_index]
+    frontmatter = lines[1:end_index]
     body = lines[end_index + 1 :]
-
-    fm = _set_field(fm, "status", "archived")
+    frontmatter = set_field(frontmatter, "status", "archived")
     if superseded_by is not None:
-        fm = _set_field(fm, "superseded_by", superseded_by)
+        frontmatter = set_field(
+            frontmatter, "superseded_by", superseded_by
+        )
 
-    return "\n".join(["---", *fm, "---", *body]) + (
+    return "\n".join(["---", *frontmatter, "---", *body]) + (
         "\n" if text.endswith("\n") else ""
     )
 
 
-def _set_field(fm_lines: list[str], key: str, value: str) -> list[str]:
+def set_field(frontmatter: list[str], key: str, value: str) -> list[str]:
     """在 frontmatter 中插入或更新单行字段。"""
 
     pattern = re.compile(rf"^({re.escape(key)})\s*:\s*.*$")
     rendered = f'{key}: "{value}"'
-    for index, line in enumerate(fm_lines):
+    for index, line in enumerate(frontmatter):
         if pattern.match(line):
-            fm_lines[index] = rendered
-            return fm_lines
-    fm_lines.append(rendered)
-    return fm_lines
+            frontmatter[index] = rendered
+            return frontmatter
+    frontmatter.append(rendered)
+    return frontmatter
 
 
 def main() -> int:
-    """归档单个文档。"""
+    """归档单个 Spec 或 Plan。"""
 
     args = parse_args()
     root = Path(args.root).resolve()
-    doc_path = resolve_doc(root, args.doc)
+    if not root.is_dir():
+        raise SystemExit(f"project root is not a directory: {root}")
 
-    if not doc_path.exists():
+    doc_path = resolve_doc(root, args.doc)
+    if not doc_path.is_file():
         raise SystemExit(f"document not found: {doc_path}")
 
+    validate_superseded_by(root, args.superseded_by)
     archive_path = detect_archive_target(root, doc_path)
     text = doc_path.read_text(encoding="utf-8")
     new_text = rewrite_frontmatter(text, args.superseded_by)

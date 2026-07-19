@@ -1,61 +1,73 @@
 # Validation Rules
 
-Read this file before running or modifying `scripts/validate_docs.py`.
-For invocation syntax see `SKILL.md` (the `Resolving the Skill Directory`
-section). This file only documents what the validator checks.
+Read this file before running, interpreting, or modifying
+`scripts/validate_docs.py`.
 
 ## Modes
 
-The validator runs in **default (migration-friendly)** mode unless told
-otherwise. In default mode most structural problems are reported as
-`WARNING` so the script can be introduced into existing projects without
-forcing immediate rework.
+The validator defaults to migration-friendly mode. Structural adoption issues
+are warnings so an existing repository can be assessed without immediately
+blocking all work.
 
-- `--strict` (alias: `--ci`) — promotes legacy / soft warnings to errors.
-  Use this in CI or when hardening a project.
-- `--format=json` — emit a single JSON object instead of human-readable
-  output. The exit code is unchanged. Suitable for piping into higher-level
-  review agents.
+- `--strict` (alias `--ci`) promotes every migration-friendly warning to an
+  error and returns a nonzero exit code. Use it for governed repositories, CI,
+  and completion checks.
+- `--format=json` emits one JSON object without changing exit behavior.
 
 ## Always-Error Checks
 
-These conditions always exit non-zero, even in default mode:
+These conditions fail in every mode:
 
-- `status` is set but is not one of `active`, `superseded`, `archived`.
-- A document under `docs/archive/**` has `status: active`.
-- A document under `docs/execution/specs/` or `docs/execution/plans/`
-  has `status: archived` (it should already have been moved).
+- `status` is present but is not `active`, `superseded`, or `archived`.
+- An archived document has `status: active`.
+- An active Spec or Plan has `status: archived`.
+- A local SOURCE target is absolute or contains `..` path traversal.
+- The supplied project root does not exist or is not a directory.
 
-## Warning-Level Checks (default mode) / Errors in `--strict`
+## Migration Warnings / Strict Errors
 
-- A required directory listed in `references/sop.md` is missing.
-- A project document lacks frontmatter or has unterminated frontmatter.
-- Frontmatter lacks any of `status`, `supersedes`, `superseded_by`, `date`.
+- A required governance directory is missing.
+- A governed Markdown document has missing, unterminated, malformed, nested,
+  duplicate, or multiline frontmatter.
+- Frontmatter lacks `status`, `supersedes`, `superseded_by`, or `date`.
 - A document in archive is not marked `status: archived`.
-- A document in active execution is marked `status: superseded`
-  (it should usually be archived instead).
+- An active Spec or Plan is marked `status: superseded` instead of being
+  closed and archived.
+- A `document_type`, when present, conflicts with the document's governed
+  directory.
 - A Tracking Ledger contains Plan-like headings such as `## File Boundaries`,
   `## Implementation Tasks`, `## Verification`, or `### Task ...`.
-- An ADR lacks `decision_status`.
-- A Plan lacks a `Source Spec` section or a `[SOURCE: ...]` reference.
-- A `[SOURCE: ...]` reference points to a path that does not exist
-  (anchors and template placeholders like `NNNN`/`YYYY-MM-DD` are skipped;
-  paths that have moved into `docs/archive/**` are recognized in default
-  mode).
+- An ADR lacks `decision_status`, uses an invalid decision status, or has
+  inconsistent `status`, `decision_status`, and supersession links.
+- A Plan lacks a Source Spec section or SOURCE reference.
+- A SOURCE target does not exist under `docs/`.
+
+Strict mode must leave these findings in `errors`, not `warnings`; a strict run
+with any such finding must report `ok: false` and return exit code 1.
+
+## SOURCE Resolution
+
+- Resolve `docs/...` from the project root.
+- Resolve paths without the `docs/` prefix from the project `docs/` directory.
+- Never fall back to a same-named file at the project root.
+- Recognize active Spec/Plan paths whose files moved to the corresponding
+  archive directory.
+- Recognize legacy ADR paths whose files already live in `docs/archive/adr/`,
+  but do not archive ADRs going forward.
+- Skip external HTTP(S) URLs and explicit template placeholders after enforcing
+  local path-boundary rules.
+- Do not validate heading anchors.
 
 ## Files Considered
 
-- All `*.md` under the target project's `docs/` tree.
-- `docs/templates/**` is skipped — that subtree is reserved for project-local
-  copies of skill templates and is not subject to governance checks.
-- The skill's own `assets/templates/**` is never scanned (it lives outside
-  the target project).
+- Scan all `*.md` files under the target project's `docs/` tree.
+- Skip `docs/templates/**` because it may contain unfilled placeholders.
+- Do not scan the skill's own `assets/templates/**` when validating a project.
 
-## What The Validator Cannot Prove
+## What the Validator Cannot Prove
 
-- Semantic consistency between code and documentation.
-- Whether a Spec's design actually matches the Plan that implements it.
-- Whether a PRD update should have been made for a given code change.
-
-These require human review. Use the Closure Checklist in
-`references/workflows.md` before declaring a change complete.
+The validator cannot prove semantic consistency between code and prose,
+confirm that a Spec matches its Plan, determine whether a code change required
+a PRD update, or prove that work is truly closed. Inspect repository evidence
+and complete the workflow checklist before declaring semantic or release
+readiness.
