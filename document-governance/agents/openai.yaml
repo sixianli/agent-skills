@@ -1,17 +1,7 @@
 interface:
   display_name: "Document Governance"
-  short_description: "项目文档治理 SOP：PRD / Architecture / ADR / Spec / Plan / Runbook / Tracking"
-  default_prompt: "帮我创建/更新/校验项目文档（PRD、Architecture、ADR、Spec、Plan、Runbook、Tracking Ledger）。"
+  short_description: "同步代码与 PRD、架构、ADR、Spec、Plan 和 Runbook"
+  default_prompt: "使用 $document-governance 检查本次变更的文档影响，更新相关项目文档并报告未解决的漂移。"
 
 policy:
   allow_implicit_invocation: true
-
-dependencies:
-  runtime:
-    - name: python3
-      min_version: "3.8"
-      reason: "运行 scripts/validate_docs.py 与 scripts/archive_doc.py。"
-  workspace:
-    - path: "docs/"
-      required: false
-      reason: "目标项目应在 docs/ 下维护项目文档；首次使用时若不存在，本 skill 会建议创建。"

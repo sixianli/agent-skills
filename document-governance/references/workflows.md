@@ -1,103 +1,105 @@
 # Document Governance Workflows
 
-Use this file when the task involves creating, closing, archiving, reverting, or
-reconciling project documents.
+Use this reference for creation, reconciliation, ADR supersession, closure,
+rollback, and conflict handling.
+
+## Contents
+
+- [New Feature Workflow](#new-feature-workflow)
+- [Drift Reconciliation](#drift-reconciliation)
+- [ADR Supersession](#adr-supersession)
+- [Spec and Plan Closure](#spec-and-plan-closure)
+- [Rollback](#rollback)
+- [Tracking Ledgers](#tracking-ledgers)
+- [Conflict Handling](#conflict-handling)
 
 ## New Feature Workflow
 
-1. If product scope changes, update or create PRD first.
-2. If current system behavior changes, update or create Architecture first.
-3. If a durable technical decision is made, create or supersede an ADR.
-4. Write an Execution Spec in `docs/execution/specs/`.
-5. After the Spec is confirmed, write an Execution Plan in `docs/execution/plans/`.
-6. Implement according to the Plan.
-7. Verify implementation.
-8. Update affected long-lived and tracking documents.
-9. Archive closed Specs and Plans only after closure is complete.
+1. Update or create the PRD when product scope changes.
+2. Update or create Architecture when current system behavior changes.
+3. Create or supersede an ADR for a durable technical decision.
+4. Write an Execution Spec under `docs/execution/specs/`.
+5. Confirm the Spec before writing an Implementation Plan under
+   `docs/execution/plans/`.
+6. Implement and verify the change.
+7. Reconcile affected long-lived, operational, and tracking documents.
+8. Archive the closed Spec and Plan only after completing closure.
 
-## Closure Checklist
+## Drift Reconciliation
+
+Use this mapping after inspecting the actual diff or changed configuration:
+
+- Public API, schema, or data contract: update PRD scope, Architecture data
+  model, and contract artifacts when present.
+- Feature behavior or user-visible flow: update PRD acceptance boundaries,
+  README feature status, and operational Runbooks when affected.
+- Environment variable, configuration, secrets handling, or deployment
+  assumption: update Architecture deployment boundaries, Runbook setup, and
+  README setup when affected.
+- Feature-flag semantics: update PRD visibility, Architecture rollout design,
+  and Runbook activation/rollback procedures.
+- Compatibility, versioning, deprecation, or supported-client policy: update
+  PRD scope and record durable choices in an ADR.
+- Operational procedure: update the Runbook; update other layers only when the
+  procedure changes product or architectural truth.
+- Architectural shift, technology replacement, or durable trade-off: create a
+  superseding ADR and update Architecture.
+
+Update affected documents in the same authorized change set. If information is
+missing, record an explicit open Tracking Ledger item instead of hiding the
+drift. Report intentionally unchanged documents and the reason.
+
+## ADR Supersession
+
+Do not archive ADRs. Supersede them in place:
+
+1. Create the replacement ADR under `docs/adr/` with `status: active`, a valid
+   `decision_status`, and `supersedes: docs/adr/<old-adr>.md`.
+2. Review and accept the replacement decision before changing the old ADR.
+3. Update the old ADR in place to `status: superseded`,
+   `decision_status: superseded`, and
+   `superseded_by: docs/adr/<new-adr>.md`.
+4. Preserve the old ADR's recorded context, options, decision, and
+   consequences; change only lifecycle metadata and cross-references.
+5. Update Architecture to describe the new current behavior.
+6. Validate both directions of the relationship and all affected SOURCE links.
+
+## Spec and Plan Closure
 
 Before archiving a Spec or Plan:
 
 - Confirm the work is merged, rejected, superseded, or otherwise closed.
 - Run and record relevant verification.
-- Update PRD if product behavior changed.
-- Update Architecture if current technical behavior changed.
-- Update README if overview, setup, feature status, or navigation changed.
-- Update Runbooks if operation, setup, or troubleshooting changed.
-- Update Tracking Ledgers when tracked ideas change state.
-- Move the closed document to `docs/archive/specs/` or `docs/archive/plans/`.
-- Set `status: archived` and preserve links to current truth.
+- Update PRD, Architecture, README, Runbooks, and Tracking Ledgers where the
+  completed work changed their truth or state.
+- Preserve links to current truth.
+- Run `scripts/archive_doc.py` for the closed Spec or Plan.
+- Run strict validation after the move.
 
-## Rollback Workflow
+Never use the archive script on an ADR.
 
-When code is rolled back:
+## Rollback
 
-- Do not leave documents claiming reverted behavior still exists.
-- If old behavior is restored, update long-lived truth to describe it.
-- If only part of a feature is reverted, document the exact remaining behavior.
-- If rollback reopens future work, add or update a Tracking Ledger item.
+- Correct current-truth documents so they do not claim reverted behavior still
+  exists.
+- Describe the exact remaining behavior after a partial rollback.
+- Preserve ADR history; create a new ADR when rollback represents a new durable
+  decision rather than rewriting an earlier ADR.
+- Add or reopen a Tracking Ledger item when rollback creates future work.
 
-## Tracking Ledger Workflow
+## Tracking Ledgers
 
-Tracking Ledgers preserve idea provenance and follow-up state.
+Record provenance, rationale, state, and links. Use the states `open`,
+`converted`, `in_progress`, `done`, `rejected`, and `superseded`.
 
-Allowed content:
-
-- Where an idea came from.
-- Why it may matter.
-- Current state: `open`, `converted`, `in_progress`, `done`, `rejected`, `superseded`.
-- Links to PRD, Architecture, ADR, Spec, Plan, Runbook, or Archive.
-
-Forbidden content:
-
-- File boundaries.
-- Implementation steps.
-- Verification commands.
-- Current product or architecture truth.
-
-## Drift-Triggered Reconciliation Workflow
-
-Use this when a code or configuration change has happened (or is about to
-happen) and you need to determine which docs must move with it. This is the
-default workflow when the skill is triggered by a diff rather than by a
-direct "write me a doc" request.
-
-1. Read the diff (or staged files) and classify the change against the
-   drift surface:
-   - **Public API / schema / data contract** → PRD scope, Architecture data
-     model. Update OpenAPI / contract artifacts if present.
-   - **Feature behavior or user-visible flow** → PRD acceptance criteria,
-     README feature status, Runbook if operational behavior shifts.
-   - **Environment variable, config flag, secrets handling** → Runbook
-     setup section, Architecture deployment section, README setup.
-   - **Deployment assumption / infrastructure dependency** → Architecture
-     boundaries + Runbook prerequisites; consider new ADR if the
-     assumption is durable.
-   - **Feature flag semantics** → PRD scope (what users can see) +
-     Architecture (rollout model) + Runbook (how to flip / rollback).
-   - **Compatibility contract** (versioning, deprecation policy, supported
-     clients) → PRD scope + ADR for the durable choice.
-   - **Operational procedure** (deploy, restore, on-call) → Runbook only,
-     usually.
-   - **Architectural shift / technology swap / durable trade-off** → new
-     ADR (or superseding ADR), then Architecture update.
-2. For each affected document, update it in the same change set. Do not
-   open a follow-up "doc PR."
-3. If a doc cannot be fully updated now (missing information, blocked by
-   another decision), record an explicit Tracking Ledger entry with state
-   `open` and links to the code change. Do not leave the drift silent.
-4. Run the validator. Fix every error before declaring the change done.
-5. Report which docs were updated, which were intentionally not updated
-   (with reason), and any ADR work that should follow.
+Do not put file boundaries, implementation steps, verification commands, or
+current product/architecture truth in a Tracking Ledger.
 
 ## Conflict Handling
 
-When documents disagree:
-
-1. Inspect current code or repository evidence.
-2. Apply the authority order from `references/sop.md`.
-3. Treat ADR as decision history, not implementation inventory.
-4. Treat Tracking Ledgers as provenance, not truth.
-5. If evidence cannot resolve the conflict, stop and ask the human.
-
+1. Inspect current code and repository evidence.
+2. Apply the authority order in `references/sop.md` to the document domains.
+3. Treat ADRs as decision history and Tracking Ledgers as provenance.
+4. Reconcile stale current-truth documents with verified implementation.
+5. Stop and request human direction only when available evidence cannot resolve
+   a material product or decision conflict.
