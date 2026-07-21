@@ -10,6 +10,7 @@ import argparse
 import json
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 
@@ -36,6 +37,20 @@ VALID_DOCUMENT_TYPES = {
 VALID_DECISION_STATUSES = {"proposed", "accepted", "superseded"}
 LEGACY_TRACKING_FILES = {"docs/TODO.md", "docs/lessons.md"}
 TRACKING_DIR = "docs/tracking"
+IDEA_DIR = "docs/tracking/ideas"
+BACKLOG_DIR = "docs/tracking/backlog"
+LEGACY_IDEA_DIR = "docs/ideas"
+IDEA_ID_PATTERN = re.compile(r"^IDEA-(\d{8})-(\d{3})$")
+BACKLOG_ID_PATTERN = re.compile(r"^BL-(\d{8})-(\d{3})$")
+VALID_IDEA_STATES = {"captured", "promoted", "closed", "superseded"}
+VALID_BACKLOG_STATES = {
+    "open",
+    "deferred",
+    "converted",
+    "done",
+    "rejected",
+    "superseded",
+}
 PLAN_LIKE_MARKERS = [
     "## File Boundaries",
     "## Implementation Tasks",
@@ -387,6 +402,253 @@ def validate_tracking_ledger(
             )
 
 
+def is_iso_date(value: str) -> bool:
+    """判断值是否为有效的 YYYY-MM-DD 日期。"""
+
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", value))
+
+
+def validate_tracking_target(
+    root: Path,
+    path: Path,
+    field_name: str,
+    value: str,
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> Path | None:
+    """校验结构化 Tracking 关系字段指向 docs/ 内的现有文件。"""
+
+    if not value:
+        return None
+    candidate, problem = normalize_local_target(root, value)
+    relative = rel_path(path, root)
+    if problem:
+        errors.append(f"{relative}: invalid {field_name} target {value}: {problem}")
+        return None
+    assert candidate is not None
+    if not candidate.is_file():
+        report_compat(
+            f"{relative}: {field_name} target does not exist: {value}",
+            strict,
+            warnings,
+            errors,
+        )
+        return None
+    return candidate
+
+
+def validate_tracking_record(
+    root: Path,
+    path: Path,
+    fields: dict[str, str],
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+    seen_ids: dict[str, Path],
+) -> None:
+    """校验 Idea/Backlog 的路径、ID、状态转换证据和关系字段。"""
+
+    path_kind: str | None = None
+    if is_under(path, root, IDEA_DIR):
+        path_kind = "idea"
+    elif is_under(path, root, BACKLOG_DIR):
+        path_kind = "backlog-item"
+
+    declared_kind = fields.get("tracking_kind", "")
+    if path_kind is None and not declared_kind:
+        return
+    relative = rel_path(path, root)
+
+    required = {"tracking_kind", "tracking_id", "tracking_state", "updated"}
+    missing = sorted(key for key in required if not fields.get(key))
+    if missing:
+        report_compat(
+            f"{relative}: missing structured tracking fields: {', '.join(missing)}",
+            strict,
+            warnings,
+            errors,
+        )
+    if declared_kind not in {"idea", "backlog-item"}:
+        report_compat(
+            f"{relative}: invalid tracking_kind {declared_kind!r}",
+            strict,
+            warnings,
+            errors,
+        )
+        return
+    if path_kind != declared_kind:
+        report_compat(
+            f"{relative}: tracking_kind {declared_kind!r} conflicts with path kind {path_kind!r}",
+            strict,
+            warnings,
+            errors,
+        )
+
+    tracking_id = fields.get("tracking_id", "")
+    pattern = IDEA_ID_PATTERN if declared_kind == "idea" else BACKLOG_ID_PATTERN
+    match = pattern.fullmatch(tracking_id)
+    if not match:
+        report_compat(
+            f"{relative}: invalid tracking_id {tracking_id!r}",
+            strict,
+            warnings,
+            errors,
+        )
+    else:
+        if not path.name.startswith(f"{tracking_id}-"):
+            report_compat(
+                f"{relative}: filename must start with {tracking_id}-",
+                strict,
+                warnings,
+                errors,
+            )
+        id_date = f"{match.group(1)[:4]}-{match.group(1)[4:6]}-{match.group(1)[6:]}"
+        if fields.get("date") and fields.get("date") != id_date:
+            report_compat(
+                f"{relative}: tracking_id date {id_date} conflicts with date {fields.get('date')!r}",
+                strict,
+                warnings,
+                errors,
+            )
+    if tracking_id:
+        previous = seen_ids.get(tracking_id)
+        if previous is not None and previous != path.resolve():
+            report_compat(
+                f"{relative}: duplicate tracking_id {tracking_id!r}; first used by {rel_path(previous, root)}",
+                strict,
+                warnings,
+                errors,
+            )
+        else:
+            seen_ids[tracking_id] = path.resolve()
+
+    updated = fields.get("updated", "")
+    if updated and not is_iso_date(updated):
+        report_compat(
+            f"{relative}: updated must be YYYY-MM-DD, found {updated!r}",
+            strict,
+            warnings,
+            errors,
+        )
+    review_after = fields.get("review_after", "")
+    if review_after and not is_iso_date(review_after):
+        report_compat(
+            f"{relative}: review_after must be YYYY-MM-DD, found {review_after!r}",
+            strict,
+            warnings,
+            errors,
+        )
+
+    state = fields.get("tracking_state", "")
+    valid_states = VALID_IDEA_STATES if declared_kind == "idea" else VALID_BACKLOG_STATES
+    if state not in valid_states:
+        report_compat(
+            f"{relative}: invalid tracking_state {state!r} for {declared_kind}",
+            strict,
+            warnings,
+            errors,
+        )
+
+    promoted_target = validate_tracking_target(
+        root,
+        path,
+        "promoted_to",
+        fields.get("promoted_to", ""),
+        strict,
+        warnings,
+        errors,
+    )
+    if state in {"promoted", "converted"} and promoted_target is None:
+        report_compat(
+            f"{relative}: {state} record must set promoted_to to an existing document",
+            strict,
+            warnings,
+            errors,
+        )
+
+    source_idea = validate_tracking_target(
+        root,
+        path,
+        "source_idea",
+        fields.get("source_idea", ""),
+        strict,
+        warnings,
+        errors,
+    )
+    if source_idea is not None and not is_under(source_idea, root, IDEA_DIR):
+        report_compat(
+            f"{relative}: source_idea must point under {IDEA_DIR}",
+            strict,
+            warnings,
+            errors,
+        )
+
+    if state == "deferred" and not (review_after or fields.get("reason")):
+        report_compat(
+            f"{relative}: deferred Backlog requires review_after or reason",
+            strict,
+            warnings,
+            errors,
+        )
+    if state == "done" and not fields.get("result"):
+        report_compat(
+            f"{relative}: done Backlog requires result",
+            strict,
+            warnings,
+            errors,
+        )
+    if state == "rejected" and not fields.get("reason"):
+        report_compat(
+            f"{relative}: rejected Backlog requires reason",
+            strict,
+            warnings,
+            errors,
+        )
+    if state == "closed" and not (fields.get("result") or fields.get("reason")):
+        report_compat(
+            f"{relative}: closed Idea requires result or reason",
+            strict,
+            warnings,
+            errors,
+        )
+    if state == "superseded":
+        successor = validate_tracking_target(
+            root,
+            path,
+            "superseded_by",
+            fields.get("superseded_by", ""),
+            strict,
+            warnings,
+            errors,
+        )
+        if successor is None:
+            report_compat(
+                f"{relative}: superseded record must set superseded_by",
+                strict,
+                warnings,
+                errors,
+            )
+        if fields.get("status") != "superseded":
+            report_compat(
+                f"{relative}: superseded record must set status: superseded",
+                strict,
+                warnings,
+                errors,
+            )
+    elif fields.get("status") == "superseded":
+        report_compat(
+            f"{relative}: status: superseded requires tracking_state: superseded",
+            strict,
+            warnings,
+            errors,
+        )
+
+
 def validate_plan(
     root: Path,
     path: Path,
@@ -706,8 +968,13 @@ def main() -> int:
     if not root.is_dir():
         errors.append(f"project root is not a directory: {root}")
     else:
+        if (root / LEGACY_IDEA_DIR).exists():
+            errors.append(
+                f"legacy Idea directory is not allowed after integration: {LEGACY_IDEA_DIR}"
+            )
         validate_required_dirs(root, args.strict, warnings, errors)
         documents: dict[Path, dict[str, str]] = {}
+        seen_tracking_ids: dict[str, Path] = {}
         for path in iter_markdown_files(root):
             resolved_path = path.resolve()
             fields, body = validate_frontmatter(
@@ -722,6 +989,15 @@ def main() -> int:
                 args.strict,
                 warnings,
                 errors,
+            )
+            validate_tracking_record(
+                root,
+                path,
+                fields,
+                args.strict,
+                warnings,
+                errors,
+                seen_tracking_ids,
             )
             validate_plan(
                 root, path, body, args.strict, warnings, errors

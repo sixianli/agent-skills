@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -21,6 +20,8 @@ REQUIRED_DIRS = [
     "docs/archive/plans",
     "docs/runbooks",
     "docs/tracking",
+    "docs/tracking/ideas",
+    "docs/tracking/backlog",
 ]
 
 
@@ -45,6 +46,7 @@ class ValidateDocsTests(unittest.TestCase):
         decision_status: str | None = None,
         supersedes: str = "",
         superseded_by: str = "",
+        extra_fields: dict[str, str] | None = None,
     ) -> Path:
         """Write one governed Markdown fixture."""
 
@@ -56,6 +58,8 @@ class ValidateDocsTests(unittest.TestCase):
             fields.append(f"document_type: {document_type}")
         if decision_status is not None:
             fields.append(f"decision_status: {decision_status}")
+        if extra_fields:
+            fields.extend(f'{key}: "{value}"' for key, value in extra_fields.items())
         fields.extend(
             [
                 f'supersedes: "{supersedes}"',
@@ -249,6 +253,127 @@ class ValidateDocsTests(unittest.TestCase):
         rendered = "\n".join(payload["errors"])
         self.assertIn("accepted replacement requires", rendered)
 
+    def test_structured_idea_and_backlog_are_strictly_valid(self) -> None:
+        """Accept path-consistent IDs, states, dates, and bidirectional provenance."""
+
+        idea_path = "docs/tracking/ideas/IDEA-20260719-001-useful-thought.md"
+        backlog_path = "docs/tracking/backlog/BL-20260719-001-evaluate-thought.md"
+        self.write_document(
+            idea_path,
+            "# Useful thought",
+            document_type="tracking",
+            extra_fields={
+                "tracking_kind": "idea",
+                "tracking_id": "IDEA-20260719-001",
+                "tracking_state": "promoted",
+                "updated": "2026-07-19",
+                "promoted_to": backlog_path,
+            },
+        )
+        self.write_document(
+            backlog_path,
+            f"# Evaluate thought\n\n- [SOURCE: {idea_path}]",
+            document_type="tracking",
+            extra_fields={
+                "tracking_kind": "backlog-item",
+                "tracking_id": "BL-20260719-001",
+                "tracking_state": "open",
+                "updated": "2026-07-19",
+                "source_idea": idea_path,
+                "review_after": "",
+                "promoted_to": "",
+                "result": "",
+                "reason": "",
+            },
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
+    def test_tracking_id_state_and_path_invariants_fail_strict_mode(self) -> None:
+        """Reject malformed IDs, mismatched path kinds, and missing transition evidence."""
+
+        self.write_document(
+            "docs/tracking/ideas/wrong-name.md",
+            "# Broken Idea",
+            document_type="tracking",
+            extra_fields={
+                "tracking_kind": "backlog-item",
+                "tracking_id": "BAD-1",
+                "tracking_state": "captured",
+                "updated": "not-a-date",
+                "promoted_to": "",
+            },
+        )
+        self.write_document(
+            "docs/tracking/backlog/BL-20260719-002-missing-target.md",
+            "# Missing target",
+            document_type="tracking",
+            extra_fields={
+                "tracking_kind": "backlog-item",
+                "tracking_id": "BL-20260719-002",
+                "tracking_state": "converted",
+                "updated": "2026-07-19",
+                "promoted_to": "",
+            },
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        rendered = "\n".join(payload["errors"])
+        self.assertIn("conflicts with path kind", rendered)
+        self.assertIn("invalid tracking_id", rendered)
+        self.assertIn("invalid tracking_state", rendered)
+        self.assertIn("must set promoted_to", rendered)
+        self.assertIn("updated must be YYYY-MM-DD", rendered)
+
+    def test_duplicate_tracking_ids_and_terminal_evidence_are_rejected(self) -> None:
+        """IDs are global and completed work must retain its outcome."""
+
+        common = {
+            "tracking_kind": "backlog-item",
+            "tracking_id": "BL-20260719-001",
+            "tracking_state": "done",
+            "updated": "2026-07-19",
+            "promoted_to": "",
+            "result": "",
+            "reason": "",
+        }
+        self.write_document(
+            "docs/tracking/backlog/BL-20260719-001-first.md",
+            "# First",
+            document_type="tracking",
+            extra_fields=common,
+        )
+        self.write_document(
+            "docs/tracking/backlog/BL-20260719-001-second.md",
+            "# Second",
+            document_type="tracking",
+            extra_fields=common,
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        rendered = "\n".join(payload["errors"])
+        self.assertIn("duplicate tracking_id", rendered)
+        self.assertIn("done Backlog requires result", rendered)
+
+    def test_legacy_idea_directory_is_an_error_in_every_mode(self) -> None:
+        """The integrated workflow has no docs/ideas compatibility mode."""
+
+        legacy = self.root / "docs/ideas"
+        legacy.mkdir(parents=True)
+        (legacy / "old.md").write_text("# Old\n", encoding="utf-8")
+
+        result, payload = self.run_validator(strict=False)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("legacy Idea directory is not allowed", "\n".join(payload["errors"]))
+
     def test_bundled_templates_form_a_strictly_valid_project(self) -> None:
         """Keep every bundled template synchronized with validator rules."""
 
@@ -261,12 +386,18 @@ class ValidateDocsTests(unittest.TestCase):
             "plan-template.md": "docs/execution/plans/2026-07-19-topic-plan.md",
             "runbook-template.md": "docs/runbooks/topic-runbook.md",
             "tracking-ledger-template.md": "docs/tracking/topic-ledger.md",
+            "idea-note-template.md": "docs/tracking/ideas/IDEA-20260719-001-idea.md",
+            "backlog-item-template.md": "docs/tracking/backlog/BL-20260719-001-item.md",
         }
         for source_name, destination_name in destinations.items():
-            shutil.copyfile(
-                templates / source_name,
-                self.root / destination_name,
+            content = (templates / source_name).read_text(encoding="utf-8")
+            content = (
+                content.replace("IDEA-YYYYMMDD-NNN", "IDEA-20260719-001")
+                .replace("BL-YYYYMMDD-NNN", "BL-20260719-001")
+                .replace("YYYY-MM-DD", "2026-07-19")
+                .replace("<project>", "demo")
             )
+            (self.root / destination_name).write_text(content, encoding="utf-8")
 
         result, payload = self.run_validator(strict=True)
 

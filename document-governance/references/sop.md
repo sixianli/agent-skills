@@ -32,6 +32,8 @@ ADR supersession, and SOURCE-path rules.
 | Spec | `docs/execution/specs/YYYY-MM-DD-topic-design.md` | Design for one change | File-level implementation steps |
 | Plan | `docs/execution/plans/YYYY-MM-DD-topic-plan.md` | Implementation order and verification | New requirements or design decisions |
 | Runbook | `docs/runbooks/topic-runbook.md` | Operate, deploy, debug, recover | Product requirements or feature rationale |
+| Idea | `docs/tracking/ideas/IDEA-*.md` | A durable insight and its thinking context | A commitment to implement |
+| Backlog Item | `docs/tracking/backlog/BL-*.md` | Future work, priority, state, and outcome | File-level execution steps |
 | Tracking Ledger | `docs/tracking/*.md` | Provenance, state, lessons, follow-ups | Current truth or execution steps |
 | Archive | `docs/archive/specs/`, `docs/archive/plans/` | Closed execution history | Active source-of-truth content |
 
@@ -63,6 +65,10 @@ Type-specific fields:
 document_type: spec        # prd | architecture | adr | spec | plan | runbook | tracking
 version: "X.Y"             # PRD/Architecture only
 decision_status: accepted  # ADR only: proposed | accepted | superseded
+tracking_kind: idea         # Tracking only: idea | backlog-item
+tracking_id: IDEA-YYYYMMDD-NNN
+tracking_state: captured    # State set depends on tracking_kind
+updated: "YYYY-MM-DD"       # Structured Idea/Backlog only
 ```
 
 Use the lifecycle fields consistently:
@@ -140,7 +146,9 @@ authoritative document rather than blindly trusting stale prose.
 | Spec | `YYYY-MM-DD-topic-design.md` |
 | Plan | `YYYY-MM-DD-topic-plan.md` |
 | Runbook | `topic-runbook.md`, `topic-setup.md`, `topic-troubleshooting.md` |
-| Tracking | `topic-ledger.md` under `docs/tracking/` |
+| Idea | `IDEA-YYYYMMDD-NNN-short-title.md` under `docs/tracking/ideas/` |
+| Backlog | `BL-YYYYMMDD-NNN-short-title.md` under `docs/tracking/backlog/` |
+| Tracking Ledger | `topic-ledger.md` directly under `docs/tracking/` |
 
 ```text
 docs/
@@ -152,6 +160,8 @@ docs/
 │   └── plans/
 ├── runbooks/
 ├── tracking/
+│   ├── ideas/
+│   └── backlog/
 └── archive/
     ├── specs/
     └── plans/
@@ -160,3 +170,7 @@ docs/
 Keep only pending or executing work in `docs/execution/specs/` and
 `docs/execution/plans/`. Move closed Specs and Plans to the matching archive
 directory after completing the closure checklist.
+
+Do not create `docs/ideas/` or a hand-maintained Tracking index. Query the
+frontmatter-bearing source records with `scripts/tracking.py list` or
+`scripts/tracking.py review`.

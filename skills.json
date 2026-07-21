@@ -24,44 +24,6 @@
   ],
   "skills": [
     {
-      "name": "capture-idea",
-      "package_dir": "capture-idea-skill",
-      "readme": "capture-idea-skill/README.md",
-      "skill_dir": "capture-idea-skill/capture-idea",
-      "description": "Preserve product ideas, original wording, thinking shifts, and open questions from an AI conversation.",
-      "implicit_invocation": true,
-      "has_tests": true,
-      "checks": [
-        {
-          "name": "pytest",
-          "command": [
-            "uv",
-            "run",
-            "--with",
-            "pytest",
-            "python",
-            "-m",
-            "pytest",
-            "capture-idea-skill/capture-idea/tests",
-            "-q"
-          ]
-        },
-        {
-          "name": "ruff",
-          "command": [
-            "uv",
-            "run",
-            "--with",
-            "ruff",
-            "ruff",
-            "check",
-            "capture-idea-skill/capture-idea/scripts",
-            "capture-idea-skill/capture-idea/tests"
-          ]
-        }
-      ]
-    },
-    {
       "name": "project-status",
       "package_dir": "project-status-skill",
       "readme": "project-status-skill/README.md",
@@ -86,9 +48,9 @@
       "package_dir": "document-governance",
       "readme": "document-governance/SKILL.md",
       "skill_dir": "document-governance",
-      "description": "Govern project documentation layers, templates, archives, validation, and code-document consistency.",
+      "description": "Govern project documentation and manage durable Ideas and Backlog items through capture, review, promotion, and closure.",
       "implicit_invocation": true,
-      "has_tests": false,
+      "has_tests": true,
       "checks": [
         {
           "name": "py-compile",
@@ -96,7 +58,21 @@
             "python3",
             "-m",
             "py_compile",
+            "document-governance/scripts/archive_doc.py",
+            "document-governance/scripts/tracking.py",
             "document-governance/scripts/validate_docs.py"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "document-governance/tests",
+            "-v"
           ]
         },
         {
@@ -108,7 +84,8 @@
             "ruff",
             "ruff",
             "check",
-            "document-governance/scripts/validate_docs.py"
+            "document-governance/scripts",
+            "document-governance/tests"
           ]
         }
       ]
