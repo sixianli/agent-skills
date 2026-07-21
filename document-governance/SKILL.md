@@ -1,6 +1,6 @@
 ---
 name: document-governance
-description: "Create, reconcile, validate, and close governed project docs under docs/: PRD, Architecture, ADR, execution Spec, implementation Plan, Runbook, and Tracking Ledger. Use for explicit artifact or doc-drift requests; for public API, schema, environment/config/deployment contract, feature flag, compatibility, durable architecture, or user-visible behavior changes in a repository already using this governance model; and for supersession, deprecation, rollback, or closure. Do not use merely because code/config changed in an ungoverned repository, or for chat-only Q&A, wording-only README edits, PR/commit/issue writing, inline comments, or OpenAPI/test/RFC artifacts merely named spec. Preserve repository instructions and conventions."
+description: "Govern an adopted repository's docs/: create, reconcile, validate, supersede, archive, and close PRD, Architecture, ADR, Spec, Plan, Runbook, Idea, Backlog, and Tracking records. Use for explicit governance or artifact requests; to preserve a meaningful idea or future TODO; to list, review, promote, or close tracked work; or when an adopted repository changes public behavior, APIs, schemas, config/deployment contracts, compatibility, or durable architecture. Do not use for ordinary changes in ungoverned repositories, chat-only brainstorming without preservation intent, wording-only README edits, PR/commit/issue writing, inline comments, or files merely named spec. Preserve repository conventions."
 ---
 
 # Document Governance
@@ -17,10 +17,14 @@ requested scope.
   ADR supersession, and SOURCE-path rules.
 - Read `references/workflows.md` for creation, reconciliation, closure,
   rollback, and conflict handling.
+- Read `references/idea-backlog-workflow.md` when capturing, reviewing,
+  promoting, closing, or migrating Ideas and Backlog items.
 - Read `references/validation-rules.md` before interpreting or changing the
   validator.
 - Copy the matching file from `assets/templates/` when creating a document.
 - Run `scripts/validate_docs.py` to validate a project.
+- Run `scripts/tracking.py` for deterministic Idea/Backlog file operations and
+  one-time Capture Idea migration. Do not create a hand-maintained index.
 - Run `scripts/archive_doc.py` only to archive a closed Spec or Plan.
 
 ## Required Workflow
@@ -36,7 +40,7 @@ requested scope.
    Specs and Plans whose closure checklist is complete.
 6. Resolve this active skill's directory from the source path supplied by the
    skill catalog or harness. Do not assume `CODEX_SKILL_DIR` exists. Before
-   running a bundled script, confirm Python 3.8 or newer is available through
+   running a bundled script, confirm Python 3.10 or newer is available through
    `python3`, then invoke the script by its resolved absolute path.
 7. Use migration-friendly validation for initial adoption audits. Use
    `--strict` for governed projects, CI, and completion checks; resolve every
@@ -54,6 +58,8 @@ requested scope.
   bidirectional `supersedes` / `superseded_by` links.
 - Keep Tracking Ledgers as provenance and state, not current product truth or
   implementation plans.
+- Store persistent Ideas under `docs/tracking/ideas/` and future work under
+  `docs/tracking/backlog/`. Do not recreate `docs/ideas/` or `INDEX.md`.
 - Keep local SOURCE references inside the target project's `docs/` tree.
 - If code is reverted, correct related current-truth documents in the same
   change set.

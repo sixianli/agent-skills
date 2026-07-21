@@ -1,8 +1,0 @@
-.DS_Store
-current.md
-capture-idea/.DS_Store
-capture-idea/**/__pycache__/
-capture-idea/**/*.py[cod]
-.pytest_cache/
-.ruff_cache/
-docs/superpowers/

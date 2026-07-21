@@ -11,6 +11,7 @@ rollback, and conflict handling.
 - [Spec and Plan Closure](#spec-and-plan-closure)
 - [Rollback](#rollback)
 - [Tracking Ledgers](#tracking-ledgers)
+- [Ideas and Backlog](#ideas-and-backlog)
 - [Conflict Handling](#conflict-handling)
 
 ## New Feature Workflow
@@ -89,11 +90,22 @@ Never use the archive script on an ADR.
 
 ## Tracking Ledgers
 
-Record provenance, rationale, state, and links. Use the states `open`,
-`converted`, `in_progress`, `done`, `rejected`, and `superseded`.
+Record provenance, rationale, state, and links. General ledgers may use the
+repository's established states. Structured Idea/Backlog records use the
+state machines in `references/idea-backlog-workflow.md`.
 
 Do not put file boundaries, implementation steps, verification commands, or
 current product/architecture truth in a Tracking Ledger.
+
+## Ideas and Backlog
+
+- Preserve a meaningful thought without committing to work as an Idea.
+- Record intended future work as a Backlog item.
+- Link an Idea to a derived Backlog item or formal governed artifact when it is
+  promoted; do not duplicate the original reasoning.
+- Query source files with `scripts/tracking.py`; do not maintain `INDEX.md`.
+- See `references/idea-backlog-workflow.md` for capture quality, transitions,
+  review behavior, closure evidence, and migration.
 
 ## Conflict Handling
 

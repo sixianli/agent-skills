@@ -1,7 +1,7 @@
 interface:
   display_name: "Document Governance"
-  short_description: "同步代码与 PRD、架构、ADR、Spec、Plan 和 Runbook"
-  default_prompt: "使用 $document-governance 检查本次变更的文档影响，更新相关项目文档并报告未解决的漂移。"
+  short_description: "治理项目文档，并记录、评审与落地 Idea/Backlog"
+  default_prompt: "使用 $document-governance 检查文档影响；按需记录、评审或推进 Idea/Backlog，并报告未解决的漂移。"
 
 policy:
   allow_implicit_invocation: true
