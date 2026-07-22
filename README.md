@@ -6,9 +6,8 @@ This repository collects reusable Codex skills that I maintain for recurring per
 
 | Skill | Documentation | Installable folder | Purpose | Implicit invocation |
 |---|---|---|---|---|
-| `project-status` | [project-status-skill/README.md](project-status-skill/README.md) | `project-status-skill/project-status/` | Maintain project-level `current.md` working-state notes for resumable agent sessions. | Yes |
 | `opencode-delegation` | [codex-delegate-to-opencode-skill/README.md](codex-delegate-to-opencode-skill/README.md) | `codex-delegate-to-opencode-skill/opencode-delegation/` | Delegate coding work to local OpenCode while Codex supervises, reviews, and verifies. | Yes, only for explicit OpenCode delegation requests |
-| `document-governance` | [document-governance/SKILL.md](document-governance/SKILL.md) | `document-governance/` | Govern project documentation and manage durable Ideas and Backlog items through capture, review, promotion, and closure. | Yes |
+| `document-governance` | [document-governance/SKILL.md](document-governance/SKILL.md) | `document-governance/` | Govern project documentation, durable Ideas/Backlog, and optional root `current.md` Working State. | Yes |
 
 Each package README or skill entrypoint explains the specific skill's purpose, install steps, usage examples, and verification commands. The installable skill folders should stay focused on runtime resources: `SKILL.md`, `agents/openai.yaml`, `scripts/`, `references/`, and `assets/` when needed.
 
@@ -25,7 +24,6 @@ Install all skills:
 
 ```bash
 mkdir -p "$HOME/.agents/skills"
-cp -R project-status-skill/project-status "$HOME/.agents/skills/"
 cp -R codex-delegate-to-opencode-skill/opencode-delegation "$HOME/.agents/skills/"
 cp -R document-governance "$HOME/.agents/skills/"
 ```

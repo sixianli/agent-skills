@@ -1,7 +1,0 @@
-interface:
-  display_name: "Project Status"
-  short_description: "Maintain current project state notes"
-  default_prompt: "Use $project-status to summarize or update this repository's current.md working state."
-
-policy:
-  allow_implicit_invocation: true

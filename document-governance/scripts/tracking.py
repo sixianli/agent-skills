@@ -28,6 +28,7 @@ BACKLOG_ID_PATTERN = re.compile(r"^BL-(\d{8})-(\d{3})$")
 VALID_IDEA_STATES = {"captured", "promoted", "closed", "superseded"}
 VALID_BACKLOG_STATES = {
     "open",
+    "in_progress",
     "deferred",
     "converted",
     "done",
@@ -556,6 +557,64 @@ def command_review(args: argparse.Namespace, root: Path) -> dict[str, object]:
     return {"action": "review", "as_of": as_of, "count": len(candidates), "items": candidates}
 
 
+def command_start(args: argparse.Namespace, root: Path) -> dict[str, object]:
+    """把一个开放或延期的 Backlog 标记为正在进行。"""
+
+    record = find_record(root, args.identity)
+    kind = record.fields.get("tracking_kind")
+    state = record.fields.get("tracking_state")
+    if kind != "backlog-item":
+        raise TrackingError(f"only Backlog records can be started; found {kind!r}")
+    if state not in {"open", "deferred"}:
+        raise TrackingError(
+            f"Backlog must be open or deferred before start; found {state!r}"
+        )
+    record.fields["tracking_state"] = "in_progress"
+    record.fields["updated"] = validate_iso_date(args.date, "date")
+    record.fields["review_after"] = ""
+    if not args.dry_run:
+        update_record(record)
+    return {
+        "action": "start",
+        "dry_run": args.dry_run,
+        "tracking_id": record.fields.get("tracking_id", ""),
+        "state": "in_progress",
+    }
+
+
+def command_defer(args: argparse.Namespace, root: Path) -> dict[str, object]:
+    """把开放或进行中的 Backlog 延期，并记录复查日期或原因。"""
+
+    record = find_record(root, args.identity)
+    kind = record.fields.get("tracking_kind")
+    state = record.fields.get("tracking_state")
+    if kind != "backlog-item":
+        raise TrackingError(f"only Backlog records can be deferred; found {kind!r}")
+    if state not in {"open", "in_progress"}:
+        raise TrackingError(
+            f"Backlog must be open or in_progress before deferral; found {state!r}"
+        )
+    review_after = args.review_after.strip()
+    reason = args.reason.strip()
+    if not (review_after or reason):
+        raise TrackingError("deferred Backlog requires --review-after or --reason")
+    if review_after:
+        validate_iso_date(review_after, "review_after")
+    record.fields["tracking_state"] = "deferred"
+    record.fields["updated"] = validate_iso_date(args.date, "date")
+    record.fields["review_after"] = review_after
+    record.fields["reason"] = reason
+    if not args.dry_run:
+        update_record(record)
+    return {
+        "action": "defer",
+        "dry_run": args.dry_run,
+        "tracking_id": record.fields.get("tracking_id", ""),
+        "state": "deferred",
+        "review_after": review_after,
+    }
+
+
 def resolve_target(root: Path, identity: str) -> Path:
     """解析 promotion/supersession 目标，并限制在 docs/ 内。"""
 
@@ -581,8 +640,11 @@ def command_promote(args: argparse.Namespace, root: Path) -> dict[str, object]:
     state = record.fields.get("tracking_state")
     if kind == "idea" and state != "captured":
         raise TrackingError(f"Idea must be captured before promotion; found {state!r}")
-    if kind == "backlog-item" and state not in {"open", "deferred"}:
-        raise TrackingError(f"Backlog must be open or deferred before conversion; found {state!r}")
+    if kind == "backlog-item" and state not in {"open", "in_progress", "deferred"}:
+        raise TrackingError(
+            "Backlog must be open, in_progress, or deferred before conversion; "
+            f"found {state!r}"
+        )
     target = resolve_target(root, args.target)
     if target.resolve() == record.path.resolve():
         raise TrackingError("a record cannot promote to itself")
@@ -980,6 +1042,18 @@ def parse_args() -> argparse.Namespace:
     review.add_argument("--as-of", default=date.today().isoformat())
     add_output_arguments(review)
 
+    start = commands.add_parser("start", help="Mark an open or deferred Backlog in progress.")
+    start.add_argument("identity", help="Backlog ID or record path.")
+    start.add_argument("--date", default=date.today().isoformat())
+    start.add_argument("--dry-run", action="store_true")
+
+    defer = commands.add_parser("defer", help="Defer an open or in-progress Backlog.")
+    defer.add_argument("identity", help="Backlog ID or record path.")
+    defer.add_argument("--review-after", default="")
+    defer.add_argument("--reason", default="")
+    defer.add_argument("--date", default=date.today().isoformat())
+    defer.add_argument("--dry-run", action="store_true")
+
     promote = commands.add_parser("promote", help="Promote a record to an existing governed artifact.")
     promote.add_argument("identity", help="Tracking ID or record path.")
     promote.add_argument("--target", required=True, help="Existing Tracking ID or path inside docs/.")
@@ -1031,6 +1105,10 @@ def dispatch(args: argparse.Namespace, root: Path) -> dict[str, object]:
         return command_list(args, root)
     if args.command == "review":
         return command_review(args, root)
+    if args.command == "start":
+        return command_start(args, root)
+    if args.command == "defer":
+        return command_defer(args, root)
     if args.command == "promote":
         return command_promote(args, root)
     if args.command == "close":

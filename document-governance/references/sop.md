@@ -7,6 +7,7 @@ ADR supersession, and SOURCE-path rules.
 
 - [Core Principles](#core-principles)
 - [Document Layers](#document-layers)
+- [Working State Boundary](#working-state-boundary)
 - [Frontmatter and Lifecycle](#frontmatter-and-lifecycle)
 - [Cross-Document References](#cross-document-references)
 - [ADR Rules](#adr-rules)
@@ -35,12 +36,25 @@ ADR supersession, and SOURCE-path rules.
 | Idea | `docs/tracking/ideas/IDEA-*.md` | A durable insight and its thinking context | A commitment to implement |
 | Backlog Item | `docs/tracking/backlog/BL-*.md` | Future work, priority, state, and outcome | File-level execution steps |
 | Tracking Ledger | `docs/tracking/*.md` | Provenance, state, lessons, follow-ups | Current truth or execution steps |
+| Working State | `current.md` at project root | Current focus, blocker, next resumption step | Durable inventory or authoritative truth |
 | Archive | `docs/archive/specs/`, `docs/archive/plans/` | Closed execution history | Active source-of-truth content |
 
 Recognize `docs/TODO.md` and `docs/lessons.md` as legacy Tracking Ledgers, but
 create new ledgers under `docs/tracking/`. Recognize existing
 `docs/archive/adr/` documents for backward compatibility, but do not move new or
 superseded ADRs there.
+
+## Working State Boundary
+
+Working State is an optional operational cache outside the governed `docs/`
+taxonomy. `current.md` and `current-archive.md` use no frontmatter and are not
+scanned by `validate_docs.py`. Do not infer adoption of the governance directory
+structure from their presence alone.
+
+Keep Backlog and Working State as separate data models. Backlog persists work
+that should remain discoverable; Working State provides a compact resumption
+snapshot. References from Working State to Tracking IDs or governed document
+paths are optional and may be one-to-many.
 
 ## Frontmatter and Lifecycle
 
@@ -131,6 +145,10 @@ Resolve conflicts in this order:
 5. Plan for execution sequence and verification.
 6. Runbook for operation and troubleshooting.
 7. Tracking Ledger for provenance and follow-up state.
+
+Working State is below this authority order. It can point to authoritative
+evidence but cannot override it. Verify its claims against current repository,
+document, test, artifact, or runtime evidence before reporting status.
 
 Current repository evidence still matters: when code and current-truth
 documents disagree, inspect the implementation and reconcile the appropriate

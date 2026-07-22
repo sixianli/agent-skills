@@ -1,7 +1,7 @@
 interface:
   display_name: "Document Governance"
-  short_description: "治理项目文档，并记录、评审与落地 Idea/Backlog"
-  default_prompt: "使用 $document-governance 检查文档影响；按需记录、评审或推进 Idea/Backlog，并报告未解决的漂移。"
+  short_description: "治理项目文档、待办与当前工作状态"
+  default_prompt: "使用 $document-governance 检查文档影响；按需管理 Idea/Backlog，或读取、更新非权威的 current.md 工作快照，并报告证据与未解决漂移。"
 
 policy:
   allow_implicit_invocation: true

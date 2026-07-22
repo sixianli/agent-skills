@@ -69,6 +69,8 @@ with any such finding must report `ok: false` and return exit code 1.
 ## Files Considered
 
 - Scan all `*.md` files under the target project's `docs/` tree.
+- Do not scan project-root `current.md` or `current-archive.md`; they are
+  non-authoritative Working State caches outside the governed taxonomy.
 - Skip `docs/templates/**` because it may contain unfilled placeholders.
 - Do not scan the skill's own `assets/templates/**` when validating a project.
 - Treat any remaining `docs/ideas/` directory as an always-error condition.
