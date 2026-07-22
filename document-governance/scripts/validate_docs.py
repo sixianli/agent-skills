@@ -45,6 +45,7 @@ BACKLOG_ID_PATTERN = re.compile(r"^BL-(\d{8})-(\d{3})$")
 VALID_IDEA_STATES = {"captured", "promoted", "closed", "superseded"}
 VALID_BACKLOG_STATES = {
     "open",
+    "in_progress",
     "deferred",
     "converted",
     "done",

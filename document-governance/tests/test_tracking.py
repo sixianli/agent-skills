@@ -121,6 +121,63 @@ class TrackingTests(unittest.TestCase):
             {"untriaged-idea", "open-backlog"},
         )
 
+    def test_backlog_start_and_defer_are_explicit_state_transitions(self) -> None:
+        """Working State links may follow Backlog execution without merging records."""
+
+        _, backlog = self.run_tracking(
+            "backlog",
+            "capture",
+            "--title",
+            "Follow up later",
+            "--summary",
+            "Track durable work independently from current.md.",
+            "--date",
+            "2026-07-21",
+        )
+        self.run_tracking(
+            "start",
+            backlog["tracking_id"],
+            "--date",
+            "2026-07-22",
+        )
+        started = (self.root / backlog["path"]).read_text(encoding="utf-8")
+        self.assertIn('tracking_state: "in_progress"', started)
+
+        self.run_tracking(
+            "defer",
+            backlog["tracking_id"],
+            "--review-after",
+            "2026-08-01",
+            "--reason",
+            "Waiting for capacity.",
+            "--date",
+            "2026-07-22",
+        )
+        deferred = (self.root / backlog["path"]).read_text(encoding="utf-8")
+        self.assertIn('tracking_state: "deferred"', deferred)
+        self.assertIn('review_after: "2026-08-01"', deferred)
+        self.assertIn('reason: "Waiting for capacity."', deferred)
+
+    def test_defer_requires_review_timing_or_reason(self) -> None:
+        """A deferral cannot hide an item without future review evidence."""
+
+        _, backlog = self.run_tracking(
+            "backlog",
+            "capture",
+            "--title",
+            "Do not lose this",
+            "--summary",
+            "Keep the item visible.",
+            "--date",
+            "2026-07-21",
+        )
+        result, _ = self.run_tracking(
+            "defer",
+            backlog["tracking_id"],
+            expected_returncode=1,
+        )
+        self.assertIn("requires --review-after or --reason", result.stderr)
+
     def test_promote_and_close_require_existing_target_and_outcome(self) -> None:
         """Transitions record an existing target and require closure evidence."""
 

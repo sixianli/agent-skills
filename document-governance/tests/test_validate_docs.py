@@ -277,7 +277,7 @@ class ValidateDocsTests(unittest.TestCase):
             extra_fields={
                 "tracking_kind": "backlog-item",
                 "tracking_id": "BL-20260719-001",
-                "tracking_state": "open",
+                "tracking_state": "in_progress",
                 "updated": "2026-07-19",
                 "source_idea": idea_path,
                 "review_after": "",

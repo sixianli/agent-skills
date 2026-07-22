@@ -24,16 +24,6 @@
   ],
   "skills": [
     {
-      "name": "project-status",
-      "package_dir": "project-status-skill",
-      "readme": "project-status-skill/README.md",
-      "skill_dir": "project-status-skill/project-status",
-      "description": "Maintain project-level current.md working-state notes for resumable agent sessions.",
-      "implicit_invocation": true,
-      "has_tests": false,
-      "checks": []
-    },
-    {
       "name": "opencode-delegation",
       "package_dir": "codex-delegate-to-opencode-skill",
       "readme": "codex-delegate-to-opencode-skill/README.md",
@@ -48,7 +38,7 @@
       "package_dir": "document-governance",
       "readme": "document-governance/SKILL.md",
       "skill_dir": "document-governance",
-      "description": "Govern project documentation and manage durable Ideas and Backlog items through capture, review, promotion, and closure.",
+      "description": "Govern project documentation, durable Ideas and Backlog, and optional root current.md Working State.",
       "implicit_invocation": true,
       "has_tests": true,
       "checks": [
@@ -60,7 +50,8 @@
             "py_compile",
             "document-governance/scripts/archive_doc.py",
             "document-governance/scripts/tracking.py",
-            "document-governance/scripts/validate_docs.py"
+            "document-governance/scripts/validate_docs.py",
+            "document-governance/scripts/working_state.py"
           ]
         },
         {

@@ -12,6 +12,7 @@ rollback, and conflict handling.
 - [Rollback](#rollback)
 - [Tracking Ledgers](#tracking-ledgers)
 - [Ideas and Backlog](#ideas-and-backlog)
+- [Working State](#working-state)
 - [Conflict Handling](#conflict-handling)
 
 ## New Feature Workflow
@@ -106,6 +107,19 @@ current product/architecture truth in a Tracking Ledger.
 - Query source files with `scripts/tracking.py`; do not maintain `INDEX.md`.
 - See `references/idea-backlog-workflow.md` for capture quality, transitions,
   review behavior, closure evidence, and migration.
+
+## Working State
+
+- Use root `current.md` only for explicit status/resume intent or an existing
+  repository opt-in rule.
+- Do not read it automatically at session start and do not treat it as project
+  truth without checking relevant evidence.
+- Link active Backlog, Spec, or Plan records when useful, but allow ad hoc
+  checkpoints with no governed reference.
+- Keep at most five entries in `current.md`; append overflow to
+  `current-archive.md` through `scripts/working_state.py`.
+- See `references/working-state-workflow.md` for routing, verification,
+  rotation, and coordinated Backlog transitions.
 
 ## Conflict Handling
 

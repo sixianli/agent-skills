@@ -10,6 +10,8 @@ migrating records created by the former Capture Idea skill.
 - “以后要做”“加入待办”“记录优化点” creates a Backlog item under
   `docs/tracking/backlog/`.
 - “列出/评审待办” queries records with `tracking.py list` or `review`.
+- “开始处理这条待办” changes an open or deferred Backlog to `in_progress`;
+  optionally reference it from Working State without copying its full content.
 - “推进/落地/转成正式工作” promotes a record to a linked Backlog, Spec, Plan,
   ADR, or other appropriate governed artifact.
 - Casual brainstorming without persistence intent creates no file.
@@ -37,8 +39,8 @@ Both types use `status: active`, `document_type: tracking`, a globally unique
 
 - Idea: `tracking_kind: idea`; states are `captured`, `promoted`, `closed`, and
   `superseded`.
-- Backlog: `tracking_kind: backlog-item`; states are `open`, `deferred`,
-  `converted`, `done`, `rejected`, and `superseded`.
+- Backlog: `tracking_kind: backlog-item`; states are `open`, `in_progress`,
+  `deferred`, `converted`, `done`, `rejected`, and `superseded`.
 
 Required transition evidence:
 
@@ -62,6 +64,8 @@ tracking.py --root <project> idea capture ...
 tracking.py --root <project> backlog capture ...
 tracking.py --root <project> list --kind all
 tracking.py --root <project> review
+tracking.py --root <project> start <BL-ID>
+tracking.py --root <project> defer <BL-ID> --review-after YYYY-MM-DD
 tracking.py --root <project> promote <ID> --target docs/...
 tracking.py --root <project> close <ID> --state ...
 ```
@@ -69,6 +73,11 @@ tracking.py --root <project> close <ID> --state ...
 When a Backlog is captured with `--source-idea`, the script promotes the Idea
 and writes bidirectional links. A promotion target must already exist; the
 script will not fabricate the semantic content of a Spec, ADR, or Plan.
+
+Backlog and Working State are related but not interchangeable. Backlog is the
+durable inventory; root `current.md` is an optional current-work cache. A
+Working State entry may reference zero or more Backlog items, and an ad hoc
+checkpoint does not require creating one. See `working-state-workflow.md`.
 
 ## One-Time Capture Idea Migration
 
