@@ -10,8 +10,7 @@ migrating records created by the former Capture Idea skill.
 - “以后要做”“加入待办”“记录优化点” creates a Backlog item under
   `docs/tracking/backlog/`.
 - “列出/评审待办” queries records with `tracking.py list` or `review`.
-- “开始处理这条待办” changes an open or deferred Backlog to `in_progress`;
-  optionally reference it from Working State without copying its full content.
+- “开始处理这条待办” changes an open or deferred Backlog to `in_progress`.
 - “推进/落地/转成正式工作” promotes a record to a linked Backlog, Spec, Plan,
   ADR, or other appropriate governed artifact.
 - Casual brainstorming without persistence intent creates no file.
@@ -73,11 +72,6 @@ tracking.py --root <project> close <ID> --state ...
 When a Backlog is captured with `--source-idea`, the script promotes the Idea
 and writes bidirectional links. A promotion target must already exist; the
 script will not fabricate the semantic content of a Spec, ADR, or Plan.
-
-Backlog and Working State are related but not interchangeable. Backlog is the
-durable inventory; root `current.md` is an optional current-work cache. A
-Working State entry may reference zero or more Backlog items, and an ad hoc
-checkpoint does not require creating one. See `working-state-workflow.md`.
 
 ## One-Time Capture Idea Migration
 
