@@ -1,4 +1,4 @@
-"""Black-box tests for scripts/tracking.py."""
+"""Black-box tests for scripts/idea_backlog.py."""
 
 from __future__ import annotations
 
@@ -9,13 +9,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 SKILL_ROOT = Path(__file__).resolve().parents[1]
-TRACKING = SKILL_ROOT / "scripts" / "tracking.py"
+IDEA_BACKLOG = SKILL_ROOT / "scripts" / "idea_backlog.py"
 
 
-class TrackingTests(unittest.TestCase):
-    """Exercise capture, query, transitions, and one-time migration."""
+class IdeaBacklogTests(unittest.TestCase):
+    """Exercise Idea/Backlog capture, query, and transitions."""
 
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
@@ -23,7 +22,7 @@ class TrackingTests(unittest.TestCase):
         self.root = Path(self.temporary_directory.name) / "project"
         self.root.mkdir()
 
-    def run_tracking(
+    def run_cli(
         self,
         *arguments: str,
         expected_returncode: int = 0,
@@ -32,7 +31,7 @@ class TrackingTests(unittest.TestCase):
 
         command = [
             sys.executable,
-            str(TRACKING),
+            str(IDEA_BACKLOG),
             "--root",
             str(self.root),
             *arguments,
@@ -45,7 +44,7 @@ class TrackingTests(unittest.TestCase):
     def capture_idea(self, title: str = "Small useful thought") -> dict:
         """Create a deterministic Idea fixture."""
 
-        _, payload = self.run_tracking(
+        _, payload = self.run_cli(
             "idea",
             "capture",
             "--title",
@@ -64,20 +63,20 @@ class TrackingTests(unittest.TestCase):
 
         payload = self.capture_idea()
 
-        self.assertEqual(payload["tracking_id"], "IDEA-20260721-001")
+        self.assertEqual(payload["record_id"], "IDEA-20260721-001")
         path = self.root / payload["path"]
         content = path.read_text(encoding="utf-8")
-        self.assertIn('tracking_kind: "idea"', content)
-        self.assertIn('tracking_state: "captured"', content)
+        self.assertIn('document_type: "idea"', content)
+        self.assertIn('record_state: "captured"', content)
         self.assertIn("- None recorded.", content)
-        self.assertFalse((self.root / "docs/ideas").exists())
-        self.assertFalse((self.root / "docs/tracking/ideas/INDEX.md").exists())
+        self.assertEqual(path.parent, self.root / "docs/ideas")
+        self.assertFalse((self.root / "docs/ideas/INDEX.md").exists())
 
     def test_backlog_from_idea_writes_bidirectional_relationship(self) -> None:
         """Creating future work from an Idea promotes and links the source."""
 
         idea = self.capture_idea()
-        _, backlog = self.run_tracking(
+        _, backlog = self.run_cli(
             "backlog",
             "capture",
             "--title",
@@ -85,14 +84,14 @@ class TrackingTests(unittest.TestCase):
             "--summary",
             "Decide whether it is worth implementing.",
             "--source-idea",
-            idea["tracking_id"],
+            idea["record_id"],
             "--date",
             "2026-07-21",
         )
 
         idea_text = (self.root / idea["path"]).read_text(encoding="utf-8")
         backlog_text = (self.root / backlog["path"]).read_text(encoding="utf-8")
-        self.assertIn('tracking_state: "promoted"', idea_text)
+        self.assertIn('record_state: "promoted"', idea_text)
         self.assertIn(f'promoted_to: "{backlog["path"]}"', idea_text)
         self.assertIn(f'source_idea: "{idea["path"]}"', backlog_text)
 
@@ -100,7 +99,7 @@ class TrackingTests(unittest.TestCase):
         """Queries must derive state from records rather than a second index."""
 
         self.capture_idea()
-        self.run_tracking(
+        self.run_cli(
             "backlog",
             "capture",
             "--title",
@@ -111,8 +110,8 @@ class TrackingTests(unittest.TestCase):
             "2026-07-21",
         )
 
-        _, listed = self.run_tracking("list", "--format", "json")
-        _, review = self.run_tracking("review", "--as-of", "2026-07-21", "--format", "json")
+        _, listed = self.run_cli("list", "--format", "json")
+        _, review = self.run_cli("review", "--as-of", "2026-07-21", "--format", "json")
 
         self.assertEqual(listed["count"], 2)
         self.assertEqual(review["count"], 2)
@@ -124,7 +123,7 @@ class TrackingTests(unittest.TestCase):
     def test_backlog_start_and_defer_are_explicit_state_transitions(self) -> None:
         """Backlog execution supports explicit start and defer transitions."""
 
-        _, backlog = self.run_tracking(
+        _, backlog = self.run_cli(
             "backlog",
             "capture",
             "--title",
@@ -134,18 +133,18 @@ class TrackingTests(unittest.TestCase):
             "--date",
             "2026-07-21",
         )
-        self.run_tracking(
+        self.run_cli(
             "start",
-            backlog["tracking_id"],
+            backlog["record_id"],
             "--date",
             "2026-07-22",
         )
         started = (self.root / backlog["path"]).read_text(encoding="utf-8")
-        self.assertIn('tracking_state: "in_progress"', started)
+        self.assertIn('record_state: "in_progress"', started)
 
-        self.run_tracking(
+        self.run_cli(
             "defer",
-            backlog["tracking_id"],
+            backlog["record_id"],
             "--review-after",
             "2026-08-01",
             "--reason",
@@ -154,14 +153,14 @@ class TrackingTests(unittest.TestCase):
             "2026-07-22",
         )
         deferred = (self.root / backlog["path"]).read_text(encoding="utf-8")
-        self.assertIn('tracking_state: "deferred"', deferred)
+        self.assertIn('record_state: "deferred"', deferred)
         self.assertIn('review_after: "2026-08-01"', deferred)
         self.assertIn('reason: "Waiting for capacity."', deferred)
 
     def test_defer_requires_review_timing_or_reason(self) -> None:
         """A deferral cannot hide an item without future review evidence."""
 
-        _, backlog = self.run_tracking(
+        _, backlog = self.run_cli(
             "backlog",
             "capture",
             "--title",
@@ -171,9 +170,9 @@ class TrackingTests(unittest.TestCase):
             "--date",
             "2026-07-21",
         )
-        result, _ = self.run_tracking(
+        result, _ = self.run_cli(
             "defer",
-            backlog["tracking_id"],
+            backlog["record_id"],
             expected_returncode=1,
         )
         self.assertIn("requires --review-after or --reason", result.stderr)
@@ -185,19 +184,40 @@ class TrackingTests(unittest.TestCase):
         spec = self.root / "docs/execution/specs/topic.md"
         spec.parent.mkdir(parents=True)
         spec.write_text("# Spec\n", encoding="utf-8")
-        self.run_tracking(
+        self.run_cli(
             "promote",
-            idea["tracking_id"],
+            idea["record_id"],
             "--target",
             "docs/execution/specs/topic.md",
             "--date",
             "2026-07-22",
         )
         promoted = (self.root / idea["path"]).read_text(encoding="utf-8")
-        self.assertIn('tracking_state: "promoted"', promoted)
+        self.assertIn('record_state: "promoted"', promoted)
         self.assertIn('promoted_to: "docs/execution/specs/topic.md"', promoted)
 
-        _, backlog = self.run_tracking(
+        _, convertible = self.run_cli(
+            "backlog",
+            "capture",
+            "--title",
+            "Convert work",
+            "--summary",
+            "Turn the work into an execution artifact.",
+            "--date",
+            "2026-07-21",
+        )
+        self.run_cli(
+            "promote",
+            convertible["record_id"],
+            "--target",
+            "docs/execution/specs/topic.md",
+            "--date",
+            "2026-07-22",
+        )
+        converted = (self.root / convertible["path"]).read_text(encoding="utf-8")
+        self.assertIn('record_state: "converted"', converted)
+
+        _, backlog = self.run_cli(
             "backlog",
             "capture",
             "--title",
@@ -210,11 +230,11 @@ class TrackingTests(unittest.TestCase):
         failed = subprocess.run(
             [
                 sys.executable,
-                str(TRACKING),
+                str(IDEA_BACKLOG),
                 "--root",
                 str(self.root),
                 "close",
-                backlog["tracking_id"],
+                backlog["record_id"],
                 "--state",
                 "done",
             ],
@@ -224,9 +244,9 @@ class TrackingTests(unittest.TestCase):
         )
         self.assertEqual(failed.returncode, 1)
         self.assertIn("requires --result", failed.stderr)
-        self.run_tracking(
+        self.run_cli(
             "close",
-            backlog["tracking_id"],
+            backlog["record_id"],
             "--state",
             "done",
             "--result",
@@ -235,60 +255,8 @@ class TrackingTests(unittest.TestCase):
             "2026-07-22",
         )
         closed = (self.root / backlog["path"]).read_text(encoding="utf-8")
-        self.assertIn('tracking_state: "done"', closed)
+        self.assertIn('record_state: "done"', closed)
         self.assertIn('result: "Implemented and verified."', closed)
-
-    def test_migration_preserves_bodies_promotes_future_todo_and_deletes_source(self) -> None:
-        """One-time migration must preserve data before removing the old directory."""
-
-        legacy = self.root / "docs/ideas"
-        legacy.mkdir(parents=True)
-        first_body = (
-            "# First Idea\n\n"
-            "## Core Ideas\n\nKeep the first body.\n\n"
-            "## Thought Trajectory\n\nStarted here.\n"
-        )
-        second_body = (
-            "# Future Improvement\n\n"
-            "## Core Ideas\n\nTurn this into future work.\n\n"
-            "## Open Questions\n\n- When?\n"
-        )
-        (legacy / "2026-07-20-first.md").write_text(first_body, encoding="utf-8")
-        (legacy / "2026-07-21-future.md").write_text(second_body, encoding="utf-8")
-        (legacy / "INDEX.md").write_text(
-            "| Date | Project | Title | Status | Link |\n"
-            "|---|---|---|---|---|\n"
-            "| 2026-07-20 | demo | First Idea | captured | [First](ideas/2026-07-20-first.md) |\n"
-            "| 2026-07-21 | demo | Future Improvement | future-todo | [Future](ideas/2026-07-21-future.md) |\n",
-            encoding="utf-8",
-        )
-        readme = self.root / "README.md"
-        readme.write_text("See docs/ideas/2026-07-20-first.md\n", encoding="utf-8")
-
-        _, dry_run = self.run_tracking("migrate-ideas", "--format", "json")
-        self.assertTrue(dry_run["dry_run"])
-        self.assertTrue(legacy.exists())
-        self.assertEqual(dry_run["backlog_count"], 1)
-
-        _, applied = self.run_tracking(
-            "migrate-ideas",
-            "--apply",
-            "--delete-source",
-            "--format",
-            "json",
-        )
-
-        self.assertTrue(applied["verified"])
-        self.assertTrue(applied["legacy_source_deleted"])
-        self.assertFalse(legacy.exists())
-        ideas = sorted((self.root / "docs/tracking/ideas").glob("*.md"))
-        backlogs = sorted((self.root / "docs/tracking/backlog").glob("*.md"))
-        self.assertEqual(len(ideas), 2)
-        self.assertEqual(len(backlogs), 1)
-        self.assertIn("Keep the first body.", ideas[0].read_text(encoding="utf-8"))
-        self.assertIn('tracking_state: "promoted"', ideas[1].read_text(encoding="utf-8"))
-        self.assertIn('source_idea: "docs/tracking/ideas/', backlogs[0].read_text(encoding="utf-8"))
-        self.assertNotIn("docs/ideas", readme.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

@@ -1,9 +1,8 @@
 ---
 status: active
-document_type: tracking
-tracking_kind: backlog-item
-tracking_id: BL-YYYYMMDD-NNN
-tracking_state: open
+document_type: backlog
+record_id: BL-YYYYMMDD-NNN
+record_state: open
 date: "YYYY-MM-DD"
 updated: "YYYY-MM-DD"
 priority: normal

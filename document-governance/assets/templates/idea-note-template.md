@@ -1,9 +1,8 @@
 ---
 status: active
-document_type: tracking
-tracking_kind: idea
-tracking_id: IDEA-YYYYMMDD-NNN
-tracking_state: captured
+document_type: idea
+record_id: IDEA-YYYYMMDD-NNN
+record_state: captured
 date: "YYYY-MM-DD"
 updated: "YYYY-MM-DD"
 project: "<project>"

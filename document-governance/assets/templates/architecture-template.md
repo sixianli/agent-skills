@@ -25,12 +25,10 @@ Describe the current implemented system shape.
 
 - 
 
-## Deferred Work
+## Backlog Links
 
-- 
+- [SOURCE: docs/backlog/BL-YYYYMMDD-NNN-item.md]
 
 ## Decision Links
 
 - [SOURCE: docs/adr/NNNN-short-title.md]
-
-

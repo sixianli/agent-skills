@@ -49,7 +49,7 @@
             "-m",
             "py_compile",
             "document-governance/scripts/archive_doc.py",
-            "document-governance/scripts/tracking.py",
+            "document-governance/scripts/idea_backlog.py",
             "document-governance/scripts/validate_docs.py"
           ]
         },

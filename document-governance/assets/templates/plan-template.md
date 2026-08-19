@@ -39,7 +39,6 @@ date: "YYYY-MM-DD"
 ## Closure Checklist
 
 - [ ] Verification has been run and recorded.
-- [ ] Long-lived documents are updated.
-- [ ] Tracking Ledgers are updated.
+- [ ] Affected current-truth documents are reconciled.
+- [ ] Remaining future work is recorded in Backlog when needed.
 - [ ] This Plan is moved to `docs/archive/plans/` when closed.
-

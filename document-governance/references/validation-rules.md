@@ -27,7 +27,7 @@ These conditions fail in every mode:
 ## Migration Warnings / Strict Errors
 
 - A required governance directory is missing.
-- `docs/tracking/ideas/` and `docs/tracking/backlog/` are created on first use;
+- `docs/ideas/` and `docs/backlog/` are created on first use;
   empty optional directories are not required because Git does not preserve
   them.
 - A governed Markdown document has missing, unterminated, malformed, nested,
@@ -38,10 +38,8 @@ These conditions fail in every mode:
   closed and archived.
 - A `document_type`, when present, conflicts with the document's governed
   directory.
-- A Tracking Ledger contains Plan-like headings such as `## File Boundaries`,
-  `## Implementation Tasks`, `## Verification`, or `### Task ...`.
 - A structured Idea/Backlog record has a missing, duplicate, malformed, or
-  path-inconsistent `tracking_id`, `tracking_kind`, or `tracking_state`.
+  path-inconsistent `record_id`, `document_type`, or `record_state`.
 - A promoted/converted record lacks a valid `promoted_to`; a deferred Backlog
   lacks `review_after` or `reason`; or a terminal record lacks its required
   result, reason, or successor.
@@ -71,10 +69,11 @@ with any such finding must report `ok: false` and return exit code 1.
 - Scan all `*.md` files under the target project's `docs/` tree.
 - Skip `docs/templates/**` because it may contain unfilled placeholders.
 - Do not scan the skill's own `assets/templates/**` when validating a project.
-- Treat any remaining `docs/ideas/` directory as an always-error condition.
-  The integrated workflow has no legacy reader or compatibility mode.
 - Open records and overdue `review_after` dates are work state, not validation
-  failures. Use `scripts/tracking.py review` to surface them.
+  failures. Use `scripts/idea_backlog.py review` to surface them.
+- The validator can enforce the location and frontmatter shape of
+  `docs/lessons.md`, but it cannot prove that an entry represents a repeated
+  Codex mistake. Review that semantic boundary manually.
 
 ## What the Validator Cannot Prove
 

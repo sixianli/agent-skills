@@ -1,6 +1,6 @@
 ---
 name: document-governance
-description: "治理已采用本体系的仓库中的 docs/：创建、协调一致、验证、替代、归档并关闭 PRD、Architecture、ADR、Spec、Plan、Runbook、Idea、Backlog 和 Tracking 记录。适用于明确的治理或文档产物请求、持久化 Idea 或未来 TODO、已跟踪工作的评审与状态转换，以及已采用本体系且公开行为或长期契约发生变化的仓库。不适用于未采用本体系的仓库中的普通修改、无持久化意图的随意头脑风暴、项目状态或工作恢复报告、仅修改措辞的 README 编辑、PR/commit/issue 文案或行内注释。遵循仓库既有约定。"
+description: "治理已采用本体系的仓库中的 docs/：创建、协调一致、验证、替代、归档并关闭 PRD、Architecture、ADR、Spec、Plan、Runbook、Idea 和 Backlog。适用于明确的治理或文档产物请求、持久化 Idea 或未来 TODO、已跟踪工作的评审与状态转换，以及已采用本体系且公开行为或长期契约发生变化的仓库。不适用于未采用本体系的仓库中的普通修改、无持久化意图的随意头脑风暴、项目状态或工作恢复报告、仅修改措辞的 README 编辑、PR/commit/issue 文案或行内注释。遵循仓库既有约定。"
 ---
 
 # 文档治理
@@ -20,8 +20,8 @@ description: "治理已采用本体系的仓库中的 docs/：创建、协调一
 - 在解释或修改验证器之前，请读取 `references/validation-rules.md`。
 - 创建文档时，从 `assets/templates/` 复制对应文件。
 - 运行 `scripts/validate_docs.py` 验证项目。
-- 运行 `scripts/tracking.py` 执行确定性的 Idea/Backlog 文件操作和一次性的
-  Capture Idea 迁移。不要创建手工维护的索引。
+- 运行 `scripts/idea_backlog.py` 执行确定性的 Idea/Backlog 文件操作。
+  不要创建手工维护的索引。
 - 仅使用 `scripts/archive_doc.py` 归档已关闭的 Spec 或 Plan。
 
 ## 必须遵循的工作流
@@ -50,11 +50,13 @@ description: "治理已采用本体系的仓库中的 docs/：创建、协调一
   `references/workflows.md` 中的替代工作流。
 - 将已被替代的 ADR 保留在 `docs/adr/` 中，保持生命周期字段一致，并维护双向的
   `supersedes` / `superseded_by` 链接。
-- 将 Tracking Ledger 用作来源追踪和状态记录，而不是当前产品事实或实施计划。
-- 将需要持久保存的 Idea 存放在 `docs/tracking/ideas/` 下，将未来工作存放在
-  `docs/tracking/backlog/` 下。不要重新创建 `docs/ideas/` 或 `INDEX.md`。
+- 将需要持久保存的 Idea 存放在 `docs/ideas/` 下，将未来工作存放在
+  `docs/backlog/` 下。不要创建 `INDEX.md`。
 - 将 Backlog 作为持久的工作清单。不要仅仅为了证明临时状态报告合理，就虚构
   Backlog 条目。
+- 不要创建或维护 `docs/TODO.md`；所有持久的未来工作都归入 Backlog。
+- `docs/lessons.md` 只记录 Codex 经常或反复犯的错误，以及防止同类错误
+  再次发生的明确规则。不要把一次性问题、项目状态或普通知识写入其中。
 - 不要创建或维护单独的项目根目录状态缓存。应根据当前的仓库、文档、测试、产物和
   运行时证据得出状态。
 - 将本地 SOURCE 引用限制在目标项目的 `docs/` 树内。

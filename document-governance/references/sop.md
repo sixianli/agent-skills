@@ -24,23 +24,27 @@ ADR supersession, and SOURCE-path rules.
 
 ## Document Layers
 
-| Layer | Default Location | Answers | Must Not Contain |
-|-------|------------------|---------|------------------|
-| PRD | `docs/prd-v*.md` | What to build and why | APIs, classes, schemas, file steps |
-| Architecture | `docs/architecture-v*.md` | Current system shape | Task checklists, rejected alternatives |
-| ADR | `docs/adr/NNNN-title.md` | Why a durable decision was made | Current implementation inventory |
-| Spec | `docs/execution/specs/YYYY-MM-DD-topic-design.md` | Design for one change | File-level implementation steps |
-| Plan | `docs/execution/plans/YYYY-MM-DD-topic-plan.md` | Implementation order and verification | New requirements or design decisions |
-| Runbook | `docs/runbooks/topic-runbook.md` | Operate, deploy, debug, recover | Product requirements or feature rationale |
-| Idea | `docs/tracking/ideas/IDEA-*.md` | A durable insight and its thinking context | A commitment to implement |
-| Backlog Item | `docs/tracking/backlog/BL-*.md` | Future work, priority, state, and outcome | File-level execution steps |
-| Tracking Ledger | `docs/tracking/*.md` | Provenance, state, lessons, follow-ups | Current truth or execution steps |
-| Archive | `docs/archive/specs/`, `docs/archive/plans/` | Closed execution history | Active source-of-truth content |
 
-Recognize `docs/TODO.md` and `docs/lessons.md` as legacy Tracking Ledgers, but
-create new ledgers under `docs/tracking/`. Recognize existing
-`docs/archive/adr/` documents for backward compatibility, but do not move new or
-superseded ADRs there.
+| Layer           | Default Location                                  | Answers                                    | Must Not Contain                          |
+| --------------- | ------------------------------------------------- | ------------------------------------------ | ----------------------------------------- |
+| PRD             | `docs/prd-v*.md`                                  | What to build and why                      | APIs, classes, schemas, file steps        |
+| Architecture    | `docs/architecture-v*.md`                         | Current system shape                       | Task checklists, rejected alternatives    |
+| ADR             | `docs/adr/NNNN-title.md`                          | Why a durable decision was made            | Current implementation inventory          |
+| Spec            | `docs/execution/specs/YYYY-MM-DD-topic-design.md` | Design for one change                      | File-level implementation steps           |
+| Plan            | `docs/execution/plans/YYYY-MM-DD-topic-plan.md`   | Implementation order and verification      | New requirements or design decisions      |
+| Runbook         | `docs/runbooks/topic-runbook.md`                  | Operate, deploy, debug, recover            | Product requirements or feature rationale |
+| Idea            | `docs/ideas/IDEA-*.md`                            | A durable insight and its thinking context | A commitment to implement                 |
+| Backlog Item    | `docs/backlog/BL-*.md`                            | Future work, priority, state, and outcome  | File-level execution steps                |
+| Codex Lessons   | `docs/lessons.md`                                 | Repeated Codex mistakes and prevention     | Status, one-off issues, future work       |
+| Archive         | `docs/archive/specs/`, `docs/archive/plans/`      | Closed execution history                   | Active source-of-truth content            |
+
+Do not create or maintain `docs/TODO.md`; Backlog is the only durable future-work
+inventory. Maintain `docs/lessons.md` only for mistakes Codex makes frequently
+or repeatedly and the explicit rules that prevent recurrence. Do not add
+project status, general knowledge, one-off incidents, or future work there.
+
+Recognize existing `docs/archive/adr/` documents for backward compatibility,
+but do not move new or superseded ADRs there.
 
 ## Frontmatter and Lifecycle
 
@@ -62,12 +66,11 @@ date: "YYYY-MM-DD"
 Type-specific fields:
 
 ```yaml
-document_type: spec        # prd | architecture | adr | spec | plan | runbook | tracking
+document_type: spec        # prd | architecture | adr | spec | plan | runbook | idea | backlog | lessons
 version: "X.Y"             # PRD/Architecture only
 decision_status: accepted  # ADR only: proposed | accepted | superseded
-tracking_kind: idea         # Tracking only: idea | backlog-item
-tracking_id: IDEA-YYYYMMDD-NNN
-tracking_state: captured    # State set depends on tracking_kind
+record_id: IDEA-YYYYMMDD-NNN
+record_state: captured      # State set depends on document_type
 updated: "YYYY-MM-DD"       # Structured Idea/Backlog only
 ```
 
@@ -130,7 +133,6 @@ Resolve conflicts in this order:
 4. Spec for confirmed design of one change.
 5. Plan for execution sequence and verification.
 6. Runbook for operation and troubleshooting.
-7. Tracking Ledger for provenance and follow-up state.
 
 Current repository evidence still matters: when code and current-truth
 documents disagree, inspect the implementation and reconcile the appropriate
@@ -138,17 +140,18 @@ authoritative document rather than blindly trusting stale prose.
 
 ## Naming and Directories
 
-| Type | Pattern |
-|------|---------|
-| PRD | `prd-v{major.minor}.md` |
-| Architecture | `architecture-v{major.minor}.md` |
-| ADR | `NNNN-short-title.md` |
-| Spec | `YYYY-MM-DD-topic-design.md` |
-| Plan | `YYYY-MM-DD-topic-plan.md` |
-| Runbook | `topic-runbook.md`, `topic-setup.md`, `topic-troubleshooting.md` |
-| Idea | `IDEA-YYYYMMDD-NNN-short-title.md` under `docs/tracking/ideas/` |
-| Backlog | `BL-YYYYMMDD-NNN-short-title.md` under `docs/tracking/backlog/` |
-| Tracking Ledger | `topic-ledger.md` directly under `docs/tracking/` |
+
+| Type            | Pattern                                                          |
+| --------------- | ---------------------------------------------------------------- |
+| PRD             | `prd-v{major.minor}.md`                                          |
+| Architecture    | `architecture-v{major.minor}.md`                                 |
+| ADR             | `NNNN-short-title.md`                                            |
+| Spec            | `YYYY-MM-DD-topic-design.md`                                     |
+| Plan            | `YYYY-MM-DD-topic-plan.md`                                       |
+| Runbook         | `topic-runbook.md`, `topic-setup.md`, `topic-troubleshooting.md` |
+| Idea            | `IDEA-YYYYMMDD-NNN-short-title.md` under `docs/ideas/`           |
+| Backlog         | `BL-YYYYMMDD-NNN-short-title.md` under `docs/backlog/`           |
+| Codex Lessons   | `docs/lessons.md`                                                |
 
 ```text
 docs/
@@ -159,9 +162,9 @@ docs/
 │   ├── specs/
 │   └── plans/
 ├── runbooks/
-├── tracking/
-│   ├── ideas/
-│   └── backlog/
+├── ideas/
+├── backlog/
+├── lessons.md
 └── archive/
     ├── specs/
     └── plans/
@@ -171,6 +174,6 @@ Keep only pending or executing work in `docs/execution/specs/` and
 `docs/execution/plans/`. Move closed Specs and Plans to the matching archive
 directory after completing the closure checklist.
 
-Do not create `docs/ideas/` or a hand-maintained Tracking index. Query the
-frontmatter-bearing source records with `scripts/tracking.py list` or
-`scripts/tracking.py review`.
+Do not create a hand-maintained Idea or Backlog index. Query the
+frontmatter-bearing source records with `scripts/idea_backlog.py list` or
+`scripts/idea_backlog.py review`.

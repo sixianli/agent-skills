@@ -1,15 +1,14 @@
 # Idea and Backlog Workflow
 
-Use this reference only when preserving an idea, managing future work, or
-migrating records created by the former Capture Idea skill.
+Use this reference only when preserving an idea or managing future work.
 
 ## Routing
 
 - “记录这个想法”“保留这段思路” or equivalent preservation intent creates an
-  Idea under `docs/tracking/ideas/`.
+  Idea under `docs/ideas/`.
 - “以后要做”“加入待办”“记录优化点” creates a Backlog item under
-  `docs/tracking/backlog/`.
-- “列出/评审待办” queries records with `tracking.py list` or `review`.
+  `docs/backlog/`.
+- “列出/评审待办” queries records with `idea_backlog.py list` or `review`.
 - “开始处理这条待办” changes an open or deferred Backlog to `in_progress`.
 - “推进/落地/转成正式工作” promotes a record to a linked Backlog, Spec, Plan,
   ADR, or other appropriate governed artifact.
@@ -32,13 +31,13 @@ Plan, not in Backlog.
 
 ## Frontmatter and States
 
-Both types use `status: active`, `document_type: tracking`, a globally unique
-`tracking_id`, `date`, `updated`, `promoted_to`, `supersedes`, and
-`superseded_by`.
+Both types use `status: active`, a type-specific `document_type`, a globally
+unique `record_id`, `record_state`, `date`, `updated`, `promoted_to`,
+`supersedes`, and `superseded_by`.
 
-- Idea: `tracking_kind: idea`; states are `captured`, `promoted`, `closed`, and
+- Idea: `document_type: idea`; states are `captured`, `promoted`, `closed`, and
   `superseded`.
-- Backlog: `tracking_kind: backlog-item`; states are `open`, `in_progress`,
+- Backlog: `document_type: backlog`; states are `open`, `in_progress`,
   `deferred`, `converted`, `done`, `rejected`, and `superseded`.
 
 Required transition evidence:
@@ -56,35 +55,19 @@ must be completed.
 ## Deterministic Commands
 
 Resolve this skill's actual source directory, verify Python 3.10+, and invoke
-`scripts/tracking.py` by absolute path.
+`scripts/idea_backlog.py` by absolute path.
 
 ```text
-tracking.py --root <project> idea capture ...
-tracking.py --root <project> backlog capture ...
-tracking.py --root <project> list --kind all
-tracking.py --root <project> review
-tracking.py --root <project> start <BL-ID>
-tracking.py --root <project> defer <BL-ID> --review-after YYYY-MM-DD
-tracking.py --root <project> promote <ID> --target docs/...
-tracking.py --root <project> close <ID> --state ...
+idea_backlog.py --root <project> idea capture ...
+idea_backlog.py --root <project> backlog capture ...
+idea_backlog.py --root <project> list --kind all
+idea_backlog.py --root <project> review
+idea_backlog.py --root <project> start <BL-ID>
+idea_backlog.py --root <project> defer <BL-ID> --review-after YYYY-MM-DD
+idea_backlog.py --root <project> promote <ID> --target docs/...
+idea_backlog.py --root <project> close <ID> --state ...
 ```
 
 When a Backlog is captured with `--source-idea`, the script promotes the Idea
 and writes bidirectional links. A promotion target must already exist; the
 script will not fabricate the semantic content of a Spec, ADR, or Plan.
-
-## One-Time Capture Idea Migration
-
-Run `migrate-ideas` without `--apply` first. The plan assigns deterministic
-IDs and maps every legacy note. On apply, the command:
-
-1. preserves each note body after its old frontmatter;
-2. converts old metadata into governed Idea frontmatter;
-3. turns a legacy `future-todo` status into a linked open Backlog item;
-4. repairs repository Markdown references;
-5. verifies body hashes, metadata, links, and destination counts; and
-6. deletes `docs/ideas/` only when `--delete-source` is supplied and all
-   verification succeeds.
-
-There is no legacy format or fallback reader after cutover. Never delete a
-source directory before the command reports `verified: true`.

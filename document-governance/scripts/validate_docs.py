@@ -13,7 +13,6 @@ import sys
 from datetime import date
 from pathlib import Path
 
-
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
@@ -21,7 +20,6 @@ REQUIRED_DIRS = [
     "docs/archive/specs",
     "docs/archive/plans",
     "docs/runbooks",
-    "docs/tracking",
 ]
 REQUIRED_FRONTMATTER = {"status", "supersedes", "superseded_by", "date"}
 VALID_STATUSES = {"active", "superseded", "archived"}
@@ -32,14 +30,13 @@ VALID_DOCUMENT_TYPES = {
     "spec",
     "plan",
     "runbook",
-    "tracking",
+    "idea",
+    "backlog",
+    "lessons",
 }
 VALID_DECISION_STATUSES = {"proposed", "accepted", "superseded"}
-LEGACY_TRACKING_FILES = {"docs/TODO.md", "docs/lessons.md"}
-TRACKING_DIR = "docs/tracking"
-IDEA_DIR = "docs/tracking/ideas"
-BACKLOG_DIR = "docs/tracking/backlog"
-LEGACY_IDEA_DIR = "docs/ideas"
+IDEA_DIR = "docs/ideas"
+BACKLOG_DIR = "docs/backlog"
 IDEA_ID_PATTERN = re.compile(r"^IDEA-(\d{8})-(\d{3})$")
 BACKLOG_ID_PATTERN = re.compile(r"^BL-(\d{8})-(\d{3})$")
 VALID_IDEA_STATES = {"captured", "promoted", "closed", "superseded"}
@@ -52,12 +49,6 @@ VALID_BACKLOG_STATES = {
     "rejected",
     "superseded",
 }
-PLAN_LIKE_MARKERS = [
-    "## File Boundaries",
-    "## Implementation Tasks",
-    "## Verification",
-    "### Task ",
-]
 SOURCE_PATTERN = re.compile(r"\[SOURCE:\s*([^\]#]+)(?:#[^\]]+)?\]")
 TEMPLATE_PLACEHOLDER_TOKENS = ("YYYY", "NNNN", "<", ">", "{{", "X.Y")
 ARCHIVE_COMPATIBILITY = {
@@ -245,8 +236,12 @@ def inferred_document_type(path: Path, root: Path) -> str | None:
         return "plan"
     if is_under(path, root, "docs/runbooks"):
         return "runbook"
-    if relative in LEGACY_TRACKING_FILES or is_under(path, root, TRACKING_DIR):
-        return "tracking"
+    if is_under(path, root, IDEA_DIR):
+        return "idea"
+    if is_under(path, root, BACKLOG_DIR):
+        return "backlog"
+    if relative == "docs/lessons.md":
+        return "lessons"
     if re.fullmatch(r"docs/prd-v[^/]+\.md", relative):
         return "prd"
     if re.fullmatch(r"docs/architecture-v[^/]+\.md", relative):
@@ -370,39 +365,6 @@ def validate_frontmatter(
     return fields, body
 
 
-def is_tracking_doc(path: Path, root: Path, fields: dict[str, str]) -> bool:
-    """判断一个文档是否属于 Tracking Ledger。"""
-
-    return (
-        fields.get("document_type") == "tracking"
-        or inferred_document_type(path, root) == "tracking"
-    )
-
-
-def validate_tracking_ledger(
-    root: Path,
-    path: Path,
-    fields: dict[str, str],
-    body: str,
-    strict: bool,
-    warnings: list[str],
-    errors: list[str],
-) -> None:
-    """检查 Tracking Ledger 是否混入 Plan 式内容。"""
-
-    if not is_tracking_doc(path, root, fields):
-        return
-    relative = rel_path(path, root)
-    for marker in PLAN_LIKE_MARKERS:
-        if marker in body:
-            report_compat(
-                f"{relative}: tracking ledger contains plan-like marker {marker!r}",
-                strict,
-                warnings,
-                errors,
-            )
-
-
 def is_iso_date(value: str) -> bool:
     """判断值是否为有效的 YYYY-MM-DD 日期。"""
 
@@ -413,7 +375,7 @@ def is_iso_date(value: str) -> bool:
     return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", value))
 
 
-def validate_tracking_target(
+def validate_record_target(
     root: Path,
     path: Path,
     field_name: str,
@@ -422,7 +384,7 @@ def validate_tracking_target(
     warnings: list[str],
     errors: list[str],
 ) -> Path | None:
-    """校验结构化 Tracking 关系字段指向 docs/ 内的现有文件。"""
+    """校验 Idea/Backlog 关系字段指向 docs/ 内的现有文件。"""
 
     if not value:
         return None
@@ -443,7 +405,7 @@ def validate_tracking_target(
     return candidate
 
 
-def validate_tracking_record(
+def validate_structured_record(
     root: Path,
     path: Path,
     fields: dict[str, str],
@@ -458,25 +420,25 @@ def validate_tracking_record(
     if is_under(path, root, IDEA_DIR):
         path_kind = "idea"
     elif is_under(path, root, BACKLOG_DIR):
-        path_kind = "backlog-item"
+        path_kind = "backlog"
 
-    declared_kind = fields.get("tracking_kind", "")
-    if path_kind is None and not declared_kind:
+    declared_kind = fields.get("document_type", "")
+    if path_kind is None and declared_kind not in {"idea", "backlog"}:
         return
     relative = rel_path(path, root)
 
-    required = {"tracking_kind", "tracking_id", "tracking_state", "updated"}
+    required = {"record_id", "record_state", "updated"}
     missing = sorted(key for key in required if not fields.get(key))
     if missing:
         report_compat(
-            f"{relative}: missing structured tracking fields: {', '.join(missing)}",
+            f"{relative}: missing structured record fields: {', '.join(missing)}",
             strict,
             warnings,
             errors,
         )
-    if declared_kind not in {"idea", "backlog-item"}:
+    if declared_kind not in {"idea", "backlog"}:
         report_compat(
-            f"{relative}: invalid tracking_kind {declared_kind!r}",
+            f"{relative}: invalid record document_type {declared_kind!r}",
             strict,
             warnings,
             errors,
@@ -484,26 +446,27 @@ def validate_tracking_record(
         return
     if path_kind != declared_kind:
         report_compat(
-            f"{relative}: tracking_kind {declared_kind!r} conflicts with path kind {path_kind!r}",
+            f"{relative}: document_type {declared_kind!r} conflicts with "
+            f"record path kind {path_kind!r}",
             strict,
             warnings,
             errors,
         )
 
-    tracking_id = fields.get("tracking_id", "")
+    record_id = fields.get("record_id", "")
     pattern = IDEA_ID_PATTERN if declared_kind == "idea" else BACKLOG_ID_PATTERN
-    match = pattern.fullmatch(tracking_id)
+    match = pattern.fullmatch(record_id)
     if not match:
         report_compat(
-            f"{relative}: invalid tracking_id {tracking_id!r}",
+            f"{relative}: invalid record_id {record_id!r}",
             strict,
             warnings,
             errors,
         )
     else:
-        if not path.name.startswith(f"{tracking_id}-"):
+        if not path.name.startswith(f"{record_id}-"):
             report_compat(
-                f"{relative}: filename must start with {tracking_id}-",
+                f"{relative}: filename must start with {record_id}-",
                 strict,
                 warnings,
                 errors,
@@ -511,22 +474,22 @@ def validate_tracking_record(
         id_date = f"{match.group(1)[:4]}-{match.group(1)[4:6]}-{match.group(1)[6:]}"
         if fields.get("date") and fields.get("date") != id_date:
             report_compat(
-                f"{relative}: tracking_id date {id_date} conflicts with date {fields.get('date')!r}",
+                f"{relative}: record_id date {id_date} conflicts with date {fields.get('date')!r}",
                 strict,
                 warnings,
                 errors,
             )
-    if tracking_id:
-        previous = seen_ids.get(tracking_id)
+    if record_id:
+        previous = seen_ids.get(record_id)
         if previous is not None and previous != path.resolve():
             report_compat(
-                f"{relative}: duplicate tracking_id {tracking_id!r}; first used by {rel_path(previous, root)}",
+                f"{relative}: duplicate record_id {record_id!r}; first used by {rel_path(previous, root)}",
                 strict,
                 warnings,
                 errors,
             )
         else:
-            seen_ids[tracking_id] = path.resolve()
+            seen_ids[record_id] = path.resolve()
 
     updated = fields.get("updated", "")
     if updated and not is_iso_date(updated):
@@ -545,17 +508,17 @@ def validate_tracking_record(
             errors,
         )
 
-    state = fields.get("tracking_state", "")
+    state = fields.get("record_state", "")
     valid_states = VALID_IDEA_STATES if declared_kind == "idea" else VALID_BACKLOG_STATES
     if state not in valid_states:
         report_compat(
-            f"{relative}: invalid tracking_state {state!r} for {declared_kind}",
+            f"{relative}: invalid record_state {state!r} for {declared_kind}",
             strict,
             warnings,
             errors,
         )
 
-    promoted_target = validate_tracking_target(
+    promoted_target = validate_record_target(
         root,
         path,
         "promoted_to",
@@ -572,7 +535,7 @@ def validate_tracking_record(
             errors,
         )
 
-    source_idea = validate_tracking_target(
+    source_idea = validate_record_target(
         root,
         path,
         "source_idea",
@@ -618,7 +581,7 @@ def validate_tracking_record(
             errors,
         )
     if state == "superseded":
-        successor = validate_tracking_target(
+        successor = validate_record_target(
             root,
             path,
             "superseded_by",
@@ -643,7 +606,7 @@ def validate_tracking_record(
             )
     elif fields.get("status") == "superseded":
         report_compat(
-            f"{relative}: status: superseded requires tracking_state: superseded",
+            f"{relative}: status: superseded requires record_state: superseded",
             strict,
             warnings,
             errors,
@@ -969,36 +932,23 @@ def main() -> int:
     if not root.is_dir():
         errors.append(f"project root is not a directory: {root}")
     else:
-        if (root / LEGACY_IDEA_DIR).exists():
-            errors.append(
-                f"legacy Idea directory is not allowed after integration: {LEGACY_IDEA_DIR}"
-            )
         validate_required_dirs(root, args.strict, warnings, errors)
         documents: dict[Path, dict[str, str]] = {}
-        seen_tracking_ids: dict[str, Path] = {}
+        seen_record_ids: dict[str, Path] = {}
         for path in iter_markdown_files(root):
             resolved_path = path.resolve()
             fields, body = validate_frontmatter(
                 root, path, args.strict, warnings, errors
             )
             documents[resolved_path] = fields
-            validate_tracking_ledger(
-                root,
-                path,
-                fields,
-                body,
-                args.strict,
-                warnings,
-                errors,
-            )
-            validate_tracking_record(
+            validate_structured_record(
                 root,
                 path,
                 fields,
                 args.strict,
                 warnings,
                 errors,
-                seen_tracking_ids,
+                seen_record_ids,
             )
             validate_plan(
                 root, path, body, args.strict, warnings, errors

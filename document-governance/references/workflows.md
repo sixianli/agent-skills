@@ -10,8 +10,8 @@ rollback, and conflict handling.
 - [ADR Supersession](#adr-supersession)
 - [Spec and Plan Closure](#spec-and-plan-closure)
 - [Rollback](#rollback)
-- [Tracking Ledgers](#tracking-ledgers)
 - [Ideas and Backlog](#ideas-and-backlog)
+- [Codex Lessons](#codex-lessons)
 - [Conflict Handling](#conflict-handling)
 
 ## New Feature Workflow
@@ -23,7 +23,7 @@ rollback, and conflict handling.
 5. Confirm the Spec before writing an Implementation Plan under
    `docs/execution/plans/`.
 6. Implement and verify the change.
-7. Reconcile affected long-lived, operational, and tracking documents.
+7. Reconcile affected long-lived and operational documents.
 8. Archive the closed Spec and Plan only after completing closure.
 
 ## Drift Reconciliation
@@ -46,9 +46,10 @@ Use this mapping after inspecting the actual diff or changed configuration:
 - Architectural shift, technology replacement, or durable trade-off: create a
   superseding ADR and update Architecture.
 
-Update affected documents in the same authorized change set. If information is
-missing, record an explicit open Tracking Ledger item instead of hiding the
-drift. Report intentionally unchanged documents and the reason.
+Update affected documents in the same authorized change set. If future work
+remains, record it in Backlog. If current evidence cannot resolve a material
+conflict, report the uncertainty and request human direction instead of
+inventing project state. Report intentionally unchanged documents and why.
 
 ## ADR Supersession
 
@@ -71,8 +72,9 @@ Before archiving a Spec or Plan:
 
 - Confirm the work is merged, rejected, superseded, or otherwise closed.
 - Run and record relevant verification.
-- Update PRD, Architecture, README, Runbooks, and Tracking Ledgers where the
-  completed work changed their truth or state.
+- Update PRD, Architecture, README, and Runbooks where the completed work
+  changed their truth.
+- Update or close affected Backlog items when the work changes their state.
 - Preserve links to current truth.
 - Run `scripts/archive_doc.py` for the closed Spec or Plan.
 - Run strict validation after the move.
@@ -86,16 +88,7 @@ Never use the archive script on an ADR.
 - Describe the exact remaining behavior after a partial rollback.
 - Preserve ADR history; create a new ADR when rollback represents a new durable
   decision rather than rewriting an earlier ADR.
-- Add or reopen a Tracking Ledger item when rollback creates future work.
-
-## Tracking Ledgers
-
-Record provenance, rationale, state, and links. General ledgers may use the
-repository's established states. Structured Idea/Backlog records use the
-state machines in `references/idea-backlog-workflow.md`.
-
-Do not put file boundaries, implementation steps, verification commands, or
-current product/architecture truth in a Tracking Ledger.
+- Add or reopen a Backlog item when rollback creates future work.
 
 ## Ideas and Backlog
 
@@ -103,15 +96,23 @@ current product/architecture truth in a Tracking Ledger.
 - Record intended future work as a Backlog item.
 - Link an Idea to a derived Backlog item or formal governed artifact when it is
   promoted; do not duplicate the original reasoning.
-- Query source files with `scripts/tracking.py`; do not maintain `INDEX.md`.
+- Query source files with `scripts/idea_backlog.py`; do not maintain `INDEX.md`.
 - See `references/idea-backlog-workflow.md` for capture quality, transitions,
-  review behavior, closure evidence, and migration.
+  review behavior, and closure evidence.
+
+## Codex Lessons
+
+Maintain `docs/lessons.md` only when evidence shows that Codex frequently or
+repeatedly makes the same mistake. Each lesson must describe the recurring
+pattern, why it matters, and a concrete prevention rule. Do not add project
+status, general knowledge, one-off incidents, or future work. Put future work
+in Backlog instead.
 
 ## Conflict Handling
 
 1. Inspect current code and repository evidence.
 2. Apply the authority order in `references/sop.md` to the document domains.
-3. Treat ADRs as decision history and Tracking Ledgers as provenance.
+3. Treat ADRs as decision history rather than current implementation inventory.
 4. Reconcile stale current-truth documents with verified implementation.
 5. Stop and request human direction only when available evidence cannot resolve
    a material product or decision conflict.
