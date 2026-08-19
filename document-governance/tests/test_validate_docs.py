@@ -211,7 +211,7 @@ class ValidateDocsTests(unittest.TestCase):
         """Allow a proposed successor while the existing decision stays active."""
 
         self.write_document(
-            "docs/adr/0001-current.md",
+            "docs/adr/0001-existing.md",
             "# Current ADR",
             document_type="adr",
             decision_status="accepted",
@@ -221,7 +221,7 @@ class ValidateDocsTests(unittest.TestCase):
             "# Proposed ADR",
             document_type="adr",
             decision_status="proposed",
-            supersedes="docs/adr/0001-current.md",
+            supersedes="docs/adr/0001-existing.md",
         )
 
         result, payload = self.run_validator(strict=True)
@@ -233,7 +233,7 @@ class ValidateDocsTests(unittest.TestCase):
         """Reject a completed replacement whose old ADR remains active."""
 
         self.write_document(
-            "docs/adr/0001-current.md",
+            "docs/adr/0001-existing.md",
             "# Current ADR",
             document_type="adr",
             decision_status="accepted",
@@ -244,7 +244,7 @@ class ValidateDocsTests(unittest.TestCase):
             "# New ADR",
             document_type="adr",
             decision_status="accepted",
-            supersedes="docs/adr/0001-current.md",
+            supersedes="docs/adr/0001-existing.md",
         )
 
         result, payload = self.run_validator(strict=True)

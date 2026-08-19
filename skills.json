@@ -38,7 +38,7 @@
       "package_dir": "document-governance",
       "readme": "document-governance/SKILL.md",
       "skill_dir": "document-governance",
-      "description": "Govern project documentation, durable Ideas and Backlog, and optional root current.md Working State.",
+      "description": "Govern project documentation and durable Idea and Backlog lifecycles.",
       "implicit_invocation": true,
       "has_tests": true,
       "checks": [
@@ -50,8 +50,7 @@
             "py_compile",
             "document-governance/scripts/archive_doc.py",
             "document-governance/scripts/tracking.py",
-            "document-governance/scripts/validate_docs.py",
-            "document-governance/scripts/working_state.py"
+            "document-governance/scripts/validate_docs.py"
           ]
         },
         {

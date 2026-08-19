@@ -122,7 +122,7 @@ class TrackingTests(unittest.TestCase):
         )
 
     def test_backlog_start_and_defer_are_explicit_state_transitions(self) -> None:
-        """Working State links may follow Backlog execution without merging records."""
+        """Backlog execution supports explicit start and defer transitions."""
 
         _, backlog = self.run_tracking(
             "backlog",
@@ -130,7 +130,7 @@ class TrackingTests(unittest.TestCase):
             "--title",
             "Follow up later",
             "--summary",
-            "Track durable work independently from current.md.",
+            "Track durable work through the Backlog record.",
             "--date",
             "2026-07-21",
         )
