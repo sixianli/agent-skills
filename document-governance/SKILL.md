@@ -1,6 +1,6 @@
 ---
 name: document-governance
-description: "Govern the project's documentation system under the repository's `docs/` root, including creating, reconciling, validating, superseding, archiving, and closing PRDs, Architecture documents, ADRs, Specs, Plans, Runbooks, user-authored Ideas, and Backlog items. Use this skill when the user explicitly requests documentation governance or any of these document-lifecycle operations, when the user wants to persist one of their own ideas as project documentation, or proactively when there is clear evidence that governed project documentation has drifted out of sync with the project's current state. Do not use this skill for ordinary code or documentation edits that do not require documentation governance or lifecycle management, casual brainstorming with no intent to persist the outcome, or routine project-status or progress reporting."
+description: "Govern the project's documentation system under the repository's `docs/` root, including creating, reconciling, validating, superseding, archiving, and closing PRDs, Architecture documents, ADRs, Specs, Plans, Runbooks, user-authored Ideas, and Backlog items. Use this skill when the user explicitly requests documentation governance or any of these document-lifecycle operations, when an adopted Runbook is being checked, sealed, or used to guide an operation, when the user wants to persist one of their own ideas as project documentation, or proactively when there is clear evidence that governed project documentation has drifted out of sync with the project's current state. Do not use this skill for ordinary code or documentation edits that do not require documentation governance or lifecycle management, casual brainstorming with no intent to persist the outcome, or routine project-status or progress reporting."
 ---
 # document-governance
 
@@ -13,12 +13,17 @@ This skill governs only project documentation that has explicitly adopted its ru
 * To understand creation, reconciliation, closure, rollback, and conflict handling, read `references/workflows.md`.
 * When capturing, reviewing, advancing, closing, or migrating Idea and Backlog items, read
   `references/idea-backlog-workflow.md`.
+* Before creating, reconciling, sealing, checking, executing from, snapshotting,
+  superseding, or retiring a Runbook, read `references/runbook-workflow.md`.
 * Before explaining or modifying the validator, read `references/validation-rules.md`.
 * When creating documents, copy the corresponding files from `assets/templates/`.
 * Run `scripts/validate_docs.py` to validate the project.
 * Run `scripts/idea_backlog.py` for deterministic Idea/Backlog file operations.
   Do not create manually maintained indexes.
-* Use only `scripts/archive_doc.py` to archive closed Specs or Plans.
+* Run `scripts/runbook.py check` before using an active Runbook and
+  `scripts/runbook.py seal` only after semantic reconciliation and relevant tests.
+* Use only `scripts/archive_doc.py` to archive closed Specs or Plans and to
+  snapshot, supersede, or retire Runbooks. Never use it for ADRs.
 
 ## Required Workflow
 
@@ -29,8 +34,8 @@ This skill governs only project documentation that has explicitly adopted its ru
 4. Classify the work and read only the reference sections that match it.
 5. Preserve answer-only or review-only scope. Once editing is authorized, keep affected code and documentation
    consistent within the same change set.
-6. Supersede ADRs in place within `docs/adr/`; never archive ADRs. Archive only Specs and Plans that have
-   completed their closure checklist.
+6. Supersede ADRs in place within `docs/adr/`; never archive ADRs. Archive Specs and Plans only after
+   closure. Keep only active Runbooks in `docs/runbooks/` and use the dedicated Runbook archive modes.
 7. Resolve the directory of the currently enabled skill from the source path provided by the skill inventory or runtime framework. Do not assume
    `CODEX_SKILL_DIR` exists. Before running scripts bundled with the skill, confirm that Python 3.10 or later is
    available via `python3`, then invoke the scripts using the resolved absolute path.
@@ -38,6 +43,9 @@ This skill governs only project documentation that has explicitly adopted its ru
    CI, and completion checks; resolve all errors before claiming that structural validation has passed.
 9. Report which documents were updated and intentionally left unchanged, which checks were skipped, any unresolved drift,
    and any required ADR follow-up work.
+10. When a Runbook guides an operation, apply all three execution gates from
+    `references/runbook-workflow.md`: current static contract, fresh target
+    preflight, and the authorization required by effective risk.
 
 ## Non-Negotiable Rules
 
@@ -57,3 +65,11 @@ This skill governs only project documentation that has explicitly adopted its ru
   runtime evidence.
 * Restrict local SOURCE references to the target project's `docs/` tree.
 * If code is rolled back, correct the related documentation that reflects the current facts within the same change set.
+* Never execute an archived or superseded Runbook. `status: active` and a
+  passing static hash do not prove live applicability and do not authorize an operation.
+* Do not use Runbook `last_reviewed`, Runbook `review_after`, periodic review
+  windows, or refreshed dates as trust. Every execution must prove current
+  repository and target state.
+* Treat `execution_risk` as a minimum protection level. Actual commands and
+  live targets can raise risk, never lower it; unknown risk is critical.
+* Never let validation or archive tooling automatically reseal a Runbook.

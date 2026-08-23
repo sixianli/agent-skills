@@ -19,7 +19,8 @@ ADR supersession, and SOURCE-path rules.
 2. Keep code and current-truth documents consistent.
 3. Separate stable truth from temporary execution artifacts.
 4. Separate design from implementation sequencing.
-5. Archive closed Specs and Plans; retain ADR decision history in place.
+5. Archive closed Specs and Plans, retain ADR decision history in place, and
+   move Runbook history out of the active execution directory.
 6. Follow user scope and repository instructions before this default taxonomy.
 
 ## Document Layers
@@ -36,7 +37,7 @@ ADR supersession, and SOURCE-path rules.
 | Idea            | `docs/ideas/IDEA-*.md`                            | A durable insight and its thinking context | A commitment to implement                 |
 | Backlog Item    | `docs/backlog/BL-*.md`                            | Future work, priority, state, and outcome  | File-level execution steps                |
 | Codex Lessons   | `docs/lessons.md`                                 | Repeated Codex mistakes and prevention     | Status, one-off issues, future work       |
-| Archive         | `docs/archive/specs/`, `docs/archive/plans/`      | Closed execution history                   | Active source-of-truth content            |
+| Archive         | `docs/archive/specs/`, `docs/archive/plans/`, `docs/archive/runbooks/` | Closed execution and Runbook history | Active source-of-truth content |
 
 Do not create or maintain `docs/TODO.md`; Backlog is the only durable future-work
 inventory. Maintain `docs/lessons.md` only for mistakes Codex makes frequently
@@ -69,6 +70,8 @@ Type-specific fields:
 document_type: spec        # prd | architecture | adr | spec | plan | runbook | idea | backlog | lessons
 version: "X.Y"             # PRD/Architecture only
 decision_status: accepted  # ADR only: proposed | accepted | superseded
+execution_risk: critical   # Active Runbook only: standard | high | critical
+contract_sha256: "sha256:<64-hex>" # Active Runbook static contract
 record_id: IDEA-YYYYMMDD-NNN
 record_state: captured      # State set depends on document_type
 updated: "YYYY-MM-DD"       # Structured Idea/Backlog only
@@ -79,13 +82,24 @@ item_type: enhancement      # Backlog only: non-empty project-defined label
 Use the lifecycle fields consistently:
 
 - `active`: current truth or open execution work.
-- `superseded`: retained in place but replaced by a named successor.
-- `archived`: a closed Spec or Plan moved under `docs/archive/`.
+- `superseded`: replaced by a named successor. ADRs retain this state in
+  `docs/adr/`; non-executable Runbook history is represented as `archived`
+  under `docs/archive/runbooks/`, not left in the active directory.
+- `archived`: a closed Spec/Plan or historical/retired Runbook under its
+  matching `docs/archive/` directory.
 - For a superseded ADR, set both `status: superseded` and
   `decision_status: superseded`, keep it in `docs/adr/`, and populate
   `superseded_by`.
 - For the replacement ADR, set `status: active`, set `supersedes`, and accept
   it before marking the old ADR superseded.
+- Keep only `status: active` Runbooks under `docs/runbooks/`. Historical
+  snapshots, superseded Runbooks, and retired Runbooks use `status: archived`
+  under `docs/archive/runbooks/`.
+- A retired Runbook without a successor sets a one-line `archive_reason`.
+- Runbook `date` is document metadata, never execution freshness. Do not add
+  Runbook `last_reviewed`, `review_after`, or periodic trust windows.
+- Read `references/runbook-workflow.md` for the risk, fingerprint, execution,
+  evidence, and archive contract.
 
 ## Cross-Document References
 
@@ -109,8 +123,10 @@ Rules:
 - Permit ordinary Markdown links for prose, but use SOURCE for authoritative
   cross-document dependencies.
 - Preserve links to closed Specs and Plans through the active-to-archive
-  compatibility mapping. Preserve legacy ADR links similarly, but do not
-  archive ADRs going forward.
+  compatibility mapping. Resolve a missing legacy active Runbook path to an
+  exact undated archive or one unambiguous dated archive; otherwise require an
+  exact archive path. Preserve legacy ADR links similarly, but do not archive
+  ADRs going forward.
 
 ## ADR Rules
 
@@ -151,6 +167,7 @@ authoritative document rather than blindly trusting stale prose.
 | Spec            | `YYYY-MM-DD-topic-design.md`                                     |
 | Plan            | `YYYY-MM-DD-topic-plan.md`                                       |
 | Runbook         | `topic-runbook.md`, `topic-setup.md`, `topic-troubleshooting.md` |
+| Archived Runbook | `YYYY-MM-DD-{stable-runbook-name}.md`; legacy undated names remain readable |
 | Idea            | `IDEA-YYYYMMDD-NNN-short-title.md` under `docs/ideas/`           |
 | Backlog         | `BL-YYYYMMDD-NNN-short-title.md` under `docs/backlog/`           |
 | Codex Lessons   | `docs/lessons.md`                                                |
@@ -169,12 +186,17 @@ docs/
 ├── lessons.md
 └── archive/
     ├── specs/
-    └── plans/
+    ├── plans/
+    └── runbooks/
 ```
 
 Keep only pending or executing work in `docs/execution/specs/` and
 `docs/execution/plans/`. Move closed Specs and Plans to the matching archive
 directory after completing the closure checklist.
+
+Keep a current Runbook at a stable path under `docs/runbooks/`. Use
+`scripts/archive_doc.py` with one of its explicit Runbook modes for snapshots,
+supersession, or retirement. Never execute from `docs/archive/runbooks/`.
 
 Do not create a hand-maintained Idea or Backlog index. Query the
 frontmatter-bearing source records with `scripts/idea_backlog.py list` or

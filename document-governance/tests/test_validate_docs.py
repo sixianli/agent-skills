@@ -11,12 +11,14 @@ from pathlib import Path
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = SKILL_ROOT / "scripts" / "validate_docs.py"
+RUNBOOK = SKILL_ROOT / "scripts" / "runbook.py"
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
     "docs/execution/plans",
     "docs/archive/specs",
     "docs/archive/plans",
+    "docs/archive/runbooks",
     "docs/runbooks",
 ]
 
@@ -94,6 +96,40 @@ class ValidateDocsTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         return result, payload
 
+    def write_sealed_runbook(
+        self, relative: str = "docs/runbooks/active-runbook.md"
+    ) -> Path:
+        """Copy, fill, and explicitly seal the bundled Runbook template."""
+
+        (self.root / "runbook-source.txt").write_text(
+            "authoritative\n", encoding="utf-8"
+        )
+        template = (
+            SKILL_ROOT / "assets/templates/runbook-template.md"
+        ).read_text(encoding="utf-8")
+        content = template.replace("YYYY-MM-DD", "2026-07-19").replace(
+            "<repo-relative-authoritative-path>", "runbook-source.txt"
+        )
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        sealed = subprocess.run(
+            [
+                sys.executable,
+                str(RUNBOOK),
+                "seal",
+                str(self.root),
+                str(path),
+                "--confirm-reconciled",
+                "--apply",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(sealed.returncode, 0, sealed.stderr)
+        return path
+
     def test_strict_mode_promotes_every_soft_rule(self) -> None:
         """Strict mode must fail for every rule documented as promotable."""
 
@@ -129,7 +165,7 @@ class ValidateDocsTests(unittest.TestCase):
         outside.write_text("outside", encoding="utf-8")
         (self.root / "README.md").write_text("root only", encoding="utf-8")
         self.write_document(
-            "docs/runbooks/links.md",
+            "docs/prd-v0.1.md",
             "\n".join(
                 [
                     "# Links",
@@ -139,7 +175,7 @@ class ValidateDocsTests(unittest.TestCase):
                     "- [SOURCE: README.md]",
                 ]
             ),
-            document_type="runbook",
+            document_type="prd",
         )
 
         result, payload = self.run_validator(strict=True)
@@ -160,9 +196,9 @@ class ValidateDocsTests(unittest.TestCase):
             document_type="spec",
         )
         self.write_document(
-            "docs/runbooks/links.md",
+            "docs/prd-v0.1.md",
             "# Links\n\n- [SOURCE: docs/execution/specs/closed.md]",
-            document_type="runbook",
+            document_type="prd",
         )
 
         result, payload = self.run_validator(strict=True)
@@ -410,6 +446,148 @@ class ValidateDocsTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, payload)
         self.assertTrue(payload["ok"])
 
+    def test_legacy_runbook_is_warning_normally_and_error_in_strict_mode(self) -> None:
+        """Keep adoption audits usable while strict completion fails closed."""
+
+        self.write_document(
+            "docs/runbooks/legacy.md",
+            "# Legacy\n\n## Procedure\n\n1. Old step.",
+            document_type="runbook",
+        )
+
+        normal_result, normal_payload = self.run_validator(strict=False)
+        strict_result, strict_payload = self.run_validator(strict=True)
+
+        self.assertEqual(normal_result.returncode, 0, normal_payload)
+        self.assertTrue(normal_payload["warnings"])
+        rendered_warnings = "\n".join(normal_payload["warnings"])
+        self.assertIn("missing execution_risk", rendered_warnings)
+        self.assertIn("missing required section: Scope", rendered_warnings)
+        self.assertEqual(strict_result.returncode, 1)
+        self.assertEqual(strict_payload["warnings"], [])
+
+    def test_malformed_or_mismatched_declared_contract_always_errors(self) -> None:
+        """Declared bad trust metadata is never migration-only."""
+
+        path = self.write_sealed_runbook()
+        sealed_text = path.read_text(encoding="utf-8")
+        path.write_text(
+            sealed_text.replace("execution_risk: critical", "execution_risk: unsafe")
+            .replace("contract_sha256: \"sha256:", "contract_sha256: \"bad-sha256:"),
+            encoding="utf-8",
+        )
+        result, payload = self.run_validator(strict=False)
+        rendered = "\n".join(payload["errors"])
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("invalid execution_risk", rendered)
+        self.assertIn("invalid contract_sha256", rendered)
+
+        path.write_text(sealed_text, encoding="utf-8")
+        (self.root / "runbook-source.txt").write_text("drift\n", encoding="utf-8")
+        mismatch_result, mismatch_payload = self.run_validator(strict=False)
+        self.assertEqual(mismatch_result.returncode, 1)
+        self.assertIn(
+            "does not match",
+            "\n".join(mismatch_payload["errors"]),
+        )
+
+    def test_archived_runbook_hash_is_not_recomputed_against_current_sources(self) -> None:
+        """Historical hashes retain format validation but not live recomputation."""
+
+        archived = self.write_document(
+            "docs/archive/runbooks/legacy.md",
+            "# Archived Runbook\n\nHistorical content.",
+            status="archived",
+            document_type="runbook",
+            extra_fields={
+                "execution_risk": "critical",
+                "contract_sha256": "sha256:" + "a" * 64,
+                "archive_reason": "Historical retirement",
+            },
+        )
+        self.assertTrue(archived.is_file())
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
+    def test_legacy_active_runbook_source_resolves_to_unique_archive(self) -> None:
+        """Preserve historical SOURCE links without choosing among snapshots."""
+
+        self.write_document(
+            "docs/archive/runbooks/old-runbook.md",
+            "# Archived",
+            status="archived",
+            document_type="runbook",
+            extra_fields={"archive_reason": "Legacy history"},
+        )
+        self.write_document(
+            "docs/prd-v0.1.md",
+            "# Product\n\n[SOURCE: docs/runbooks/old-runbook.md]",
+            document_type="prd",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+
+    def test_legacy_runbook_source_requires_one_unambiguous_dated_archive(self) -> None:
+        """Resolve one dated archive but fail when several snapshots could match."""
+
+        for archive_date in ("2026-07-18",):
+            self.write_document(
+                f"docs/archive/runbooks/{archive_date}-old-runbook.md",
+                "# Archived",
+                status="archived",
+                document_type="runbook",
+                extra_fields={"archive_reason": "Historical retirement"},
+            )
+        self.write_document(
+            "docs/prd-v0.1.md",
+            "# Product\n\n[SOURCE: docs/runbooks/old-runbook.md]",
+            document_type="prd",
+        )
+
+        unique_result, unique_payload = self.run_validator(strict=True)
+        self.assertEqual(unique_result.returncode, 0, unique_payload)
+
+        self.write_document(
+            "docs/archive/runbooks/2026-07-19-old-runbook.md",
+            "# Another archive",
+            status="archived",
+            document_type="runbook",
+            extra_fields={"archive_reason": "Historical retirement"},
+        )
+        ambiguous_result, ambiguous_payload = self.run_validator(strict=True)
+
+        self.assertEqual(ambiguous_result.returncode, 1)
+        self.assertIn(
+            "ambiguous archived Runbook SOURCE target",
+            "\n".join(ambiguous_payload["errors"]),
+        )
+
+    def test_archive_source_compatibility_rejects_symlink_escape(self) -> None:
+        """Do not let a compatibility lookup escape docs through a symlink."""
+
+        outside = self.sandbox / "outside.md"
+        outside.write_text("outside\n", encoding="utf-8")
+        archive = self.root / "docs/archive/runbooks/old-runbook.md"
+        archive.symlink_to(outside)
+        self.write_document(
+            "docs/prd-v0.1.md",
+            "# Product\n\n[SOURCE: docs/runbooks/old-runbook.md]",
+            document_type="prd",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(
+            "missing SOURCE target",
+            "\n".join(payload["errors"]),
+        )
+
     def test_bundled_templates_form_a_strictly_valid_project(self) -> None:
         """Keep every bundled template synchronized with validator rules."""
 
@@ -432,10 +610,41 @@ class ValidateDocsTests(unittest.TestCase):
                 .replace("BL-YYYYMMDD-NNN", "BL-20260719-001")
                 .replace("YYYY-MM-DD", "2026-07-19")
                 .replace("<project>", "demo")
+                .replace("<repo-relative-authoritative-path>", "README.md")
             )
             destination = self.root / destination_name
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_text(content, encoding="utf-8")
+
+        (self.root / "README.md").write_text("# Demo\n", encoding="utf-8")
+        sealed = subprocess.run(
+            [
+                sys.executable,
+                str(RUNBOOK),
+                "seal",
+                str(self.root),
+                "docs/runbooks/topic-runbook.md",
+                "--confirm-reconciled",
+                "--apply",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(sealed.returncode, 0, sealed.stderr)
+        checked = subprocess.run(
+            [
+                sys.executable,
+                str(RUNBOOK),
+                "check",
+                str(self.root),
+                "docs/runbooks/topic-runbook.md",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(checked.returncode, 0, checked.stderr)
 
         result, payload = self.run_validator(strict=True)
 

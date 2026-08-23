@@ -38,7 +38,7 @@
       "package_dir": "document-governance",
       "readme": "document-governance/SKILL.md",
       "skill_dir": "document-governance",
-      "description": "Govern project documentation and durable Idea and Backlog lifecycles.",
+      "description": "Govern project documentation and fail-closed Runbook execution lifecycles.",
       "implicit_invocation": true,
       "has_tests": true,
       "checks": [
@@ -50,6 +50,7 @@
             "py_compile",
             "document-governance/scripts/archive_doc.py",
             "document-governance/scripts/idea_backlog.py",
+            "document-governance/scripts/runbook.py",
             "document-governance/scripts/validate_docs.py"
           ]
         },

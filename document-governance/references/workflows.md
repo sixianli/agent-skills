@@ -9,6 +9,7 @@ rollback, and conflict handling.
 - [Drift Reconciliation](#drift-reconciliation)
 - [ADR Supersession](#adr-supersession)
 - [Spec and Plan Closure](#spec-and-plan-closure)
+- [Runbook Lifecycle and Execution](#runbook-lifecycle-and-execution)
 - [Rollback](#rollback)
 - [Ideas and Backlog](#ideas-and-backlog)
 - [Codex Lessons](#codex-lessons)
@@ -80,6 +81,46 @@ Before archiving a Spec or Plan:
 - Run strict validation after the move.
 
 Never use the archive script on an ADR.
+
+## Runbook Lifecycle and Execution
+
+Runbooks use event-driven reconciliation, not calendar renewal:
+
+1. Create or revise the stable active file under `docs/runbooks/` from the
+   Runbook template.
+2. Inspect current repository facts, selected contract sources, tests, and
+   protected configuration. Write target-read-only preflight, evidence,
+   rollback, and stop rules that do not hard-code temporary live claims.
+3. Run relevant tests, inspect the diff, then use `scripts/runbook.py seal` in
+   dry-run mode. Only after semantic reconciliation use
+   `--confirm-reconciled --apply`, followed by `runbook.py check`.
+4. For every actual operation, rerun the static check, current Git/worktree
+   readback, target-read-only Live-State Preflight, effective-risk decision,
+   and required authorization before bounded execution and verification.
+5. Stop on any mismatch, ambiguous target, missing evidence root, failed
+   safety prerequisite, or authorization boundary. A Runbook never grants
+   authority to continue.
+
+When operational truth changes, reconcile and reseal because of the event.
+Never refresh a date, invent a review window, force a seal, or let a validator
+write the hash.
+
+Use `scripts/archive_doc.py` with exactly one Runbook mode:
+
+- `--snapshot --archive-date DATE` before a major revision at the same stable
+  path;
+- `--superseded-by ACTIVE_PATH --archive-date DATE` when another active
+  Runbook replaces it;
+- `--retire --reason TEXT --archive-date DATE` when it has no successor.
+
+Runbook archive operations validate reciprocal lineage and refuse overwrite.
+Snapshot and successor modes change an active Runbook's frontmatter, so its
+existing seal becomes invalid. Reconcile and explicitly seal that active file;
+the archive tool never does so automatically. Historical archives are never
+executed or fingerprinted again against current sources.
+
+Read `references/runbook-workflow.md` for the complete risk, fingerprint,
+Live-State Preflight, evidence, mutation-boundary, and archive rules.
 
 ## Rollback
 

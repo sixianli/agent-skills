@@ -14,6 +14,11 @@ from datetime import date
 from pathlib import Path
 
 from idea_backlog import BACKLOG_HEADER_FIELDS, VALID_BACKLOG_PRIORITIES
+from runbook import (
+    HASH_PATTERN,
+    VALID_EXECUTION_RISKS,
+    audit_active_runbook,
+)
 
 REQUIRED_DIRS = [
     "docs/adr",
@@ -21,6 +26,7 @@ REQUIRED_DIRS = [
     "docs/execution/plans",
     "docs/archive/specs",
     "docs/archive/plans",
+    "docs/archive/runbooks",
     "docs/runbooks",
 ]
 REQUIRED_FRONTMATTER = {"status", "supersedes", "superseded_by", "date"}
@@ -236,7 +242,9 @@ def inferred_document_type(path: Path, root: Path) -> str | None:
         path, root, "docs/archive/plans"
     ):
         return "plan"
-    if is_under(path, root, "docs/runbooks"):
+    if is_under(path, root, "docs/runbooks") or is_under(
+        path, root, "docs/archive/runbooks"
+    ):
         return "runbook"
     if is_under(path, root, IDEA_DIR):
         return "idea"
@@ -302,6 +310,15 @@ def validate_frontmatter(
     elif in_active_execution and status == "superseded":
         report_compat(
             f"{relative}: superseded execution document should move to archive",
+            strict,
+            warnings,
+            errors,
+        )
+
+    in_active_runbooks = is_under(path, root, "docs/runbooks")
+    if in_active_runbooks and status in {"superseded", "archived"}:
+        report_compat(
+            f"{relative}: non-active Runbook should move to docs/archive/runbooks/",
             strict,
             warnings,
             errors,
@@ -662,6 +679,50 @@ def validate_plan(
         )
 
 
+def validate_active_runbook(
+    root: Path,
+    path: Path,
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    """Apply the shared Runbook contract rules with migration semantics."""
+
+    if not is_under(path, root, "docs/runbooks"):
+        return
+    relative = rel_path(path, root)
+    audit = audit_active_runbook(root, path)
+    for finding in audit.findings:
+        if finding.code in {"frontmatter", "inactive-status"}:
+            # Generic frontmatter and directory lifecycle checks above own
+            # these messages; the shared audit still enforces them for check.
+            continue
+        message = f"{relative}: {finding.message}"
+        if finding.kind == "error":
+            errors.append(message)
+        else:
+            report_compat(message, strict, warnings, errors)
+
+
+def validate_archived_runbook(
+    root: Path,
+    path: Path,
+    fields: dict[str, str],
+    errors: list[str],
+) -> None:
+    """Validate declared archive fields without recomputing historical hashes."""
+
+    if not is_under(path, root, "docs/archive/runbooks"):
+        return
+    relative = rel_path(path, root)
+    risk = fields.get("execution_risk")
+    if risk is not None and risk not in VALID_EXECUTION_RISKS:
+        errors.append(f"{relative}: invalid execution_risk {risk!r}")
+    contract_hash = fields.get("contract_sha256")
+    if contract_hash is not None and not HASH_PATTERN.fullmatch(contract_hash):
+        errors.append(f"{relative}: invalid contract_sha256 {contract_hash!r}")
+
+
 def normalize_local_target(root: Path, target: str) -> tuple[Path | None, str | None]:
     """把本地引用解析到 docs/ 内，并返回路径边界错误。"""
 
@@ -700,14 +761,39 @@ def source_target_result(root: Path, target: str) -> tuple[str, str]:
         return "ok", ""
 
     docs_root = (root / "docs").resolve()
+
+    def safe_docs_file(path: Path) -> bool:
+        """Accept compatibility targets only when they still resolve inside docs/."""
+
+        try:
+            resolved = path.resolve(strict=True)
+        except (OSError, RuntimeError):
+            return False
+        return is_within(resolved, docs_root) and resolved.is_file()
+
     relative = candidate.relative_to(docs_root).as_posix()
     for active_prefix, archive_prefix in ARCHIVE_COMPATIBILITY.items():
         if relative.startswith(active_prefix):
             archived = docs_root / relative.replace(
                 active_prefix, archive_prefix, 1
             )
-            if archived.is_file():
+            if safe_docs_file(archived):
                 return "ok", ""
+    if relative.startswith("runbooks/"):
+        basename = Path(relative).name
+        archive_root = docs_root / "archive/runbooks"
+        legacy = archive_root / basename
+        if safe_docs_file(legacy):
+            return "ok", ""
+        dated_matches = sorted(archive_root.glob(f"????-??-??-{basename}"))
+        dated_files = [path for path in dated_matches if safe_docs_file(path)]
+        if len(dated_files) == 1:
+            return "ok", ""
+        if len(dated_files) > 1:
+            return (
+                "missing",
+                f"ambiguous archived Runbook SOURCE target {target}; update it to an exact archive path",
+            )
     return "missing", f"missing SOURCE target {target}"
 
 
@@ -906,6 +992,136 @@ def validate_adr_relationships(
                 )
 
 
+def _is_runbook_document(
+    root: Path, path: Path, fields: dict[str, str]
+) -> bool:
+    """Return whether path or frontmatter identifies a Runbook."""
+
+    return (
+        inferred_document_type(path, root) == "runbook"
+        or fields.get("document_type") == "runbook"
+    )
+
+
+def validate_runbook_relationships(
+    root: Path,
+    documents: dict[Path, dict[str, str]],
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    """Validate active/archive Runbook placement and reciprocal lineage."""
+
+    for path, fields in documents.items():
+        if not _is_runbook_document(root, path, fields):
+            continue
+        owner_relative = rel_path(path, root)
+        in_archive = is_under(path, root, "docs/archive/runbooks")
+        if in_archive and fields.get("document_type") != "runbook":
+            report_compat(
+                f"{owner_relative}: archived Runbook should set document_type: runbook",
+                strict,
+                warnings,
+                errors,
+            )
+        if (
+            in_archive
+            and fields.get("status") == "archived"
+            and not fields.get("superseded_by")
+            and not fields.get("archive_reason")
+        ):
+            report_compat(
+                f"{owner_relative}: archived Runbook without a successor should set archive_reason",
+                strict,
+                warnings,
+                errors,
+            )
+        if is_under(path, root, "docs/runbooks") and fields.get("superseded_by"):
+            report_compat(
+                f"{owner_relative}: active Runbook must not name a successor",
+                strict,
+                warnings,
+                errors,
+            )
+
+        old_targets = resolved_relationships(
+            root,
+            path,
+            "supersedes",
+            fields.get("supersedes", ""),
+            strict,
+            warnings,
+            errors,
+        )
+        new_targets = resolved_relationships(
+            root,
+            path,
+            "superseded_by",
+            fields.get("superseded_by", ""),
+            strict,
+            warnings,
+            errors,
+        )
+
+        for old_path in old_targets:
+            old_fields = documents.get(old_path)
+            if old_fields is None:
+                continue
+            if not _is_runbook_document(root, old_path, old_fields):
+                report_compat(
+                    f"{owner_relative}: supersedes target {rel_path(old_path, root)} is not a Runbook",
+                    strict,
+                    warnings,
+                    errors,
+                )
+                continue
+            reverse = resolved_relationships(
+                root,
+                old_path,
+                "superseded_by",
+                old_fields.get("superseded_by", ""),
+                strict,
+                warnings,
+                errors,
+            )
+            if path not in reverse:
+                report_compat(
+                    f"{owner_relative}: supersedes link is not reciprocated by {rel_path(old_path, root)}",
+                    strict,
+                    warnings,
+                    errors,
+                )
+
+        for new_path in new_targets:
+            new_fields = documents.get(new_path)
+            if new_fields is None:
+                continue
+            if not _is_runbook_document(root, new_path, new_fields):
+                report_compat(
+                    f"{owner_relative}: superseded_by target {rel_path(new_path, root)} is not a Runbook",
+                    strict,
+                    warnings,
+                    errors,
+                )
+                continue
+            reverse = resolved_relationships(
+                root,
+                new_path,
+                "supersedes",
+                new_fields.get("supersedes", ""),
+                strict,
+                warnings,
+                errors,
+            )
+            if path not in reverse:
+                report_compat(
+                    f"{owner_relative}: superseded_by link is not reciprocated by {rel_path(new_path, root)}",
+                    strict,
+                    warnings,
+                    errors,
+                )
+
+
 def emit_text(warnings: list[str], errors: list[str]) -> None:
     """以人类可读格式输出结果。"""
 
@@ -963,8 +1179,14 @@ def main() -> int:
         validate_required_dirs(root, args.strict, warnings, errors)
         documents: dict[Path, dict[str, str]] = {}
         seen_record_ids: dict[str, Path] = {}
+        docs_root = (root / "docs").resolve()
         for path in iter_markdown_files(root):
             resolved_path = path.resolve()
+            if not is_within(resolved_path, docs_root):
+                errors.append(
+                    f"{rel_path(path, root)}: governed Markdown resolves outside docs/"
+                )
+                continue
             fields, body = validate_frontmatter(
                 root, path, args.strict, warnings, errors
             )
@@ -981,6 +1203,12 @@ def main() -> int:
             validate_plan(
                 root, path, body, args.strict, warnings, errors
             )
+            validate_active_runbook(
+                root, path, args.strict, warnings, errors
+            )
+            validate_archived_runbook(
+                root, path, fields, errors
+            )
             validate_source_links(
                 root,
                 path,
@@ -990,6 +1218,9 @@ def main() -> int:
                 errors,
             )
         validate_adr_relationships(
+            root, documents, args.strict, warnings, errors
+        )
+        validate_runbook_relationships(
             root, documents, args.strict, warnings, errors
         )
 
