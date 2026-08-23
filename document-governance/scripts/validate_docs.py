@@ -13,6 +13,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from idea_backlog import BACKLOG_HEADER_FIELDS, VALID_BACKLOG_PRIORITIES
+
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
@@ -452,6 +454,32 @@ def validate_structured_record(
             warnings,
             errors,
         )
+
+    if declared_kind == "backlog":
+        missing_header = sorted(BACKLOG_HEADER_FIELDS - fields.keys())
+        if missing_header:
+            report_compat(
+                f"{relative}: missing Backlog frontmatter fields: "
+                f"{', '.join(missing_header)}",
+                strict,
+                warnings,
+                errors,
+            )
+        priority = fields.get("priority", "")
+        if priority not in VALID_BACKLOG_PRIORITIES:
+            report_compat(
+                f"{relative}: invalid Backlog priority {priority!r}",
+                strict,
+                warnings,
+                errors,
+            )
+        if not fields.get("item_type"):
+            report_compat(
+                f"{relative}: Backlog item_type must be non-empty",
+                strict,
+                warnings,
+                errors,
+            )
 
     record_id = fields.get("record_id", "")
     pattern = IDEA_ID_PATTERN if declared_kind == "idea" else BACKLOG_ID_PATTERN

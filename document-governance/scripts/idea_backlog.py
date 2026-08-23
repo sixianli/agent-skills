@@ -30,6 +30,19 @@ VALID_BACKLOG_STATES = {
     "rejected",
     "superseded",
 }
+VALID_BACKLOG_PRIORITIES = ("urgent", "high", "normal", "low")
+BACKLOG_HEADER_FIELDS = {
+    "record_id",
+    "record_state",
+    "updated",
+    "priority",
+    "item_type",
+    "source_idea",
+    "review_after",
+    "promoted_to",
+    "result",
+    "reason",
+}
 FIELD_ORDER = [
     "status",
     "document_type",
@@ -523,7 +536,10 @@ def command_review(args: argparse.Namespace, root: Path) -> dict[str, object]:
         ):
             item["review_reason"] = "deferred-review-due"
             candidates.append(item)
-    priority_order = {"urgent": 0, "high": 1, "normal": 2, "low": 3, "": 4}
+    priority_order = {
+        priority: index for index, priority in enumerate(VALID_BACKLOG_PRIORITIES)
+    }
+    priority_order[""] = len(VALID_BACKLOG_PRIORITIES)
     candidates.sort(
         key=lambda item: (
             priority_order.get(item["priority"], 4),
@@ -713,7 +729,11 @@ def parse_args() -> argparse.Namespace:
     backlog_capture.add_argument("--title", required=True)
     backlog_capture.add_argument("--summary", required=True)
     backlog_capture.add_argument("--source-idea", default="")
-    backlog_capture.add_argument("--priority", choices=("urgent", "high", "normal", "low"), default="normal")
+    backlog_capture.add_argument(
+        "--priority",
+        choices=VALID_BACKLOG_PRIORITIES,
+        default="normal",
+    )
     backlog_capture.add_argument("--item-type", default="enhancement")
     backlog_capture.add_argument("--review-after", default="")
     backlog_capture.add_argument("--date", default=local_today_iso())

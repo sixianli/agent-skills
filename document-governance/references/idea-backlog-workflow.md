@@ -40,6 +40,13 @@ unique `record_id`, `record_state`, `date`, `updated`, `promoted_to`,
 - Backlog: `document_type: backlog`; states are `open`, `in_progress`,
   `deferred`, `converted`, `done`, `rejected`, and `superseded`.
 
+Every Backlog keeps the complete flat header from
+`assets/templates/backlog-item-template.md`, including `priority`,
+`item_type`, `source_idea`, `review_after`, `promoted_to`, `result`, and
+`reason`, even when an optional value is empty. `priority` is one of `urgent`,
+`high`, `normal`, or `low`. `item_type` is a non-empty project-defined label;
+this skill does not impose a cross-project item-type enumeration.
+
 Required transition evidence:
 
 - `promoted` and `converted` require `promoted_to`.
@@ -51,6 +58,9 @@ Required transition evidence:
 Open or overdue items do not fail strict validation. They are surfaced by the
 review command so CI validates structure without pretending all future work
 must be completed.
+
+Backlog `review_after` schedules reconsideration of future work. It is not a
+Runbook trust or execution-freshness field.
 
 ## Deterministic Commands
 

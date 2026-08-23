@@ -266,6 +266,8 @@ class ValidateDocsTests(unittest.TestCase):
                 "record_id": "BL-20260719-001",
                 "record_state": "in_progress",
                 "updated": "2026-07-19",
+                "priority": "high",
+                "item_type": "evaluation",
                 "source_idea": idea_path,
                 "review_after": "",
                 "promoted_to": "",
@@ -278,6 +280,54 @@ class ValidateDocsTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, payload)
         self.assertTrue(payload["ok"])
+
+    def test_backlog_header_priority_and_item_type_follow_template_contract(self) -> None:
+        """Reject incomplete headers, unknown priorities, and blank item types."""
+
+        self.write_document(
+            "docs/backlog/BL-20260719-003-invalid-contract.md",
+            "# Invalid contract",
+            document_type="backlog",
+            extra_fields={
+                "record_id": "BL-20260719-003",
+                "record_state": "open",
+                "updated": "2026-07-19",
+                "priority": "medium",
+                "item_type": "",
+            },
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(payload["warnings"], [])
+        rendered = "\n".join(payload["errors"])
+        self.assertIn("missing Backlog frontmatter fields", rendered)
+        self.assertIn("invalid Backlog priority 'medium'", rendered)
+        self.assertIn("Backlog item_type must be non-empty", rendered)
+
+    def test_backlog_contract_violations_are_migration_warnings_normally(self) -> None:
+        """Keep non-strict validation usable while old Backlogs are migrated."""
+
+        self.write_document(
+            "docs/backlog/BL-20260719-004-migration-warning.md",
+            "# Migration warning",
+            document_type="backlog",
+            extra_fields={
+                "record_id": "BL-20260719-004",
+                "record_state": "open",
+                "updated": "2026-07-19",
+            },
+        )
+
+        result, payload = self.run_validator(strict=False)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+        rendered = "\n".join(payload["warnings"])
+        self.assertIn("missing Backlog frontmatter fields", rendered)
+        self.assertIn("invalid Backlog priority ''", rendered)
+        self.assertIn("Backlog item_type must be non-empty", rendered)
 
     def test_record_id_state_and_path_invariants_fail_strict_mode(self) -> None:
         """Reject malformed IDs, mismatched path kinds, and missing transition evidence."""

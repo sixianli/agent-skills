@@ -72,6 +72,8 @@ decision_status: accepted  # ADR only: proposed | accepted | superseded
 record_id: IDEA-YYYYMMDD-NNN
 record_state: captured      # State set depends on document_type
 updated: "YYYY-MM-DD"       # Structured Idea/Backlog only
+priority: normal            # Backlog only: urgent | high | normal | low
+item_type: enhancement      # Backlog only: non-empty project-defined label
 ```
 
 Use the lifecycle fields consistently:

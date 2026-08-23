@@ -12,7 +12,6 @@ import re
 import shutil
 from pathlib import Path
 
-
 ACTIVE_TO_ARCHIVE = {
     "docs/execution/specs": "docs/archive/specs",
     "docs/execution/plans": "docs/archive/plans",

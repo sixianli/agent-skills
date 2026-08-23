@@ -40,6 +40,9 @@ These conditions fail in every mode:
   directory.
 - A structured Idea/Backlog record has a missing, duplicate, malformed, or
   path-inconsistent `record_id`, `document_type`, or `record_state`.
+- A Backlog omits any field in its complete template header, uses a priority
+  other than `urgent`, `high`, `normal`, or `low`, or has an empty
+  `item_type`.
 - A promoted/converted record lacks a valid `promoted_to`; a deferred Backlog
   lacks `review_after` or `reason`; or a terminal record lacks its required
   result, reason, or successor.
