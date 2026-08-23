@@ -1,7 +1,6 @@
 interface:
   display_name: "Document Governance"
-  short_description: "治理项目文档、Idea、Backlog、决策记录与执行文档生命周期"
-  default_prompt: "使用 $document-governance 检查并协调项目文档、Idea、Backlog、ADR、Spec、Plan 与 Runbook 的影响和生命周期。"
-
+  short_description: "Govern adopted docs, user Ideas, and Backlog lifecycles"
+  default_prompt: "Use $document-governance to reconcile adopted project documentation, capture user-authored Ideas, and manage PRD, Architecture, ADR, Spec, Plan, Runbook, and Backlog lifecycles."
 policy:
   allow_implicit_invocation: true
