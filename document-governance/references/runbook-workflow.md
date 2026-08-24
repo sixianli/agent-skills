@@ -26,7 +26,8 @@ not affected by this rule.
 
 ## Active Contract
 
-Every active Runbook under `docs/runbooks/` must set:
+Every active Runbook under `docs/runbooks/` must set `execution_risk` to one
+of `standard`, `high`, or `critical`. For example, a production Runbook uses:
 
 ```yaml
 status: active
@@ -83,6 +84,14 @@ apply the higher actual risk. For a target-read-only preflight, no target
 mutation authorization is requested merely because the Runbook is critical.
 At the mutation boundary, critical work always requires immediate, action- and
 target-specific authorization.
+
+`runbook.py check` does not infer risk from shell commands, prose, or a live
+target, and a successful static check must never be treated as a risk decision.
+Before any mutation, the executing agent must independently classify the actual
+commands and effects plus the target discovered by preflight. It then applies
+the highest of those classifications and the declared floor through the
+authorization policy below. If any classification is unknown or unreliable,
+use `critical`.
 
 The mutation boundary is the first action that changes the governed target,
 external system, data, permissions, billing, provider/model identity, or
@@ -167,7 +176,11 @@ was performed; computing a hash alone cannot prove that work happened.
 
 For every actual use, in this order:
 
-1. Confirm the entry is under `docs/runbooks/` and has `status: active`.
+1. Confirm the entry is under `docs/runbooks/` and has `status: active`. If the
+   supplied entry is archived or superseded, stop. When it names exactly one
+   repository-valid `superseded_by` candidate, report that candidate as the
+   possible active entry, but never follow or execute it automatically; a user
+   who chooses it must begin again at gate 1.
 2. Run `runbook.py check ROOT RUNBOOK` and stop on every finding.
 3. Read the current Git HEAD, worktree state, selected sources, and protected
    configuration. Do not reuse a cached conclusion from another task.
