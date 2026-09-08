@@ -11,6 +11,12 @@ This repository collects reusable Codex skills that I maintain for recurring per
 
 Each package README or skill entrypoint explains the specific skill's purpose, install steps, usage examples, and verification commands. The installable skill folders should stay focused on runtime resources: `SKILL.md`, `agents/openai.yaml`, `scripts/`, `references/`, and `assets/` when needed.
 
+## Shoshin
+
+[Shoshin](shoshin/README.md) 提供 16 个工程技能，源码位于 `shoshin/skills/<skill-name>/`。
+已接入本仓库结构与脚本检查；按用户本轮要求，真实项目、完整 UI 与安装后验收保留未完成。
+安装时复制完整技能目录并保留 LICENSE，先核查同名目标，详见包说明。
+
 ## Install
 
 Install one skill, for example:
@@ -20,7 +26,7 @@ mkdir -p "$HOME/.agents/skills"
 cp -R document-governance "$HOME/.agents/skills/"
 ```
 
-Install all skills:
+Install both original standalone skills (see the Shoshin package for its installation steps):
 
 ```bash
 mkdir -p "$HOME/.agents/skills"

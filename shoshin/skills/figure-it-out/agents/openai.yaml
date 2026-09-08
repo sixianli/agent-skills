@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · figure-it-out"
+  short_description: "对已有授权的复杂目标组织有依赖、可验证的实施单元，按证据调整假设；用于多阶段工作，不创建长期任务、自动调度或交付流水线。"
+  default_prompt: "请使用 $figure-it-out 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,495 @@
+{
+  "kind": "source-inventory-evidence",
+  "date": "2026-09-08",
+  "upstream_commit": "71ed0d1076fec562c1b74ee353121a8d00f75382",
+  "upstream_version": "0.15.0",
+  "skills": [
+    {
+      "source": "automations/benny/skills/reproduce-and-fix-issues/SKILL.md",
+      "sha256": "1363cc07343fe86aab42853b1bd4563288cbcbdf12f1c265b3b3b1afa25c09cb",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "automations/benny/skills/setup-benny/SKILL.md",
+      "sha256": "5a3cbe63360c9f6373b6cb6c79a1eaf7e0eba181bfaa1577e2e6431af3407282",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "automations/benny/skills/triage-issue-reports/SKILL.md",
+      "sha256": "216a758b8711e64d19a55e6032c496527daac6364d010611040f3c04ef1a448f",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/architect/SKILL.md",
+      "sha256": "897a59beaa3cab107d98c256206e062cc4a5e9421a45b9d462fbded19291fea5",
+      "decision": "adapted skill",
+      "target": "architect/SKILL.md"
+    },
+    {
+      "source": "skills/arena/SKILL.md",
+      "sha256": "8d431f7b1aa19daf6300366fc876c4d1aadac06417ec5502407345ffaf4e90d9",
+      "decision": "deferred; no runtime directory",
+      "target": null
+    },
+    {
+      "source": "skills/automate-me/SKILL.md",
+      "sha256": "1510979b0b71b54284427a19c09918f8b1fdfc168f9b7f9e30098793a5ec88ef",
+      "decision": "adapted skill",
+      "target": "automate-me/SKILL.md"
+    },
+    {
+      "source": "skills/blast-radius/SKILL.md",
+      "sha256": "20cb2945f5fe62055166f745107274af5f19428ca033e53a9b8bc69650d3ded1",
+      "decision": "adapted skill",
+      "target": "blast-radius/SKILL.md"
+    },
+    {
+      "source": "skills/bro/SKILL.md",
+      "sha256": "aa329d0ceeeecb6822a7174ad76bb07a7826a3c52ceb6a588dec4138815084bb",
+      "decision": "deferred; no runtime directory",
+      "target": null
+    },
+    {
+      "source": "skills/create-verification-skill/SKILL.md",
+      "sha256": "644f2551403c1bca01a2855b34611b6e7be0ce0dc5b204514c376c0f6a6e6ac4",
+      "decision": "adapted skill",
+      "target": "create-verification-skill/SKILL.md"
+    },
+    {
+      "source": "skills/figure-it-out/SKILL.md",
+      "sha256": "e041c64a39f1084a20e60ee99762c4dbd3ec8be56ed33fd68ea867b8bd8bd3e4",
+      "decision": "adapted skill",
+      "target": "figure-it-out/SKILL.md"
+    },
+    {
+      "source": "skills/how/SKILL.md",
+      "sha256": "06b714dbd830bc829bfb89e33a1c39daf6d72ea412e488ea9d65f5f33b885a0c",
+      "decision": "adapted skill",
+      "target": "how/SKILL.md"
+    },
+    {
+      "source": "skills/interrogate/SKILL.md",
+      "sha256": "2867910309e81411123ae4edca68ffca5795e66521d3f3bc0876f6213b542fb9",
+      "decision": "adapted skill",
+      "target": "interrogate/SKILL.md"
+    },
+    {
+      "source": "skills/maintain-verification-skill/SKILL.md",
+      "sha256": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
+      "decision": "adapted skill",
+      "target": "maintain-verification-skill/SKILL.md"
+    },
+    {
+      "source": "skills/make-bot-ui/SKILL.md",
+      "sha256": "3624c8ef16cf2e48deb2a4049e72c6962a9431c8d6c6af90e7bd7ea0375224ec",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/no-comments/SKILL.md",
+      "sha256": "5c5b0882297d704c3a9720c52b7a793c68b013eaf717989f0945624efdfe2b05",
+      "decision": "conservative adaptation",
+      "target": "interrogate/references/comment-review.md"
+    },
+    {
+      "source": "skills/poteto-mode/SKILL.md",
+      "sha256": "dc166350bc3bb3b9a061930380e971b3ca8c9f55822c52d7249b92b43f5cb865",
+      "decision": "adapted entrypoint and workflows",
+      "target": "engineering-workflow/SKILL.md"
+    },
+    {
+      "source": "skills/principle-attack-the-premise/SKILL.md",
+      "sha256": "c87bd7536f772f8a403ad8155535ee17a1bbec9a353156693eb3bb1520c87ae3",
+      "decision": "adapted method",
+      "spec_row": "attack-the-premise",
+      "target": "`figure-it-out/SKILL.md`：重复失败后检查共同前提",
+      "detail": "`figure-it-out/references/execution-methods.md` 的假设复查节；多次修复依赖同一假设时读，actor 分布调查只用于适合问题"
+    },
+    {
+      "source": "skills/principle-boundary-discipline/SKILL.md",
+      "sha256": "62ac2862c2caa22dd14531f51c9c6bb445ceb198ca98a687e25b4d47c1f10a28",
+      "decision": "adapted method",
+      "spec_row": "boundary-discipline",
+      "target": "`architect/SKILL.md`：标识外部输入、解析边界和内部不变量",
+      "detail": "`architect/references/design-review.md` 的边界节；设计验证位置或适配器时读"
+    },
+    {
+      "source": "skills/principle-build-the-lever/SKILL.md",
+      "sha256": "458b269eab8e95a1573276955312f7d2a13ae8599879a9efc748248f6bc34b56",
+      "decision": "adapted method",
+      "spec_row": "build-the-lever",
+      "target": "`figure-it-out/SKILL.md`：比较直接执行与确定性工具的收益",
+      "detail": "`figure-it-out/references/execution-methods.md` 的工具选择节；批量转换或需要可重复检查时读，不强制产出脚本"
+    },
+    {
+      "source": "skills/principle-encode-lessons-in-structure/SKILL.md",
+      "sha256": "77044c83a9ac6df78fc643887ea5f1f11f082adaf14b717c060cdaed03cce863",
+      "decision": "adapted method",
+      "spec_row": "encode-lessons-in-structure",
+      "target": "`reflect/SKILL.md`：区分执行失误、规则缺陷和结构机制机会",
+      "detail": "`reflect/references/reflection-criteria.md` 的机制选择节；证据显示反复出现同类问题时读"
+    },
+    {
+      "source": "skills/principle-exhaust-the-design-space/SKILL.md",
+      "sha256": "8583310d7297b7823d75494faa57b003564d436807febecdecbd8321abe5cf6e",
+      "decision": "adapted method",
+      "spec_row": "exhaust-the-design-space",
+      "target": "`architect/SKILL.md`：重要未决取舍比较必要方案",
+      "detail": "`architect/references/design-review.md` 的替代方案节；存在真实不同设计时读，不强制 arena 或候选数量"
+    },
+    {
+      "source": "skills/principle-experience-first/SKILL.md",
+      "sha256": "58903529d733b1c1a7c9ccf127d45ef3c7d0d9f0b81164a4dc6b80efe6f2912b",
+      "decision": "adapted method",
+      "spec_row": "experience-first",
+      "target": "`architect/SKILL.md`：从使用者与维护者的实际操作判断设计",
+      "detail": "无；直接结合输入和接口设计"
+    },
+    {
+      "source": "skills/principle-fix-root-causes/SKILL.md",
+      "sha256": "ba4cd38da1dcc8fe5432feb64457cba95594736a9b21b2ebf8f8c52aee068707",
+      "decision": "adapted method",
+      "spec_row": "fix-root-causes",
+      "target": "`tdd/SKILL.md`：失败必须对应目标缺陷，修复机制而非削弱检查",
+      "detail": "无；tdd 只承担回归验证部分"
+    },
+    {
+      "source": "skills/principle-foundational-thinking/SKILL.md",
+      "sha256": "864b827e8199d946ce58beca0f89c4ed4099ed6e426fb698a3aaa45de2a9eea2",
+      "decision": "adapted method",
+      "spec_row": "foundational-thinking",
+      "target": "`architect/SKILL.md`：先确认数据、所有权与必要依赖",
+      "detail": "无；与设计步骤合写"
+    },
+    {
+      "source": "skills/principle-guard-the-context-window/SKILL.md",
+      "sha256": "9f60e2c79b35f865cb103462f9128c6760b70f603475d1e535e5930f61840f66",
+      "decision": "adapted method",
+      "spec_row": "guard-the-context-window",
+      "target": "`figure-it-out/SKILL.md`：先过滤输出，再按收益选择上下文隔离",
+      "detail": "`figure-it-out/references/execution-methods.md` 的上下文与委派节；大材料、独立调查或委派取舍不清时读，采用本 Spec 的研究结论"
+    },
+    {
+      "source": "skills/principle-laziness-protocol/SKILL.md",
+      "sha256": "9006579e9e3f33955d17569733db688ae65f22577dc3b21803d219a5a8445aff",
+      "decision": "adapted method",
+      "spec_row": "laziness-protocol",
+      "target": "`architect/SKILL.md`：评估实际协调负担，不按行数或固定层数决定",
+      "detail": "`architect/references/design-review.md` 的复杂度节；新增层次或重构取舍时读"
+    },
+    {
+      "source": "skills/principle-make-operations-idempotent/SKILL.md",
+      "sha256": "540738217c3da7bf513b9886924ad6a2bc77e58be867f5bd2e1831c74bf2ce70",
+      "decision": "adapted method",
+      "spec_row": "make-operations-idempotent",
+      "target": "`architect/SKILL.md`：涉及可重复副作用时询问重复和中断后的结果",
+      "detail": "`architect/references/design-review.md` 的重复与中断节；命令、重试或生命周期设计时读，不移入调度运行时"
+    },
+    {
+      "source": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "sha256": "09978915a4a11990cf0a9a02d9c08cc59e0b7a04c5c24b83aa560fbe4146f75b",
+      "decision": "adapted method",
+      "spec_row": "migrate-callers-then-delete-legacy-apis",
+      "target": "`engineering-workflow/SKILL.md`：重构时路由 refactoring 流程",
+      "detail": "`engineering-workflow/references/workflows/refactoring.md` 的调用者迁移节；仅在已授权的内部 API 整体迁移时读"
+    },
+    {
+      "source": "skills/principle-minimize-reader-load/SKILL.md",
+      "sha256": "42551c5dc74cd578163c148da552db3ff67d29b78600ef216bfd311fb828fe69",
+      "decision": "adapted method",
+      "spec_row": "minimize-reader-load",
+      "target": "`interrogate/SKILL.md`：审查不必要的追踪层次和隐藏状态",
+      "detail": "`architect/references/design-review.md` 的复杂度节；与 laziness-protocol 共用判定方法，不另写一份"
+    },
+    {
+      "source": "skills/principle-model-the-domain/SKILL.md",
+      "sha256": "bbadbb9a723fac3f76e782ae45665eb94058ec10993e4bae36d4dc6b0e4eac07",
+      "decision": "adapted method",
+      "spec_row": "model-the-domain",
+      "target": "`architect/SKILL.md`：模型表达真实关系与状态",
+      "detail": "`architect/references/design-review.md` 的领域建模节；状态/所有权存在歧义时读"
+    },
+    {
+      "source": "skills/principle-never-block-on-the-human/SKILL.md",
+      "sha256": "d82bce9ab9193249d1ec0d514202d89602f0fd3d312174d622c2dd222bae5a2e",
+      "decision": "adapted method",
+      "spec_row": "never-block-on-the-human",
+      "target": "各技能保留自身授权停止点；不新增通用正文段落",
+      "detail": "无；实际授权规则来自宿主和用户，拒绝原版“可逆即可先做”的泛化"
+    },
+    {
+      "source": "skills/principle-outcome-oriented-execution/SKILL.md",
+      "sha256": "beedcaed75572a6a1662d47f16da203c2bd2c9dbffbbd678d4ba187d67b7e670",
+      "decision": "adapted method",
+      "spec_row": "outcome-oriented-execution",
+      "target": "`figure-it-out/SKILL.md`：阶段可有明确限定的中间状态，最终必须满足目标",
+      "detail": "`figure-it-out/references/execution-methods.md` 的阶段验收节；计划迁移允许短期不完整时读"
+    },
+    {
+      "source": "skills/principle-prove-it-works/SKILL.md",
+      "sha256": "ae13d287984a5864312b6286899d4ee2b60f8272b5e5e8fcc586a7c3ea51020b",
+      "decision": "adapted method",
+      "spec_row": "prove-it-works",
+      "target": "`create-verification-skill/SKILL.md`：运行实际路径并记录证据和限制",
+      "detail": "`create-verification-skill/references/evidence-standards.md`；设计观测或判断代理自报、截图、mock 等证据是否充分时读"
+    },
+    {
+      "source": "skills/principle-redesign-from-first-principles/SKILL.md",
+      "sha256": "a1c7fd0a96b40e12a74bceb0e6bb20a9666dd844dcabfb624acb27da23b929fe",
+      "decision": "adapted method",
+      "spec_row": "redesign-from-first-principles",
+      "target": "`architect/SKILL.md`：新约束出现时重新检验整体设计，不自动扩大重构授权",
+      "detail": "无；与设计步骤合写"
+    },
+    {
+      "source": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "sha256": "05294b40448e927c5da1c7b6f5c6b9fed3744637e3833d2d948b9154a9dd00bb",
+      "decision": "adapted method",
+      "spec_row": "separate-before-serializing-shared-state",
+      "target": "`architect/SKILL.md`：先确认共享写入是否必要，再确定独立所有权或串行控制",
+      "detail": "`architect/references/design-review.md` 的共享状态节；设计并发写入时读"
+    },
+    {
+      "source": "skills/principle-sequence-verifiable-units/SKILL.md",
+      "sha256": "761390804ee36c32f5338d8db47ec54463d40ff96dbb296dfafabcd5f2593eec",
+      "decision": "adapted method",
+      "spec_row": "sequence-verifiable-units",
+      "target": "`figure-it-out/SKILL.md`：按可检查单元组织工作",
+      "detail": "`figure-it-out/references/execution-methods.md` 的阶段验收节；与 outcome-oriented-execution 共用，明确单元边界可包含哪些中间状态"
+    },
+    {
+      "source": "skills/principle-subtract-before-you-add/SKILL.md",
+      "sha256": "a983a50e732c1ed315eba7aaf47a61329e31c4794eb1ab9d25d9945265b31e03",
+      "decision": "adapted method",
+      "spec_row": "subtract-before-you-add",
+      "target": "`interrogate/SKILL.md`：只建议删除已确认且任务相关的冗余",
+      "detail": "无；与审查步骤合写"
+    },
+    {
+      "source": "skills/principle-test-behavior-not-implementation/SKILL.md",
+      "sha256": "87e40efe4e486f7ea639d2ed1fc0abe6c93b8fd0e89a81218086909d2470a52e",
+      "decision": "adapted method",
+      "spec_row": "test-behavior-not-implementation",
+      "target": "`tdd/SKILL.md`：断言可观察契约，检查能否捕获目标缺陷",
+      "detail": "无；正文用必要的短例子解释，不复制原版错误的断言名称黑名单"
+    },
+    {
+      "source": "skills/principle-type-system-discipline/SKILL.md",
+      "sha256": "c83da8031ffb4c86410030d3e261f659598fca2b7d8158fd9dc269d70a3a025e",
+      "decision": "adapted method",
+      "spec_row": "type-system-discipline",
+      "target": "`typescript-best-practices/SKILL.md`：检查非法状态、来源类型与穷尽处理",
+      "detail": "`typescript-best-practices/references/patterns.md` 的类型表达节；选择具体 TS 表达或处理断言时读"
+    },
+    {
+      "source": "skills/recall/SKILL.md",
+      "sha256": "d265b0e5b6dc5b89c0407f3387d24462c988e1990a37d5359735137908128c5a",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/reflect/SKILL.md",
+      "sha256": "6a4d4ccaace9ce88c3e268fcbedf3cfd40e527162a5e5aad6de8edbaf5e2b83f",
+      "decision": "adapted skill",
+      "target": "reflect/SKILL.md"
+    },
+    {
+      "source": "skills/setup-pstack/SKILL.md",
+      "sha256": "5acdc3db4f15f3e9b81fb56eab7f17cdccde1a11a40053ed7743f7467729c8a9",
+      "decision": "adapted documentation",
+      "target": "README.md"
+    },
+    {
+      "source": "skills/show-me-your-work/SKILL.md",
+      "sha256": "831e85ba3f84f38bf338cd03e6af050fea357752e25a825e334c99f59d7f2077",
+      "decision": "adapted skill",
+      "target": "show-me-your-work/SKILL.md"
+    },
+    {
+      "source": "skills/swarm/SKILL.md",
+      "sha256": "d578d877c3b8b9de7163f52579c4683337a940acc0fbe4496a498f5d3b27df30",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/tdd/SKILL.md",
+      "sha256": "011cab0ecc04a3632121efb493ae4d60aa282a9b72c66de74dd8ad7e4313e05a",
+      "decision": "adapted skill",
+      "target": "tdd/SKILL.md"
+    },
+    {
+      "source": "skills/teach/SKILL.md",
+      "sha256": "bd286e5a6290673be2cd28aef7af2ec7f1fb138e6bce156ea657368c7e7fc8a4",
+      "decision": "adapted skill",
+      "target": "teach/SKILL.md"
+    },
+    {
+      "source": "skills/technical-writing/SKILL.md",
+      "sha256": "6d6d9e625ae412ee8f36df8deb6fd9203d7c6acca776d5ee3cabbb9126f8b84c",
+      "decision": "adapted skill",
+      "target": "technical-writing/SKILL.md"
+    },
+    {
+      "source": "skills/typescript-best-practices/SKILL.md",
+      "sha256": "28f9e61710e205f6f3c5476f333483cff0e988f6a5b639e2faad536344b40c5e",
+      "decision": "adapted skill",
+      "target": "typescript-best-practices/SKILL.md"
+    },
+    {
+      "source": "skills/unslop/SKILL.md",
+      "sha256": "c6d2572294d933a428211921069e9a248490e9b466ca59437cb4d9de248600ca",
+      "decision": "deferred; no runtime directory",
+      "target": null
+    },
+    {
+      "source": "skills/why/SKILL.md",
+      "sha256": "222b93789754ba6ee901835137184acdca667f7e47c523bcc85aca86675fb249",
+      "decision": "adapted skill",
+      "target": "why/SKILL.md"
+    }
+  ],
+  "playbooks": [
+    {
+      "source": "skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "sha256": "f6a13a445c360b48d6cd72780ac01955f45b82826476efe0e67c7559329407aa",
+      "decision": "adapted method",
+      "target": "skill-creator invocation convention"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/autonomous-run.md",
+      "sha256": "15e54ad3ac92565613980772d8708de6e19cc4690bfd4bb3fb8836522407377b",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/autopilot-full.md",
+      "sha256": "52f69170bd7fa6b436992d90d3ef7fba893201e0b497297b416e9aea0e567d5f",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/autopilot-stack.md",
+      "sha256": "66364cd3a2286cbecfb73d3a7bf7d1fa387ede8525d37ef22b69d4ac03c2c5b2",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/babysit.md",
+      "sha256": "51be21872152f97612d37258273269b88212b6696432d25d678cac30f02f4157",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/bug-fix.md",
+      "sha256": "e958c67d5454fc12d76ec645b50dfd85c423082aac13a49e2913ef2815948216",
+      "decision": "adapted method",
+      "target": "engineering-workflow/references/workflows/bug-fix.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/eval.md",
+      "sha256": "b862bfa2fae2399abf047a8e80d3e3dddb64003af96fb1cebb625216131e36bb",
+      "decision": "adapted method",
+      "target": "tests/behavior-cases.json and reviewer rubric"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/feature.md",
+      "sha256": "430dae0fd736554ff7dffc3ef0644c9f0c845e25742f69e598c35b9b89660301",
+      "decision": "adapted method",
+      "target": "engineering-workflow/references/workflows/feature.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/hillclimb.md",
+      "sha256": "bc1fc4052c1ee918a56115a219cbcbbc4c147fa1a8080e77c7d58068eecac299",
+      "decision": "adapted method",
+      "target": "engineering-workflow/references/workflows/performance.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/investigation.md",
+      "sha256": "dc66bcf6af3a074fc7f67aa5e12b93ef571a4fb4d8e17f2f1af5ae5359f42e46",
+      "decision": "adapted method",
+      "target": "engineering-workflow/references/workflows/investigation.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "sha256": "63426a55519fbc4fb9f00baf5cc7b1148f70dfb62ad360a0f6533d287dd36edf",
+      "decision": "adapted method",
+      "target": "figure-it-out/references/execution-methods.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/opening-a-pr.md",
+      "sha256": "b173ff9638ff62f91f6813c1a0ed3417cdf9f6545a659be0c1fb1f42130e0e66",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/orchestrate.md",
+      "sha256": "d42b4375f1bd4ce23da0b575a198571a2117df7eea10c3c9fc6d92ae1053f7be",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/pause-safely.md",
+      "sha256": "7d5fc10e144265f1b35f8157926541e738c1de64b6a85b3e61b51cf268c3dffd",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/perf-issue.md",
+      "sha256": "b2ee9aed1466583361cb61b4e8d79ebb3b61f7f9f6540be7633852afacab1d89",
+      "decision": "adapted method",
+      "target": "engineering-workflow/references/workflows/performance.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/prototype.md",
+      "sha256": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962",
+      "decision": "adapted method",
+      "target": "engineering-workflow/references/workflows/prototype.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/refactoring.md",
+      "sha256": "53bac1f1fe886600dd1991b5511b7975e6a206168038f9d282d88e45408e93cf",
+      "decision": "adapted method",
+      "target": "engineering-workflow/references/workflows/refactoring.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/runtime-forensics.md",
+      "sha256": "594f02c40c243a346e1f57b688ecf2ed5e882f21b3d24ed2204d1ac6f1c24a8a",
+      "decision": "adapted method",
+      "target": "engineering-workflow/references/workflows/forensics.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/session-pickup.md",
+      "sha256": "1604fb463f7c7410d43fa024ca76c1c1824c166a01fd69d61f073d06fdca2a47",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/shipping.md",
+      "sha256": "c301902136e0a9a0a55403c35374f6f5738e501aee66c27458dc197b87557550",
+      "decision": "excluded by PRD",
+      "target": null
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/trace-forensics.md",
+      "sha256": "137ce3984fb96e45971fdff4d3c79fa4ccc647c5b30ae4945783b9fb23f8cec7",
+      "decision": "adapted method",
+      "target": "engineering-workflow/references/workflows/forensics.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/visual-parity.md",
+      "sha256": "950ca51999a6454c98eee6bcbc3d1bbe501a4e3a5d5439b6f6ddc378991b256c",
+      "decision": "adapted method",
+      "target": "create-verification-skill/references/visual-parity.md"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "sha256": "fc464dc4121926df1704f483c5feca83717c0a40b4651d3e11bd3aedd89441b6",
+      "decision": "excluded by PRD",
+      "target": null
+    }
+  ],
+  "note": "Generated from actual upstream paths and Spec rows; destination mapping is an author review record, not a runtime registry or semantic acceptance."
+}

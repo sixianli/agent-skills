@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · technical-writing"
+  short_description: "编写或审查技术教程、操作指南、参考和原理解释，保持事实、术语及证据限定；文档生命周期由已采用的 document-governa"
+  default_prompt: "请使用 $technical-writing 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+{
+  "skills_copied": 16,
+  "exit_code": 0,
+  "output": "Skill structure and declared references passed; behavior and host discovery were not tested.\n",
+  "personal_collisions": [],
+  "limits": "Actual copied layout check; source directory not removed; no new-host discovery or personal installation."
+}

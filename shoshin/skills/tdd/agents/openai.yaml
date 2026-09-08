@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · tdd"
+  short_description: "在明确 TDD、失败测试、回归测试请求或缺陷已有有效本地测试路径时，建立失败前与修复后证据；不为每个小编辑强造测试框架。"
+  default_prompt: "请使用 $tdd 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

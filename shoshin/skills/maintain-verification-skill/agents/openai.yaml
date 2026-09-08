@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · maintain-verification-skill"
+  short_description: "维护指定项目已有验证技能与功能地图，双向核查源码覆盖并实跑用户路径；修正文档和助手，产品回归只报告，不自动创建 PR。"
+  default_prompt: "请使用 $maintain-verification-skill 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

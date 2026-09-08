@@ -1,0 +1,22 @@
+import csv, io, importlib.util, subprocess, tempfile
+from pathlib import Path
+root=Path('/Users/triggerjames/Documents/sxl_code_work_space/agent-skills/shoshin')
+spec=importlib.util.spec_from_file_location('v',root/'scripts/validate-skills.py')
+v=importlib.util.module_from_spec(spec); spec.loader.exec_module(v)
+log=root/'skills/show-me-your-work/scripts/log.sh'
+def runlog(p,cells):
+ return subprocess.run(['bash',str(log),str(p),*cells],text=True,capture_output=True)
+with tempfile.TemporaryDirectory(prefix='shoshin-review-') as d:
+ p=Path(d)/'log.tsv'
+ header='ts\tphase\tdecision\twhy\tevidence\tresult'
+ p.write_text(header)
+ r=runlog(p,['p','d','w','e','r'])
+ print('NO_FINAL_NEWLINE',r.returncode,repr(p.read_text()),'row widths',list(map(len,csv.reader(io.StringIO(p.read_text()),delimiter='\t'))))
+ p.unlink()
+ r=runlog(p,['p','"quoted decision"','"open quote','e','r'])
+ print('QUOTE_CELLS',r.returncode,repr(p.read_text()),'decoded',list(csv.reader(io.StringIO(p.read_text()),delimiter='\t')))
+ skills=Path(d)/'skills'; a=skills/'alpha'; a.mkdir(parents=True)
+ (a/'SKILL.md').write_text('---\nname: alpha\ndescription: A useful task\n---\nRead [method][method].\n\n[method]: references/missing.md\n')
+ print('REFERENCE_STYLE_MISSING',v.validate(skills,lambda _: (True,'ok')))
+ (a/'SKILL.md').write_text('---\nname: alpha\ndescription: A useful task\n---\nRead [method](references/missing.md).\n')
+ print('INLINE_MISSING_CONTROL',v.validate(skills,lambda _: (True,'ok')))

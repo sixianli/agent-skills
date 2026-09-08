@@ -1,0 +1,59 @@
+test_bad_arguments_do_not_create_file (test_tools.LogTests.test_bad_arguments_do_not_create_file) ... ok
+test_controls_and_formula_prefixes (test_tools.LogTests.test_controls_and_formula_prefixes) ... /Users/triggerjames/Documents/sxl_code_work_space/agent-skills/shoshin/tests/test_tools.py:101: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/l2/yz2r8t351wn81jsl2zv3nnsh0000gn/T/tmp6eb0dfxk/sub/decisions.tsv' mode='r' encoding='UTF-8'>
+  rows = list(csv.reader(self.path.open(), delimiter='\t'))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+FAIL
+test_empty_file_gets_header (test_tools.LogTests.test_empty_file_gets_header) ... FAIL
+test_first_write_and_append (test_tools.LogTests.test_first_write_and_append) ... /Users/triggerjames/Documents/sxl_code_work_space/agent-skills/shoshin/tests/test_tools.py:93: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/l2/yz2r8t351wn81jsl2zv3nnsh0000gn/T/tmpas_sq29e/sub/decisions.tsv' mode='r' encoding='UTF-8'>
+  rows = list(csv.reader(self.path.open(), delimiter='\t'))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_invalid_existing_header_is_not_modified (test_tools.LogTests.test_invalid_existing_header_is_not_modified) ... FAIL
+test_write_failure_is_visible (test_tools.LogTests.test_write_failure_is_visible) ... ok
+test_dependency_can_be_discovered_elsewhere (test_tools.ReferenceTests.test_dependency_can_be_discovered_elsewhere) ... ok
+test_duplicate_names_and_directory_mismatch (test_tools.ReferenceTests.test_duplicate_names_and_directory_mismatch) ... ok
+test_fenced_examples_are_not_dependencies (test_tools.ReferenceTests.test_fenced_examples_are_not_dependencies) ... ok
+test_invalid_frontmatter_is_reported (test_tools.ReferenceTests.test_invalid_frontmatter_is_reported) ... ok
+test_owner_escape_and_absolute_reference (test_tools.ReferenceTests.test_owner_escape_and_absolute_reference) ... ok
+test_resources_and_sections (test_tools.ReferenceTests.test_resources_and_sections) ... ok
+test_symlink_cannot_escape_owner (test_tools.ReferenceTests.test_symlink_cannot_escape_owner) ... ok
+
+======================================================================
+FAIL: test_controls_and_formula_prefixes (test_tools.LogTests.test_controls_and_formula_prefixes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/triggerjames/Documents/sxl_code_work_space/agent-skills/shoshin/tests/test_tools.py", line 102, in test_controls_and_formula_prefixes
+    self.assertEqual(rows[1][1:], ["'=1", "'+1", "'-1", "'@SUM(1)", "'  =1 next line"])
+AssertionError: Lists differ: ["'=1", "'+1", "'-1", "'@SUM(1)", '  =1 next line'] != ["'=1", "'+1", "'-1", "'@SUM(1)", "'  =1 next line"]
+
+First differing element 4:
+'  =1 next line'
+"'  =1 next line"
+
+- ["'=1", "'+1", "'-1", "'@SUM(1)", '  =1 next line']
+?                                                  ^
+
++ ["'=1", "'+1", "'-1", "'@SUM(1)", "'  =1 next line"]
+?                                   +               ^
+
+
+======================================================================
+FAIL: test_empty_file_gets_header (test_tools.LogTests.test_empty_file_gets_header)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/triggerjames/Documents/sxl_code_work_space/agent-skills/shoshin/tests/test_tools.py", line 118, in test_empty_file_gets_header
+    self.assertEqual(len(self.path.read_text().splitlines()), 2)
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_invalid_existing_header_is_not_modified (test_tools.LogTests.test_invalid_existing_header_is_not_modified)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/triggerjames/Documents/sxl_code_work_space/agent-skills/shoshin/tests/test_tools.py", line 111, in test_invalid_existing_header_is_not_modified
+    self.assertNotEqual(self.run_log('a', 'b', 'c', 'd', 'e').returncode, 0)
+AssertionError: 0 == 0
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.249s
+
+FAILED (failures=3)

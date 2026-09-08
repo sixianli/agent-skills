@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · automate-me"
+  short_description: "根据用户指定的跨会话材料整理稳定工作偏好并提出规则改进；区分一次性要求和项目限制，不自动扫描历史、创建个人模式或写配置。"
+  default_prompt: "请使用 $automate-me 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

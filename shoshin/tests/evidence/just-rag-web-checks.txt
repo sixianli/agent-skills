@@ -1,0 +1,8 @@
+2026-09-08; JUST-RAG efb58712923a43e523d4e4184c509c12289dfd71
+Command: npm run lint && npm test -- --reporter=dot
+Working directory: apps/web
+Observed: eslint, tsc --noEmit and test:e2e:typecheck exited 0.
+Vitest 4.1.10: 10 test files passed, 50 tests passed; duration 3.65s.
+Scope: existing jsdom/unit frontend suite, not live browser/server or production validation.
+Local backend check: no TCP listeners found on 8000, 5432, 9000.
+Docker: local OrbStack socket missing; daemon not running at inspection.

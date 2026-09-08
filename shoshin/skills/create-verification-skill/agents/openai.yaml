@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · create-verification-skill"
+  short_description: "为指定真实项目生成并实跑本地验证技能和功能地图，覆盖启动、诊断、用户操作、取证及清理；未实跑的产物只能称草稿。"
+  default_prompt: "请使用 $create-verification-skill 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · how"
+  short_description: "解释代码机制、调用链、模块归属与边界；用于代码导读和修改前理解。历史动机交给 why，解释请求本身不修改代码。"
+  default_prompt: "请使用 $how 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

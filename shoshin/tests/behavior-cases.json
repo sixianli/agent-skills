@@ -1,0 +1,242 @@
+[
+  {
+    "id": "how-ordinary",
+    "skill": "how",
+    "request": "只解释 scripts/validate_all.py 如何读取清单并汇总失败，不修改。"
+  },
+  {
+    "id": "how-negative",
+    "skill": "how",
+    "request": "把这句话缩短：执行完成后返回结果。"
+  },
+  {
+    "id": "how-exception",
+    "skill": "how",
+    "request": "仅解释动态注册的消费者；仓库里找不到注册配置。"
+  },
+  {
+    "id": "why-ordinary",
+    "skill": "why",
+    "request": "追溯 JUST-RAG client.ts 的 done 完成检查为何加入，只查本地 Git。"
+  },
+  {
+    "id": "why-negative",
+    "skill": "why",
+    "request": "列出这个函数接受的参数，不讨论历史。"
+  },
+  {
+    "id": "why-exception",
+    "skill": "why",
+    "request": "找不到 PR 讨论时解释作者为什么用了该阈值。"
+  },
+  {
+    "id": "blast-radius-ordinary",
+    "skill": "blast-radius",
+    "request": "只读分析 log.sh 增加已有表头检查的影响，检查特殊字符与调用者。"
+  },
+  {
+    "id": "blast-radius-negative",
+    "skill": "blast-radius",
+    "request": "请把标题中的错别字改掉。"
+  },
+  {
+    "id": "blast-radius-exception",
+    "skill": "blast-radius",
+    "request": "严格只读评估一个依赖外部调用者的 API 删除提议，消费者仓库不可用。"
+  },
+  {
+    "id": "create-verification-skill-ordinary",
+    "skill": "create-verification-skill",
+    "request": "为 JUST-RAG 的评测资产 CLI 生成验证技能并实跑，只用本地材料。"
+  },
+  {
+    "id": "create-verification-skill-negative",
+    "skill": "create-verification-skill",
+    "request": "这个正则是什么意思？"
+  },
+  {
+    "id": "create-verification-skill-exception",
+    "skill": "create-verification-skill",
+    "request": "生成聊天验证技能，但没有可用测试后端或测试身份。"
+  },
+  {
+    "id": "tdd-ordinary",
+    "skill": "tdd",
+    "request": "为日志的双引号读回缺陷增加回归证明，再修正。"
+  },
+  {
+    "id": "tdd-negative",
+    "skill": "tdd",
+    "request": "只调整一处文档措辞。"
+  },
+  {
+    "id": "tdd-exception",
+    "skill": "tdd",
+    "request": "缺陷只发生在不可访问硬件上，当前没有匹配测试工具。"
+  },
+  {
+    "id": "typescript-best-practices-ordinary",
+    "skill": "typescript-best-practices",
+    "request": "只读审查 JUST-RAG ChatMessage 状态与 SSE 解析边界，说明类型的真实限制。"
+  },
+  {
+    "id": "typescript-best-practices-negative",
+    "skill": "typescript-best-practices",
+    "request": "解释 Python 列表切片。"
+  },
+  {
+    "id": "typescript-best-practices-exception",
+    "skill": "typescript-best-practices",
+    "request": "项目 TS 4.8，需要校验配置对象字面量但不能升级编译器。"
+  },
+  {
+    "id": "maintain-verification-skill-ordinary",
+    "skill": "maintain-verification-skill",
+    "request": "维护 JUST-RAG verify-just-rag 的源码与地图，保持产品文件不变。"
+  },
+  {
+    "id": "maintain-verification-skill-negative",
+    "skill": "maintain-verification-skill",
+    "request": "用户只要求运行现有一项检查。"
+  },
+  {
+    "id": "maintain-verification-skill-exception",
+    "skill": "maintain-verification-skill",
+    "request": "一次操作失败后 UI 留在错误弹窗；进程健康，且实例属于用户。"
+  },
+  {
+    "id": "teach-ordinary",
+    "skill": "teach",
+    "request": "解释 JUST-RAG SSE 的 final 与 done，让准备修改聊天代码的开发者理解两层状态。"
+  },
+  {
+    "id": "teach-negative",
+    "skill": "teach",
+    "request": "只把上一句话说简单一点。"
+  },
+  {
+    "id": "teach-exception",
+    "skill": "teach",
+    "request": "当前实现清楚，但历史设计记录缺失；请解释它为何这样设计。"
+  },
+  {
+    "id": "interrogate-ordinary",
+    "skill": "interrogate",
+    "request": "只读审查新日志脚本和资源校验器，给出真实触发与影响。"
+  },
+  {
+    "id": "interrogate-negative",
+    "skill": "interrogate",
+    "request": "按已批准方案实现明确的小改动。"
+  },
+  {
+    "id": "interrogate-exception",
+    "skill": "interrogate",
+    "request": "独立审查代理失败，剩余结果都说通过，但部分文件无人检查。"
+  },
+  {
+    "id": "show-me-your-work-ordinary",
+    "skill": "show-me-your-work",
+    "request": "为当前复杂任务记录一次方案选择和一次由证据触发的纠正。"
+  },
+  {
+    "id": "show-me-your-work-negative",
+    "skill": "show-me-your-work",
+    "request": "给出一个简单计算结果。"
+  },
+  {
+    "id": "show-me-your-work-exception",
+    "skill": "show-me-your-work",
+    "request": "只有工具产物没有原始会话记录，请核查日志真实性。"
+  },
+  {
+    "id": "technical-writing-ordinary",
+    "skill": "technical-writing",
+    "request": "基于 JUST-RAG README 已有命令写一段评测资产操作说明。"
+  },
+  {
+    "id": "technical-writing-negative",
+    "skill": "technical-writing",
+    "request": "请实际部署 README 中描述的系统。"
+  },
+  {
+    "id": "technical-writing-exception",
+    "skill": "technical-writing",
+    "request": "润色“当前仅在本地检查通过，真实模型质量未知”，要求具体但没有新证据。"
+  },
+  {
+    "id": "architect-ordinary",
+    "skill": "architect",
+    "request": "为日志单写者与已有文件保护设计接口，先给设计不写代码。"
+  },
+  {
+    "id": "architect-negative",
+    "skill": "architect",
+    "request": "修正文档拼写。"
+  },
+  {
+    "id": "architect-exception",
+    "skill": "architect",
+    "request": "现有重构要求改变所有权，但外部兼容消费者范围未知。"
+  },
+  {
+    "id": "figure-it-out-ordinary",
+    "skill": "figure-it-out",
+    "request": "按已批准设计完成技能包源码和检查，逐步核验，安装不在范围内。"
+  },
+  {
+    "id": "figure-it-out-negative",
+    "skill": "figure-it-out",
+    "request": "只读总结这个 Plan。"
+  },
+  {
+    "id": "figure-it-out-exception",
+    "skill": "figure-it-out",
+    "request": "两次修正依赖同一假设但失败，剩余授权只允许修改验证助手。"
+  },
+  {
+    "id": "reflect-ordinary",
+    "skill": "reflect",
+    "request": "复盘本次漏测日志特殊字符的过程，给具体机制建议，不修改规则。"
+  },
+  {
+    "id": "reflect-negative",
+    "skill": "reflect",
+    "request": "整理用户跨会话的稳定偏好。"
+  },
+  {
+    "id": "reflect-exception",
+    "skill": "reflect",
+    "request": "现有规则已写明要检查引用，但执行者遗漏；另有一次性网络故障。"
+  },
+  {
+    "id": "automate-me-ordinary",
+    "skill": "automate-me",
+    "request": "根据用户指定材料整理偏好：两次要求中文；一次本项目不提交；另一个项目允许提交。只交建议。"
+  },
+  {
+    "id": "automate-me-negative",
+    "skill": "automate-me",
+    "request": "复盘本次测试漏项。"
+  },
+  {
+    "id": "automate-me-exception",
+    "skill": "automate-me",
+    "request": "历史访问不可用，材料只含一次临时指令；判断能否形成全局规则。"
+  },
+  {
+    "id": "engineering-workflow-ordinary",
+    "skill": "engineering-workflow",
+    "request": "只解释一个小函数，保持只读。"
+  },
+  {
+    "id": "engineering-workflow-negative",
+    "skill": "engineering-workflow",
+    "request": "你好吗？"
+  },
+  {
+    "id": "engineering-workflow-exception",
+    "skill": "engineering-workflow",
+    "request": "修复工作需要真实后台，但只有静态代码且用户要求先看设计。"
+  }
+]

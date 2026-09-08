@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · why"
+  short_description: "追溯代码设计动机、历史取舍、回归与阈值来源，区分直接证据和推断；当前代码机制问题用 how，不自动扫描无关历史。"
+  default_prompt: "请使用 $why 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

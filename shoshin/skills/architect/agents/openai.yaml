@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · architect"
+  short_description: "从调用者用法、数据与不变量设计类型、接口、所有权和模块边界；用于明确设计或必要结构取舍，设计请求完成后停止，不自动实现。"
+  default_prompt: "请使用 $architect 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

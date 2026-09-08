@@ -1,0 +1,5 @@
+ts	phase	decision	why	evidence	result
+2026-09-08T13:34:13Z	P0	使用文档固定的唯一上游	避免引入未批准迁移来源	shoshin/tests/evidence/upstream-inventory.json	50 skills; 23 playbooks; same baseline
+2026-09-08T13:34:13Z	P2	修正日志边界处理	3 个失败用例证明原助手不能满足本包合同	shoshin/tests/evidence/tools-before.txt	13 tests passed after adaptation
+2026-09-08T13:34:13Z	P1	将试点可执行证据限定到资产 CLI	本地应用后端未运行，不能以资产检查替代聊天验收	shoshin/tests/evidence/just-rag-assets.json	asset path passed; product UI unverified
+2026-09-08T13:45:28Z	scope	停止真实项目试点并完成源码入口	用户明确要求节省 token，直接实施 Plan	shoshin/docs/execution/plans/2026-09-08-shoshin-plan.md	16 source skills; live acceptance remains open

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · interrogate"
+  short_description: "对明确代码或 diff 做独立审查、挑战关键前提并核实发现，含保守注释审查；审查请求不自动应用修改，不固定多模型投票。"
+  default_prompt: "请使用 $interrogate 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

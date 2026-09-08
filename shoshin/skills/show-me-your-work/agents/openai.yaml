@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · show-me-your-work"
+  short_description: "为需要审阅决策过程的复杂任务记录单一 TSV 日志并核查证据；只记选择、转向、验证和阻塞，不为普通操作创建日志。"
+  default_prompt: "请使用 $show-me-your-work 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · reflect"
+  short_description: "在用户要求复盘当前任务时，区分执行失误、技能缺陷、结构机制机会和一次性问题，提出有证据的改进；不挖掘无关历史或自动写记忆。"
+  default_prompt: "请使用 $reflect 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Shoshin · blast-radius"
+  short_description: "分析 diff 或变更提议的影响范围、隐含消费者与关键安全前提；用于改动评估，默认只读，不因发现风险自动修复。"
+  default_prompt: "请使用 $blast-radius 处理当前请求，保留指定范围并说明证据与限制。"
+policy:
+  allow_implicit_invocation: true
