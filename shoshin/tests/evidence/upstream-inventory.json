@@ -98,7 +98,7 @@
       "source": "skills/poteto-mode/SKILL.md",
       "sha256": "dc166350bc3bb3b9a061930380e971b3ca8c9f55822c52d7249b92b43f5cb865",
       "decision": "adapted entrypoint and workflows",
-      "target": "engineering-workflow/SKILL.md"
+      "target": "shoshin/SKILL.md"
     },
     {
       "source": "skills/principle-attack-the-premise/SKILL.md",
@@ -193,8 +193,8 @@
       "sha256": "09978915a4a11990cf0a9a02d9c08cc59e0b7a04c5c24b83aa560fbe4146f75b",
       "decision": "adapted method",
       "spec_row": "migrate-callers-then-delete-legacy-apis",
-      "target": "`engineering-workflow/SKILL.md`：重构时路由 refactoring 流程",
-      "detail": "`engineering-workflow/references/workflows/refactoring.md` 的调用者迁移节；仅在已授权的内部 API 整体迁移时读"
+      "target": "`shoshin/SKILL.md`：重构时路由 refactoring 流程",
+      "detail": "`shoshin/references/workflows/refactoring.md` 的调用者迁移节；仅在已授权的内部 API 整体迁移时读"
     },
     {
       "source": "skills/principle-minimize-reader-load/SKILL.md",
@@ -386,7 +386,7 @@
       "source": "skills/poteto-mode/playbooks/bug-fix.md",
       "sha256": "e958c67d5454fc12d76ec645b50dfd85c423082aac13a49e2913ef2815948216",
       "decision": "adapted method",
-      "target": "engineering-workflow/references/workflows/bug-fix.md"
+      "target": "shoshin/references/workflows/bug-fix.md"
     },
     {
       "source": "skills/poteto-mode/playbooks/eval.md",
@@ -398,19 +398,19 @@
       "source": "skills/poteto-mode/playbooks/feature.md",
       "sha256": "430dae0fd736554ff7dffc3ef0644c9f0c845e25742f69e598c35b9b89660301",
       "decision": "adapted method",
-      "target": "engineering-workflow/references/workflows/feature.md"
+      "target": "shoshin/references/workflows/feature.md"
     },
     {
       "source": "skills/poteto-mode/playbooks/hillclimb.md",
       "sha256": "bc1fc4052c1ee918a56115a219cbcbbc4c147fa1a8080e77c7d58068eecac299",
       "decision": "adapted method",
-      "target": "engineering-workflow/references/workflows/performance.md"
+      "target": "shoshin/references/workflows/performance.md"
     },
     {
       "source": "skills/poteto-mode/playbooks/investigation.md",
       "sha256": "dc66bcf6af3a074fc7f67aa5e12b93ef571a4fb4d8e17f2f1af5ae5359f42e46",
       "decision": "adapted method",
-      "target": "engineering-workflow/references/workflows/investigation.md"
+      "target": "shoshin/references/workflows/investigation.md"
     },
     {
       "source": "skills/poteto-mode/playbooks/multi-phase-plan.md",
@@ -440,25 +440,25 @@
       "source": "skills/poteto-mode/playbooks/perf-issue.md",
       "sha256": "b2ee9aed1466583361cb61b4e8d79ebb3b61f7f9f6540be7633852afacab1d89",
       "decision": "adapted method",
-      "target": "engineering-workflow/references/workflows/performance.md"
+      "target": "shoshin/references/workflows/performance.md"
     },
     {
       "source": "skills/poteto-mode/playbooks/prototype.md",
       "sha256": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962",
       "decision": "adapted method",
-      "target": "engineering-workflow/references/workflows/prototype.md"
+      "target": "shoshin/references/workflows/prototype.md"
     },
     {
       "source": "skills/poteto-mode/playbooks/refactoring.md",
       "sha256": "53bac1f1fe886600dd1991b5511b7975e6a206168038f9d282d88e45408e93cf",
       "decision": "adapted method",
-      "target": "engineering-workflow/references/workflows/refactoring.md"
+      "target": "shoshin/references/workflows/refactoring.md"
     },
     {
       "source": "skills/poteto-mode/playbooks/runtime-forensics.md",
       "sha256": "594f02c40c243a346e1f57b688ecf2ed5e882f21b3d24ed2204d1ac6f1c24a8a",
       "decision": "adapted method",
-      "target": "engineering-workflow/references/workflows/forensics.md"
+      "target": "shoshin/references/workflows/forensics.md"
     },
     {
       "source": "skills/poteto-mode/playbooks/session-pickup.md",
@@ -476,7 +476,7 @@
       "source": "skills/poteto-mode/playbooks/trace-forensics.md",
       "sha256": "137ce3984fb96e45971fdff4d3c79fa4ccc647c5b30ae4945783b9fb23f8cec7",
       "decision": "adapted method",
-      "target": "engineering-workflow/references/workflows/forensics.md"
+      "target": "shoshin/references/workflows/forensics.md"
     },
     {
       "source": "skills/poteto-mode/playbooks/visual-parity.md",

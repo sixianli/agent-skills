@@ -5,7 +5,7 @@ The allowed source was the local cursor-plugins/pstack directory at commit
 `71ed0d1076fec562c1b74ee353121a8d00f75382` of cursor/plugins.
 Upstream: https://github.com/cursor/plugins/tree/main/pstack
 
-The 15 leaf skills, engineering-workflow entrypoint and workflow references adapt the corresponding PStack skills,
+The 15 leaf skills, shoshin entrypoint and workflow references adapt the corresponding PStack skills,
 principles and Playbooks listed in the design Spec. The decision log helper adapts
 `skills/show-me-your-work/scripts/log.sh`, retaining TSV control-character handling and
 formula-prefix protection, and adding existing-header validation, empty-file handling, line separation and TSV quote escaping.

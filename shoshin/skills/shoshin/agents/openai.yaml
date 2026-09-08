@@ -1,6 +1,6 @@
 interface:
-  display_name: "Shoshin · engineering-workflow"
+  display_name: "Shoshin"
   short_description: "为明确的工程请求选择必要的解释、调查、审查、设计、实施或复盘方法；简单任务直接完成，不默认多代理、长期模式或自动交付。"
-  default_prompt: "请使用 $engineering-workflow 处理当前请求，保留指定范围并说明证据与限制。"
+  default_prompt: "请使用 $shoshin 处理当前请求，保留指定范围并说明证据与限制。"
 policy:
   allow_implicit_invocation: true

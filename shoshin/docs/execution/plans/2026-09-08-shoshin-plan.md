@@ -273,7 +273,7 @@ P2 通过条件：相应 AC03–AC09、AC11–AC12 有结果；表达技能评�
 
 ### P3-04：撰写跨技能参考流程
 
-文件：skills/engineering-workflow/references/workflows/ 下七份文件；本阶段只形成参考流程，不创建未完成的入口 SKILL.md。
+文件：skills/shoshin/references/workflows/ 下七份文件；本阶段只形成参考流程，不创建未完成的入口 SKILL.md。
 
 - [x] investigation.md：请求分类、只读调查、置信度与交付边界。
 - [x] bug-fix.md：原症状与预期→复现→排除假设→机制证据→范围内修复→同路径及邻近验证。tdd 是其中按需步骤。
@@ -303,7 +303,7 @@ P3 通过条件：AC02、AC03、AC06、AC08、AC11 有真实验收；automate-me
 
 ### P4-01：轻量入口
 
-文件：skills/engineering-workflow/SKILL.md、agents/openai.yaml。原前置为需要调用的技能和参考流程已验证；本轮用户取消试点并要求直接实施后，按结构/脚本验证完成源码接通，未执行行为验收仍单列开放。
+文件：skills/shoshin/SKILL.md、agents/openai.yaml。原前置为需要调用的技能和参考流程已验证；本轮用户取消试点并要求直接实施后，按结构/脚本验证完成源码接通，未执行行为验收仍单列开放。
 
 - [x] 分类解释、调查、审查、设计、实现与复盘，保留用户要求的停止点。
 - [x] 简单任务直接做；复杂任务只选择必要能力，禁止固定代理树和“跨函数即 architect”。
@@ -394,7 +394,7 @@ git diff --cached --check
 | 对应任务 | 对象与方法 | 实际结果和证据 | 限制 |
 |---|---|---|---|
 | P0-03、P2-04 | `python3 -m unittest discover -s shoshin/tests -v` | 初始 3 个边界失败、独立审查再发现 3 个失败；修正及新增范围检查后 18 项通过。`tests/evidence/tools-before.txt`、`review-regressions-before.txt`、`tools-after.txt` | 确定性助手检查，不证明所有技能触发 |
-| P0-03、P4-02 部分 | `python3 shoshin/scripts/validate-skills.py` | 16 个技能资源与声明链接通过 | 包括 engineering-workflow 入口；自然语言外部依赖仍需宿主发现 |
+| P0-03、P4-02 部分 | `python3 shoshin/scripts/validate-skills.py` | 16 个技能资源与声明链接通过 | 包括 shoshin 入口；自然语言外部依赖仍需宿主发现 |
 | P1-01、P1-05 | 独立上下文实际执行 how/why，调查 JUST-RAG SSE 完成与历史 | `tests/evidence/how-why-just-rag.md` 有 App→客户端→路由→应用服务链、Git 引入提交与证据等级 | 同模型独立上下文；该次调查仅静态，非运行复现 |
 | P1-03 | 目标技能 helper 执行 Doctor→原资产 CLI→证据→清理 | `tests/evidence/just-rag-assets.json`：486 题、54 份来源，退出 0，自有临时目录清理，证据读回、Git 状态一致 | 仅评测资产路径；非完整 RAG、上传、OIDC 或模型质量验收 |
 | P1-06 | JUST-RAG `npm run lint && npm test -- --reporter=dot` | ESLint、TypeScript/e2e 类型检查通过；10 文件 50 tests 通过。`tests/evidence/just-rag-web-checks.txt` | 现有 jsdom/单元测试，非真实浏览器服务链 |
@@ -425,3 +425,7 @@ bro 只重述上一条回复，不负责代码研究。自然语言“说简单�
 因此，本轮源码实施可交付，但原 Plan 的真实项目、全量行为对照、性能/视觉/取证和安装后验收不勾选。个人安装和远端发布仍未授权。本轮不再为补这些证据追加试点或模型调用。
 
 最终本包检查：16 个技能在复制布局下引用通过；18 项工具测试通过；根 `python3 scripts/validate_all.py` 的全部检查通过；文档 strict 校验为 0 warnings；`git diff --check` 通过。未执行的真实行为与安装验收继续保持开放。
+
+### 入口命名调整
+
+用户要求将入口名称改为 `shoshin`。入口目录、SKILL 名称、展示元数据、默认提示词、根技能登记、行为用例标识与文档中的目标路径同步使用该名称；技能职责和交付边界保持不变。

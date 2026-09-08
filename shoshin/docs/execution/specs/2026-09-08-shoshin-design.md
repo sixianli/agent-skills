@@ -29,7 +29,7 @@ date: "2026-09-08"
 
 ### Included
 
-确定的 16 个技能目录：`engineering-workflow`、`how`、`why`、`teach`、`blast-radius`、`tdd`、`typescript-best-practices`、`create-verification-skill`、`maintain-verification-skill`、`interrogate`、`show-me-your-work`、`technical-writing`、`architect`、`figure-it-out`、`reflect`、`automate-me`。
+确定的 16 个技能目录：`shoshin`、`how`、`why`、`teach`、`blast-radius`、`tdd`、`typescript-best-practices`、`create-verification-skill`、`maintain-verification-skill`、`interrogate`、`show-me-your-work`、`technical-writing`、`architect`、`figure-it-out`、`reflect`、`automate-me`。
 
 保守注释审查为 interrogate 的组成部分。工作流、模板和原则是这些技能的附属能力，不额外登记为独立技能。unslop/bro 仅纳入评估，arena 明确待定；automate-me 已确认纳入。
 
@@ -120,7 +120,7 @@ Shoshin 使用现有工具承载已确认的技能与流程。本轮不新增任
 | show-me-your-work | show-me-your-work/SKILL.md：末尾强制不同家族代理审计日志与 transcript | 长审计轨迹或重要证据缺口适合独立核实；短日志直接检查，不强制跨家族，不重复整项工作 |
 | figure-it-out | figure-it-out/SKILL.md：按边界分工，委派产物有 judge 并由主审核 | 独立产物可拆；紧耦合实现单一所有者。验证按具体风险选择测试、主审核或独立审查，不固定每 worker 再配 judge |
 | tdd、typescript-best-practices、technical-writing | 对应 SKILL.md 提供测试、类型和写作方法，没有必需的代理树 | 默认在主会话使用方法；出现明确独立验证或大材料分析需求时应用统一判断，不因技能存在而启动代理 |
-| engineering-workflow | 借鉴 poteto-mode 中各 Playbook | 选择任务步骤，不额外复制一层调度；调用叶技能不等于启动子代理 |
+| shoshin | 借鉴 poteto-mode 中各 Playbook | 选择任务步骤，不额外复制一层调度；调用叶技能不等于启动子代理 |
 
 #### 工作流适配矩阵
 
@@ -168,7 +168,7 @@ Shoshin 使用现有工具承载已确认的技能与流程。本轮不新增任
 | figure-it-out | 复杂目标与约束 → 阶段、验收与按证据调整的执行方法 | how；按需 architect、验证技能、日志；不创建 goal/定时任务，不吞入长期编排 |
 | reflect | 当前任务过程及用户复盘请求 → 有证据的改进提案 | 必要时 skill-creator；已有规则明确而未执行时不重复加规则；按已有授权应用，无授权则仅交付提案；不承担 recall/automate-me |
 | automate-me | 用户指定的跨会话材料和现有规则 → 有证据的稳定偏好及规则改进提案 | 按需 skill-creator；区分稳定偏好、单次指令和冲突；不扫描无关历史，不自动写记忆或配置；按实际授权应用修改 |
-| engineering-workflow | 用户任务 → 最小必要流程与有证据的交付 | 最后实现；按需选择上述技能；简单任务无额外层级；不自动持久化 sticky mode |
+| shoshin | 用户任务 → 最小必要流程与有证据的交付 | 最后实现；按需选择上述技能；简单任务无额外层级；不自动持久化 sticky mode |
 
 reflect 不固定三个分析者加一个综合者；interrogate 的独立判断不等于跨模型家族多样性；没有真实只读工具隔离时不声称隔离已经成立。现有 Codex 委派与权限规则是约束，不虚构 readonly 会剥离全部 MCP 的平台规律。
 
@@ -204,7 +204,7 @@ agent-skills/
     │   ├── runbooks/                   # 当前空；无操作合同则不编造 Runbook
     │   └── archive/{specs,plans,runbooks}/
     ├── skills/
-    │   ├── engineering-workflow/
+    │   ├── shoshin/
     │   │   ├── SKILL.md
     │   │   ├── agents/openai.yaml
     │   │   └── references/workflows/
@@ -275,7 +275,7 @@ agent-skills/
 | guard-the-context-window | `figure-it-out/SKILL.md`：先过滤输出，再按收益选择上下文隔离 | `figure-it-out/references/execution-methods.md` 的上下文与委派节；大材料、独立调查或委派取舍不清时读，采用本 Spec 的研究结论 | how、why、reflect、automate-me、interrogate、日志审计、验证维护和 forensics 各保留短触发条件，需要详细判断才引用 |
 | laziness-protocol | `architect/SKILL.md`：评估实际协调负担，不按行数或固定层数决定 | `architect/references/design-review.md` 的复杂度节；新增层次或重构取舍时读 | interrogate 的 review-criteria.md 引用，refactoring 保留任务范围内简化要求 |
 | make-operations-idempotent | `architect/SKILL.md`：涉及可重复副作用时询问重复和中断后的结果 | `architect/references/design-review.md` 的重复与中断节；命令、重试或生命周期设计时读，不移入调度运行时 | 验证生成与维护正文要求自有启动/清理操作可重复检查，复杂设计再引用 |
-| migrate-callers-then-delete-legacy-apis | `engineering-workflow/SKILL.md`：重构时路由 refactoring 流程 | `engineering-workflow/references/workflows/refactoring.md` 的调用者迁移节；仅在已授权的内部 API 整体迁移时读 | architect 识别兼容契约；普通设计不因引用而启动迁移 |
+| migrate-callers-then-delete-legacy-apis | `shoshin/SKILL.md`：重构时路由 refactoring 流程 | `shoshin/references/workflows/refactoring.md` 的调用者迁移节；仅在已授权的内部 API 整体迁移时读 | architect 识别兼容契约；普通设计不因引用而启动迁移 |
 | minimize-reader-load | `interrogate/SKILL.md`：审查不必要的追踪层次和隐藏状态 | `architect/references/design-review.md` 的复杂度节；与 laziness-protocol 共用判定方法，不另写一份 | interrogate/references/review-criteria.md 给出审查触发与引用 |
 | model-the-domain | `architect/SKILL.md`：模型表达真实关系与状态 | `architect/references/design-review.md` 的领域建模节；状态/所有权存在歧义时读 | TypeScript 的 patterns.md 只提供语言落地实例，不复制通用方法 |
 | never-block-on-the-human | 各技能保留自身授权停止点；不新增通用正文段落 | 无；实际授权规则来自宿主和用户，拒绝原版“可逆即可先做”的泛化 | architect、reflect、automate-me、验证流程按各自任务范围执行 |
@@ -311,7 +311,7 @@ agent-skills/
 | interrogate、show-me-your-work | 对应同名技能，证据优先，取消默认跨家族与外部写入假设 |
 | technical-writing | 独立保留；中文、仓库规范与文档治理分工 |
 | architect、figure-it-out、reflect | 同名技能；去掉强制 arena、长期编排和固定代理树 |
-| poteto-mode | engineering-workflow 轻量入口与限定参考流程 |
+| poteto-mode | shoshin 轻量入口与限定参考流程 |
 | setup-pstack | 不保留独立入口；通用配置说明进入 README/元数据，不写 Cursor rules |
 | no-comments | 仅提取保守注释审查；不迁移 Comment Sicko 人格与删除策略 |
 | swarm | 不迁移；必要分工要求放入使用者技能 |

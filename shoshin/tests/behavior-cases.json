@@ -225,18 +225,18 @@
     "request": "历史访问不可用，材料只含一次临时指令；判断能否形成全局规则。"
   },
   {
-    "id": "engineering-workflow-ordinary",
-    "skill": "engineering-workflow",
+    "id": "shoshin-ordinary",
+    "skill": "shoshin",
     "request": "只解释一个小函数，保持只读。"
   },
   {
-    "id": "engineering-workflow-negative",
-    "skill": "engineering-workflow",
+    "id": "shoshin-negative",
+    "skill": "shoshin",
     "request": "你好吗？"
   },
   {
-    "id": "engineering-workflow-exception",
-    "skill": "engineering-workflow",
+    "id": "shoshin-exception",
+    "skill": "shoshin",
     "request": "修复工作需要真实后台，但只有静态代码且用户要求先看设计。"
   }
 ]

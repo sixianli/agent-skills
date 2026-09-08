@@ -122,10 +122,10 @@
       "checks": []
     },
     {
-      "name": "engineering-workflow",
+      "name": "shoshin",
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
-      "skill_dir": "shoshin/skills/engineering-workflow",
+      "skill_dir": "shoshin/skills/shoshin",
       "description": "为明确的工程请求选择必要的解释、调查、审查、设计、实施或复盘方法；简单任务直接完成，不默认多代理、长期模式或自动交付。",
       "implicit_invocation": true,
       "has_tests": true,
