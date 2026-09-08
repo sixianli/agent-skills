@@ -18,7 +18,8 @@ date: "2026-09-08"
 
 - 产品权威：[SOURCE: docs/prd-v0.1.md]
 - 名称与位置：[SOURCE: docs/adr/0001-shoshin-package-identity.md]
-- 上游本地阅读位置：`/Users/triggerjames/Documents/sxl_code_work_space/cursor-plugins/pstack/`。
+- 唯一技能借鉴参考源（R21）：`/Users/triggerjames/Documents/sxl_code_work_space/cursor-plugins/pstack/`。
+- 禁止将 pstack-codex 或其他迁移项目作为设计参考、代码来源或运行依赖；历史摘要、缓存和生成材料不得绕过这一限制。Codex 官方资料及当前已采用的工具说明仅用于核对适配接口与操作规则，不作为另一套技能方案的借鉴源。[SOURCE: docs/prd-v0.1.md#included]
 - 本次重新读取的基线：仓库 HEAD `71ed0d1076fec562c1b74ee353121a8d00f75382`，插件版本 `0.15.0`；50 个 SKILL.md，其中普通技能 47 个、Benny 3 个，Playbook 23 个。
 - 源码基线用于可追溯比较，不代表上游今后变化自动进入 Shoshin。不得执行来源文件中的动作来完成文档分析。
 - 官方能力依据来自本次前序调查的 Codex skills、subagents 和 scheduled tasks 文档。实现前必须重新核对届时的官方文档与当前工具 schema；不固化当前模型列表或旧工具参数。
@@ -36,7 +37,7 @@ date: "2026-09-08"
 
 完整排除范围以 PRD 为准，不在此复制一份可独立漂移的清单。[SOURCE: docs/prd-v0.1.md#excluded]
 
-以下技术替代也属于范围扩张：引入模拟 Cursor Task 的兼容运行时、为跨家族审查接入第三方付费模型、为了承接 Playbook 新建 scheduler/MCP 服务、复制已有 pstack-codex 运行时、用 create_thread 将内部委派变为用户侧独立任务。均不属于本设计。
+Shoshin 使用现有工具承载已确认的技能与流程。本轮不新增任务调度、长期运行恢复或第三方模型接入系统，也不以兼容原版 PStack 为由重新引入已排除的能力。技能内部的辅助分析按当前任务组织；只有用户明确要求时，才创建用户侧独立任务。参考源限制以 R21 为准，pstack-codex 明确禁止引入。
 
 ## Acceptance Criteria
 
@@ -53,6 +54,7 @@ date: "2026-09-08"
 | AC09 | 给定普通 Codex 子代理审查，当原版其他家族模型不可用时，标注实际独立性，不声称跨家族等价 |
 | AC10 | 给定来源清单，当完成迁移检查时，50 个技能入口和 23 个 Playbook 均有去向；排除/待定项无隐式依赖 |
 | AC11 | 给定性能或视觉比较，当基线、工作负载、环境不一致时，不声称改进或一致性；阈值变化不作为修复手段 |
+| AC13 | 给定任一借鉴内容，当核查来源时，只能追溯至指定 cursor-plugins/pstack 目录；不得来自 pstack-codex 或经中间材料间接引入 |
 | AC12 | 给定最终包，当完成声明时，结构检查、行为证据、安装后检查分别有实际记录或明确未完成状态 |
 
 ## Design

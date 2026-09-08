@@ -34,6 +34,8 @@ date: "2026-09-08"
 - R09：源码、个人安装副本和目标项目生成的验证技能有明确归属；引用不依赖本机仓库绝对路径。
 - R10：用文档固定需求、技术范围、目标目录和实施验收，避免后续改变名称、扩大范围或把待定项当作承诺。
 
+- R21：Shoshin 的技能借鉴参考源仅限 `/Users/triggerjames/Documents/sxl_code_work_space/cursor-plugins/pstack/`。禁止参考、复制、移植或依赖 `pstack-codex` 的设计、技能、代码、脚本和运行时，也不以历史分析或中间产物间接引入。依据：用户明确要求“只允许你将 Cursor Plugins 目录里面的 pstack 这个目录作为参考源”。
+
 ### Excluded
 
 以下是明确排除项，不作为将来默认阶段保留：
