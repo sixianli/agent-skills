@@ -17,7 +17,7 @@ This document records user-confirmed requirements from the conversation and is a
 
 ## Target Users
 
-The primary user develops multiple projects with Codex and values explanations of mechanisms, architecture and ownership, real reproductions, behavior preservation, explicit evidence, and proportionate autonomy. The package is English-only following the user's language decision; retain technical terms that improve precision. The earlier conversation used Simplified Chinese, but that is no longer the package's default language requirement.
+The primary user develops multiple projects with Codex and values explanations of mechanisms, architecture and ownership, real reproductions, behavior preservation, explicit evidence, and proportionate autonomy. Communication defaults to Simplified Chinese unless the user requests another language; retain technical terms that improve precision. English-only applies to package source text, not to the language of responses or generated documents. In particular, teach adapts PStack's English-output instruction to Simplified Chinese.
 
 ## Scope
 

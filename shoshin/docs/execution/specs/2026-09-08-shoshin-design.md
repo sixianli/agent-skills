@@ -155,7 +155,7 @@ Resolve cross-skill references by name through host discovery, then read the ret
 |---|---|---|
 | how | Question and code scope → entrypoints, flow, ownership, boundaries, evidence, unknowns | Primary agent explores directly by default; delegate only under R22's benefit/cost conditions; read-only by default |
 | why | Design question and code anchor → history, inference, alternatives, gaps | Git and actually available sources; not all seven categories required; no external writes |
-| teach | Learning goal and system → mechanisms and rationale at the requested depth | Reuse how, use why when rationale matters; English by default, without forced brevity or diagram sequences |
+| teach | Learning goal and system → mechanisms and rationale at the requested depth | Reuse how, use why when rationale matters; Simplified Chinese by default unless otherwise requested, without forced brevity or diagram sequences |
 | blast-radius | Diff/proposal → affected contracts, critical assumptions, risks, checks | how/why as needed; distinguish strict read-only from permitted experiments; no automatic fixes |
 | tdd | Known defect and test path → failing-before, passing-after, adjacent evidence | No forced harness without a practical test path; not a complete diagnostic workflow |
 | typescript-best-practices | TS code/design → contract-correct types or review | Project version/conventions first; no mechanical deletion of all as/guards or mandatory brands |
@@ -309,7 +309,7 @@ The preceding table covers 23 principles. This table covers the other 24 main sk
 | tdd, typescript-best-practices | Same-name skills; preserve meaningful verification and typing rules |
 | create-verification-skill, maintain-verification-skill | Same-name skills; project-owned output and actual controls |
 | interrogate, show-me-your-work | Same-name skills; evidence first, without default cross-family or external-write assumptions |
-| technical-writing | Separate skill; English writing, repository conventions, and document-governance responsibilities |
+| technical-writing | Separate skill; Chinese-language adaptation, repository conventions, and document-governance responsibilities |
 | architect, figure-it-out, reflect | Same-name skills; remove mandatory arena, persistent orchestration, and fixed agent trees |
 | poteto-mode | Lightweight shoshin entrypoint and bounded workflow references |
 | setup-pstack | No standalone entrypoint; generic configuration goes in README/metadata, not Cursor rules |

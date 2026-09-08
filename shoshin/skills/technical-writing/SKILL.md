@@ -11,7 +11,7 @@ Identify the main purpose first: a tutorial guides a learning exercise, a how-to
 
 Use real symbols, files, commands, and terminology. Do not invent mechanisms or numbers merely to sound concrete. Preserve exact command arguments and prerequisites. Separate executed results from expected output. Rewriting must preserve the user's structural requirements, conditions, negations, numbers, and confidence levels.
 
-Write natural English. Do not mechanically enforce word limits or rules about articles and -ing forms at the expense of clarity. Lead with the conclusion, then explain the mechanism and its consequences. Give observable results in tutorials and guides, and link to long background explanations. Explain unfamiliar technical terms on first use and keep their names consistent.
+Follow the user's requested output language, using Simplified Chinese by default. When writing in Chinese, use natural Chinese syntax rather than mechanically applying English word-count, article, or -ing rules. Lead with the conclusion, then explain the mechanism and its consequences. Give observable results in tutorials and guides, and link to long background explanations. Explain unfamiliar technical terms on first use and keep their names consistent.
 
 For formal document creation, status changes, or archiving in a project that has adopted governance, discover and use document-governance. Ordinary wording edits do not require introducing a lifecycle. If governance tools are missing, deliver reviewable prose and identify the blocked steps; do not claim governance is complete.
 

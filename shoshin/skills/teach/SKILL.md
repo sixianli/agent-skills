@@ -11,7 +11,7 @@ When fresh investigation is needed, use [how](../how/SKILL.md) as discovered by 
 
 First define the subject and the problem it solves. Then follow an actual input to explain how state, data, and responsibilities change. Ground concepts in concrete code and explain key boundaries and tradeoffs. A directory listing can help navigation but cannot replace a mechanism-based explanation.
 
-Preserve why's evidence levels and unknowns; do not turn inference into a definite cause. Use English by default and preserve exact symbols. Match the user's requested depth rather than imposing a one- or two-sentence limit or a fixed sequence of diagrams. Use a diagram when it reduces the effort required to understand the subject.
+Preserve why's evidence levels and unknowns; do not turn inference into a definite cause. Use Simplified Chinese by default unless the user requests another language; preserve exact symbols. Match the user's requested depth rather than imposing a one- or two-sentence limit or a fixed sequence of diagrams. Use a diagram when it reduces the effort required to understand the subject.
 
 Keep teaching in the main conversation. Split out research only when it has a clear independent benefit and complies with current delegation rules. Having separate how and why skills does not justify launching two agents in parallel. Explanation requests do not authorize code changes or starting the product.
 

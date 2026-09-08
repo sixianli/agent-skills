@@ -184,7 +184,7 @@ Mapping: AC05, AC15, AC16. These are implementation and execution acceptance req
 
 File: skills/teach/SKILL.md. Prerequisites: how, why.
 
-- [x] Select concepts, mechanisms, and rationale by learner goals and existing knowledge, without a fixed Q&A cadence. The later English-only decision sets the default output language to English.
+- [x] Select concepts, mechanisms, and rationale by learner goals and existing knowledge, without a fixed Q&A cadence or forced English output. Use Simplified Chinese by default unless the user requests another language.
 - [x] Reuse findings, preserve why's uncertainty, and avoid repeating full exploration.
 - [ ] Verify coherence, evidence, and depth while teaching a real subsystem; use diagrams only when useful.
 - [ ] Verify an explanation request does not trigger edits and a short question does not become a broad investigation.
@@ -214,7 +214,7 @@ Files: skills/show-me-your-work/SKILL.md, references/decision-log-template.tsv, 
 Files: skills/technical-writing/SKILL.md and references/writing-guidelines.md as needed.
 
 - [x] Adapt tutorial/how-to/reference/explanation purposes, consistent terminology, and disambiguation.
-- [x] Adapt language, code formatting, and repository conventions without mechanical English word-count, article, or -ing rules. The later English-only decision replaces the original Chinese-language adaptation.
+- [x] Adapt language, code formatting, and repository conventions without mechanical English word-count, article, or -ing rules. Retain the Chinese-language adaptation; English-only governs the package source text.
 - [x] Define the division with document-governance, which still owns formal document lifecycle.
 - [ ] Verify a real how-to guide and explanation; PR/commit prose does not automatically trigger remote actions.
 
@@ -432,6 +432,10 @@ The user requested the entrypoint name `shoshin`. Its directory, SKILL name, dis
 
 ### English-only package
 
-The user requested accurate, idiomatic English throughout Shoshin, checked against the permitted PStack source. Translate skill bodies, references, metadata, design documents, test requests, and narrative evidence. Preserve IDs, source hashes, timestamps, outcomes, and unchecked acceptance. Historical user statements and reports are identified as translations rather than verbatim English records. Exact external Unicode paths retain their values through JSON escapes; do not rename external resources. Translate test input text into English while retaining Unicode boundary coverage. English replaces the previous default Chinese-output guidance.
+The user requested accurate, idiomatic English throughout Shoshin, checked against the permitted PStack source. Translate skill bodies, references, metadata, design documents, test requests, and narrative evidence. Preserve IDs, source hashes, timestamps, outcomes, and unchecked acceptance. Historical user statements and reports are identified as translations rather than verbatim English records. Exact external Unicode paths retain their values through JSON escapes; do not rename external resources. Translate test input text into English while retaining Unicode boundary coverage. English-only applies to package source text, not to responses or generated documents. Preserve the default Simplified Chinese communication requirement.
 
 Translation checks completed: all 105 tracked package files have no CJK text or filenames; 16 skill metadata files retain valid descriptions, invocation prompts, and implicit-invocation policy; all 73 upstream source hashes match the recorded baseline. Plan checkbox states and document lifecycle metadata are unchanged. External-path JSON decodes identically. Test logic and assertion structure are unchanged; English fixtures retain Unicode anchor and log round-trip coverage. Package structure/references and the root aggregate checks passed, including 18 Shoshin tests; strict documentation validation reported 0 warnings, and git diff --check passed. These checks validate this language conversion, not the previously unexecuted behavioral or installation acceptance.
+
+### 2026-09-09 Output-language correction
+
+Independent review of translation commit 1a0d4d7 identified an unintended change from English package text to English runtime output. The user confirmed that the translation request did not change response language and explicitly required teach to adapt PStack's English instruction to Chinese. Restore Simplified Chinese as the default in teach and technical-writing, and reconcile the PRD, Spec, and this Plan. Keep all package text in English. This corrects the translation scope; it does not complete outstanding behavior or installation acceptance.
