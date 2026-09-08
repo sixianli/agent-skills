@@ -28,9 +28,9 @@ date: "2026-09-08"
 
 ### Included
 
-确定的 15 个技能目录：`engineering-workflow`、`how`、`why`、`teach`、`blast-radius`、`tdd`、`typescript-best-practices`、`create-verification-skill`、`maintain-verification-skill`、`interrogate`、`show-me-your-work`、`technical-writing`、`architect`、`figure-it-out`、`reflect`。
+确定的 16 个技能目录：`engineering-workflow`、`how`、`why`、`teach`、`blast-radius`、`tdd`、`typescript-best-practices`、`create-verification-skill`、`maintain-verification-skill`、`interrogate`、`show-me-your-work`、`technical-writing`、`architect`、`figure-it-out`、`reflect`、`automate-me`。
 
-保守注释审查为 interrogate 的组成部分。工作流、模板和原则是这些技能的附属能力，不额外登记为独立技能。unslop/bro 仅纳入评估，arena/automate-me 明确待定。
+保守注释审查为 interrogate 的组成部分。工作流、模板和原则是这些技能的附属能力，不额外登记为独立技能。unslop/bro 仅纳入评估，arena 明确待定；automate-me 已确认纳入。
 
 ### Excluded
 
@@ -83,6 +83,7 @@ date: "2026-09-08"
 | architect | 需求、调用者用法与既有约束 → 结构、类型/接口、取舍和风险 | how；必要时 why/interrogate；不依赖 arena；设计请求交付设计后停止 |
 | figure-it-out | 复杂目标与约束 → 阶段、验收与按证据调整的执行方法 | how；按需 architect、验证技能、日志；不创建 goal/定时任务，不吞入长期编排 |
 | reflect | 当前任务过程及用户复盘请求 → 有证据的改进提案 | 必要时 skill-creator；已有规则明确而未执行时不重复加规则；批准后才应用；不承担 recall/automate-me |
+| automate-me | 用户指定的跨会话材料和现有规则 → 有证据的稳定偏好及规则改进提案 | 按需 skill-creator；区分稳定偏好、单次指令和冲突；不扫描无关历史，不自动写记忆或配置；按实际授权应用修改 |
 | engineering-workflow | 用户任务 → 最小必要流程与有证据的交付 | 最后实现；按需选择上述技能；简单任务无额外层级；不自动持久化 sticky mode |
 
 reflect 不固定三个分析者加一个综合者；interrogate 的独立判断不等于跨模型家族多样性；没有真实只读工具隔离时不声称隔离已经成立。现有 Codex 委派与权限规则是约束，不虚构 readonly 会剥离全部 MCP 的平台规律。
@@ -139,7 +140,8 @@ agent-skills/
     │   ├── technical-writing/{SKILL.md,references/}
     │   ├── architect/{SKILL.md,references/}
     │   ├── figure-it-out/SKILL.md
-    │   └── reflect/{SKILL.md,references/}
+    │   ├── reflect/{SKILL.md,references/}
+    │   └── automate-me/{SKILL.md,references/}
     ├── scripts/validate-skills.py       # 检查本包引用、范围和依赖等必要合同
     └── tests/                          # 实施时增加有意义的脚本测试与行为验收材料
 ```
@@ -197,7 +199,8 @@ agent-skills/
 | no-comments | 仅提取保守注释审查；不迁移 Comment Sicko 人格与删除策略 |
 | swarm | 不迁移；必要分工要求放入使用者技能 |
 | recall、make-bot-ui | 排除 |
-| arena、automate-me | Backlog 待定，无运行时目录，无隐式依赖 |
+| automate-me | 同名独立技能，P3 实施；稳定工作偏好整理，不承担当前任务复盘或长期自动化 |
+| arena | Backlog 待定，无运行时目录，无隐式依赖 |
 | unslop、bro | P2 分别评估，不能预先登记或合并进 technical-writing 入口 |
 | benny/setup-benny、benny/triage-issue-reports、benny/reproduce-and-fix-issues | 全部排除 |
 

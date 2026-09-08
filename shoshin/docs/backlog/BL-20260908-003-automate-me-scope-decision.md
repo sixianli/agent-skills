@@ -2,16 +2,16 @@
 status: "active"
 document_type: "backlog"
 record_id: "BL-20260908-003"
-record_state: "deferred"
+record_state: "converted"
 date: "2026-09-08"
 updated: "2026-09-08"
 priority: "low"
 item_type: "scope-decision"
 source_idea: ""
 review_after: ""
-promoted_to: ""
+promoted_to: "docs/execution/plans/2026-09-08-shoshin-plan.md"
 result: ""
-reason: "用户尚未决定是否需要独立的个人工作方式技能。"
+reason: "此前因用户未决定而暂缓；现已明确纳入实施方案。"
 supersedes: ""
 superseded_by: ""
 ---
@@ -19,7 +19,7 @@ superseded_by: ""
 
 ## Summary
 
-用户尚未决定引入跨会话个人偏好整理。先使用现有全局指令与 reflect，不以复盘名义隐式实现 automate-me。
+用户已明确要求将 automate-me 纳入待办。目标是基于指定的跨会话材料整理稳定工作偏好，复用现有规则，与 reflect 保持独立职责；详细实施见 Plan 的 P3-05。
 
 ## Origin
 
@@ -27,4 +27,4 @@ superseded_by: ""
 
 ## Notes
 
-- 保持待定，不创建运行时技能目录，也不作为当前实施的前置依赖。
+- 此前待定，2026-09-08 用户明确纳入。转入 Plan 表示已列入实施方案，不表示技能已经实现。
