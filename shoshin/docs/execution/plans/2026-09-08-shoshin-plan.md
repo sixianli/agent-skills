@@ -58,7 +58,10 @@ PRD 规定范围，Spec 规定设计，Plan 只定义执行顺序。新的产品
 - [ ] 将 Spec 的技能合同落实为每个技能都要表达的要素：触发、不触发、输入、步骤、输出、必要依赖、限制与验证。只作为作者检查，不建立运行时模板框架。
 - [ ] 明确 skill name/目录 slug、agents/openai.yaml 调用策略；不把原版 disable-model-invocation、paths、mode、reminder 直接视为 Codex 合同。
 - [ ] 内部资源使用相对路径；跨技能通过实际发现结果定位。确认完整必选集合安装后可用，缺失依赖的结果可解释。
-- [ ] 按 Spec 将工程原则纳入拥有相关行为的技能或参考文件，不创建 23 个独立原则技能或根目录规则注册中心。
+- [ ] 按 Spec“23 条原则的明确落点”逐项落实：短执行合同写入指定 SKILL.md/流程正文，长方法写入唯一详细位置；不在本阶段预建空参考。[SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#23-条原则的明确落点]
+- [ ] 每个引用在调用处声明读取条件、owner 技能、文件与主题节；跨技能仅读取材料，不触发 owner 完整流程或子代理。普通任务不加载全量原则。
+- [ ] 以 Spec 指定使用者检查一致性，允许不同任务保留必要短规则，禁止复制详细方法；不新增原则注册表或重复索引。
+- [ ] 跨阶段引用单独记录验收范围：P1/P2 可验证正文自包含路径及依赖缺失的报告；依赖 P3 owner 的详细路径在其技能可发现后补验，P4 完整检查通过前不得宣称整包引用已验证。不预建占位 SKILL.md，也不因暂缺 owner 复制一份方法。
 
 ### P0-03：建立最小有效验证入口
 
@@ -107,7 +110,7 @@ P0 准备用例和比较方法；各技能在对应阶段具备可执行产物�
 
 ### P1-03：create-verification-skill
 
-文件：skills/create-verification-skill/SKILL.md、references/feature-map-example/；真实生成物位于获准试点的 .agents/skills/verify-<app>/。
+文件：skills/create-verification-skill/SKILL.md、references/feature-map-example/、references/evidence-standards.md；真实生成物位于获准试点的 .agents/skills/verify-<app>/。
 
 - [ ] 接入 skill-creator；从项目读取启动、操作、观测、隔离和清理方法，不留下示例占位命令。
 - [ ] 输出 Launch、Doctor、Drive、Evidence、Cleanup、Helpers 与功能地图；各功能有用户路径和通过条件。
@@ -232,7 +235,7 @@ P2 通过条件：相应 AC03–AC09、AC11–AC12 有结果；表达技能评�
 
 ### P3-01：architect
 
-文件：skills/architect/SKILL.md、references/design-template.md 及必要设计检查材料。
+文件：skills/architect/SKILL.md、references/design-template.md、references/design-review.md（边界、替代方案、复杂度、领域建模、重复与中断、共享状态）。
 
 - [ ] 从调用者用法推导类型、接口、所有权、状态和模块边界，说明必要替代方案与取舍。
 - [ ] 复用 how，涉及历史约束时用 why；只有有实际争议才使用 interrogate。
@@ -242,7 +245,7 @@ P2 通过条件：相应 AC03–AC09、AC11–AC12 有结果；表达技能评�
 
 ### P3-02：figure-it-out
 
-文件：skills/figure-it-out/SKILL.md。前置：基础分析、验证、architect、按需日志。
+文件：skills/figure-it-out/SKILL.md、references/execution-methods.md（假设复查、工具选择、上下文与委派、阶段验收）。前置：基础分析、验证、architect、按需日志。
 
 - [ ] 将复杂目标拆成有依赖的可验证单元，先处理高风险未知，再执行已明确部分。
 - [ ] 保留 multi-phase-plan 的阶段/证据思想，不复制 PR 模板和检查器；用户要求正式 Spec/Plan 时路由 document-governance。
@@ -303,6 +306,8 @@ P3 通过条件：AC02、AC03、AC06、AC08、AC11 有真实验收；automate-me
 
 ### P4-02：整包复核与安装前交付
 
+- [ ] 核对 23 条原则的落点和引用章节；普通任务仅凭本技能正文完成，条件性任务能找到唯一详细方法，缺失 owner 时明确报告。检查原版硬编码路径、全量原则加载及递归技能调用没有被带回。
+- [ ] 以边界解析、重复失败、共享应用和阶段验收场景验证短合同与详细方法相容；不新增逐句匹配提示词的测试。
 - [ ] 按 AC14 验收普通任务、复杂但紧密依赖的任务、具有独立审查价值的任务：前两者默认不委派；后者记录具体收益与成本取舍，限制代理数量、上下文和输出，不以多代理数量作为质量指标。实际用量可得时记录，无数据不声称节省 token。
 - [ ] 按 AC13 检查借鉴内容与运行依赖的来源，确认没有直接或间接引入 pstack-codex；来源声明中的排除说明不当作运行依赖误报。
 - [ ] 用实际文件清单逐项核对 Spec 的 50 个入口和 23 个 Playbook 去向；检查必需引用不存在落空。

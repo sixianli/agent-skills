@@ -211,7 +211,7 @@ agent-skills/
     │   ├── typescript-best-practices/{SKILL.md,references/patterns.md}
     │   ├── create-verification-skill/
     │   │   ├── SKILL.md
-    │   │   └── references/{feature-map-example/,visual-parity.md}
+    │   │   └── references/{feature-map-example/,visual-parity.md,evidence-standards.md}
     │   ├── maintain-verification-skill/SKILL.md
     │   ├── interrogate/{SKILL.md,references/}
     │   │   # references/comment-review.md 承载保守注释审查
@@ -220,8 +220,8 @@ agent-skills/
     │   │   ├── references/decision-log-template.tsv
     │   │   └── scripts/log.sh
     │   ├── technical-writing/{SKILL.md,references/}
-    │   ├── architect/{SKILL.md,references/}
-    │   ├── figure-it-out/SKILL.md
+    │   ├── architect/{SKILL.md,references/{design-template.md,design-review.md}}
+    │   ├── figure-it-out/{SKILL.md,references/execution-methods.md}
     │   ├── reflect/{SKILL.md,references/}
     │   └── automate-me/{SKILL.md,references/}
     ├── scripts/validate-skills.py       # 检查本包引用、范围和依赖等必要合同
@@ -236,33 +236,56 @@ agent-skills/
 
 ### 共享原则的归属
 
-23 条原版原则全部审阅，但不创建 23 个独立运行技能。以下为主要归属；跨技能通过语义引用或本技能必要约束使用，不建立第二套规则注册中心。
+采用“执行必需内容内联，条件性细节按需引用”。这是本轮对落点与复用的确定设计。23 条原则逐条转化，不创建独立 principle 技能、共享原则加载器或全量必读文件。
 
-| 原 principle 后缀 | 主要归属及适配 |
-|---|---|
-| attack-the-premise | bug-fix、figure-it-out：重复失败后检验共同假设；actor 不均衡统计仅用于合适问题 |
-| boundary-discipline | architect、typescript-best-practices：边界解析，内部信任需要有效不变量 |
-| build-the-lever | figure-it-out：在确定执行或可复核性有收益时写脚本，不强制所有非平凡任务产出工具 |
-| encode-lessons-in-structure | reflect：优先类型/lint/规范机制，不自动写记忆或外部工单 |
-| exhaust-the-design-space | architect、prototype：重大未知比较必要替代方案，不引入强制 arena |
-| experience-first | architect、teach：使用者与维护者体验，不盲目增加功能 |
-| fix-root-causes | bug-fix、tdd：复现并追踪机制，不机械禁止合理 guard |
-| foundational-thinking | architect、figure-it-out：数据、所有权与必要基础设施优先 |
-| guard-the-context-window | 各确需委派技能：限制输出与分工，不单独建 swarm |
-| laziness-protocol | architect、refactoring：减少协调复杂度，不以三层/最小行数替代设计判断 |
-| make-operations-idempotent | architect、验证助手脚本：明确重复和中断语义 |
-| migrate-callers-then-delete-legacy-apis | refactoring：仅协调可变更的内部契约；不擅自破坏外部兼容 |
-| minimize-reader-load | architect、interrogate：减少追踪层次和隐藏状态 |
-| model-the-domain | architect、typescript-best-practices：领域模型优先，局部清楚时保持简单 |
-| never-block-on-the-human | 所有技能授权边界：已授权自主推进，可逆不等于可扩范围 |
-| outcome-oriented-execution | figure-it-out、refactoring：中间失败需计划内且有边界 |
-| prove-it-works | tdd、验证技能、日志：检查真实产物，明确证据层级 |
-| redesign-from-first-principles | architect：重新考虑设计不自动授权重构 |
-| separate-before-serializing-shared-state | architect、各委派技能：独立所有权优先于锁 |
-| sequence-verifiable-units | tdd、figure-it-out：按单元验证，不默认 rebase 或拆红态提交 |
-| subtract-before-you-add | refactoring、interrogate：仅删已确认且任务相关的多余内容 |
-| test-behavior-not-implementation | tdd、验证：看可观察契约；修正按断言名称判定无效测试的说法 |
-| type-system-discipline | typescript-best-practices、architect：消除非法状态，避免无意义强化类型 |
+#### 正文与引用的职责
+
+- `SKILL.md` 包含本技能每次执行都需要的步骤、判断和停止条件。短规则直接写在步骤旁，不只写一个原则名称让执行者猜测，也不为一句话额外读取文件。
+- `references/` 保存较长的判定方法、分支、正反例。正文在相应步骤写明“什么情况下读取哪个文件的哪一节”；普通任务不先读完所有参考。
+- 详细方法只维护一个位置；正文是可独立执行的最小要求，不重复参考文件的整段论述。原版已经很短且改写后无必要扩展的原则只内联，不为目录整齐创建空参考。
+- 用户/宿主已提供的授权、Git 与工作规则不复制成原则正文；只在容易误执行的技能步骤保留任务特有的停止点，例如 architect 的设计请求不自动进入实现。
+- 此安排与当前 skill-creator 的渐进披露、短技能自包含和信息单一维护约定一致；这些是技能格式指导，方法内容仍只借鉴 R21 指定 PStack 目录。
+
+#### 23 条原则的明确落点
+
+下表所有路径相对 `shoshin/skills/`，均为待实施文件。标记“无”表示仅在正文落实，不新建详细参考。每个详细文件按所列主题设稳定标题；可共用同一文件的不同主题节，不按原原则名拆成 23 个文件。
+
+| 原 principle 后缀 | 主维护入口：正文中的具体要求 | 唯一详细落点及读取条件 | 其他使用者 |
+|---|---|---|---|
+| attack-the-premise | `figure-it-out/SKILL.md`：重复失败后检查共同前提 | `figure-it-out/references/execution-methods.md` 的假设复查节；多次修复依赖同一假设时读，actor 分布调查只用于适合问题 | bug-fix 流程保留重新诊断步骤，需要详细方法才引用 |
+| boundary-discipline | `architect/SKILL.md`：标识外部输入、解析边界和内部不变量 | `architect/references/design-review.md` 的边界节；设计验证位置或适配器时读 | TypeScript 技能正文保留边界解析要求，patterns.md 只给 TS 实例 |
+| build-the-lever | `figure-it-out/SKILL.md`：比较直接执行与确定性工具的收益 | `figure-it-out/references/execution-methods.md` 的工具选择节；批量转换或需要可重复检查时读，不强制产出脚本 | refactoring 引用工具选择方法 |
+| encode-lessons-in-structure | `reflect/SKILL.md`：区分执行失误、规则缺陷和结构机制机会 | `reflect/references/reflection-criteria.md` 的机制选择节；证据显示反复出现同类问题时读 | automate-me 仅在偏好提案涉及工程机制时引用，不把普通偏好改成 lint |
+| exhaust-the-design-space | `architect/SKILL.md`：重要未决取舍比较必要方案 | `architect/references/design-review.md` 的替代方案节；存在真实不同设计时读，不强制 arena 或候选数量 | prototype 引用比较方法 |
+| experience-first | `architect/SKILL.md`：从使用者与维护者的实际操作判断设计 | 无；直接结合输入和接口设计 | teach 正文按学习者目标组织解释，不复制产品设计论述 |
+| fix-root-causes | `tdd/SKILL.md`：失败必须对应目标缺陷，修复机制而非削弱检查 | 无；tdd 只承担回归验证部分 | bug-fix 流程正文负责复现→机制调查→修复→同路径验证，不以 tdd 替代诊断 |
+| foundational-thinking | `architect/SKILL.md`：先确认数据、所有权与必要依赖 | 无；与设计步骤合写 | figure-it-out 按实际依赖安排阶段，不重复架构方法 |
+| guard-the-context-window | `figure-it-out/SKILL.md`：先过滤输出，再按收益选择上下文隔离 | `figure-it-out/references/execution-methods.md` 的上下文与委派节；大材料、独立调查或委派取舍不清时读，采用本 Spec 的研究结论 | how、why、reflect、automate-me、interrogate、日志审计、验证维护和 forensics 各保留短触发条件，需要详细判断才引用 |
+| laziness-protocol | `architect/SKILL.md`：评估实际协调负担，不按行数或固定层数决定 | `architect/references/design-review.md` 的复杂度节；新增层次或重构取舍时读 | interrogate 的 review-criteria.md 引用，refactoring 保留任务范围内简化要求 |
+| make-operations-idempotent | `architect/SKILL.md`：涉及可重复副作用时询问重复和中断后的结果 | `architect/references/design-review.md` 的重复与中断节；命令、重试或生命周期设计时读，不移入调度运行时 | 验证生成与维护正文要求自有启动/清理操作可重复检查，复杂设计再引用 |
+| migrate-callers-then-delete-legacy-apis | `engineering-workflow/SKILL.md`：重构时路由 refactoring 流程 | `engineering-workflow/references/workflows/refactoring.md` 的调用者迁移节；仅在已授权的内部 API 整体迁移时读 | architect 识别兼容契约；普通设计不因引用而启动迁移 |
+| minimize-reader-load | `interrogate/SKILL.md`：审查不必要的追踪层次和隐藏状态 | `architect/references/design-review.md` 的复杂度节；与 laziness-protocol 共用判定方法，不另写一份 | interrogate/references/review-criteria.md 给出审查触发与引用 |
+| model-the-domain | `architect/SKILL.md`：模型表达真实关系与状态 | `architect/references/design-review.md` 的领域建模节；状态/所有权存在歧义时读 | TypeScript 的 patterns.md 只提供语言落地实例，不复制通用方法 |
+| never-block-on-the-human | 各技能保留自身授权停止点；不新增通用正文段落 | 无；实际授权规则来自宿主和用户，拒绝原版“可逆即可先做”的泛化 | architect、reflect、automate-me、验证流程按各自任务范围执行 |
+| outcome-oriented-execution | `figure-it-out/SKILL.md`：阶段可有明确限定的中间状态，最终必须满足目标 | `figure-it-out/references/execution-methods.md` 的阶段验收节；计划迁移允许短期不完整时读 | refactoring 保持行为基线；普通重构不继承中间破坏许可 |
+| prove-it-works | `create-verification-skill/SKILL.md`：运行实际路径并记录证据和限制 | `create-verification-skill/references/evidence-standards.md`；设计观测或判断代理自报、截图、mock 等证据是否充分时读 | tdd、维护验证、日志审计各保留自身必需证据步骤，详细等级只引用此文件 |
+| redesign-from-first-principles | `architect/SKILL.md`：新约束出现时重新检验整体设计，不自动扩大重构授权 | 无；与设计步骤合写 | figure-it-out 在设计前提改变时调用 architect，不重写设计流程 |
+| separate-before-serializing-shared-state | `architect/SKILL.md`：先确认共享写入是否必要，再确定独立所有权或串行控制 | `architect/references/design-review.md` 的共享状态节；设计并发写入时读 | 工作委派的 execution-methods.md 只规定写入归属；验证维护保留共享应用单一操作者，不复制通用并发论述 |
+| sequence-verifiable-units | `figure-it-out/SKILL.md`：按可检查单元组织工作 | `figure-it-out/references/execution-methods.md` 的阶段验收节；与 outcome-oriented-execution 共用，明确单元边界可包含哪些中间状态 | tdd 正文保留失败→修复→验证顺序，不复制 Git 提交策略 |
+| subtract-before-you-add | `interrogate/SKILL.md`：只建议删除已确认且任务相关的冗余 | 无；与审查步骤合写 | refactoring 正文在批准范围内清理；不要求每个功能先做无关删除 |
+| test-behavior-not-implementation | `tdd/SKILL.md`：断言可观察契约，检查能否捕获目标缺陷 | 无；正文用必要的短例子解释，不复制原版错误的断言名称黑名单 | 验证技能以用户路径和副作用定义验收，不重复完整测试指导 |
+| type-system-discipline | `typescript-best-practices/SKILL.md`：检查非法状态、来源类型与穷尽处理 | `typescript-best-practices/references/patterns.md` 的类型表达节；选择具体 TS 表达或处理断言时读 | architect 正文保留语言无关的类型/接口要求，只有 TS 细节才引用 |
+
+#### 跨技能复用与维护
+
+1. 其他技能只写自己执行必需的短规则。例如维护验证直接写“共享应用由单一操作者控制”，无需为这句话读取完整 architect。
+2. 需要详细方法时，明确写“通过技能发现定位 architect，仅读取 references/design-review.md 的共享状态节”等说明。不得硬编码本机路径，不调用 owner 的完整技能流程来代替读取材料，不把跨技能读取自动变成子代理任务。
+3. 所有详细文件均由所属技能的 `SKILL.md` 在对应步骤直接链接。读者不必先读另一个 references 才能找到核心方法；参考文件之间可以提供相关链接，但不要求递归遍历。一个任务已读取的同版材料不重复加载。
+4. 各技能的短执行合同与唯一详细方法必须相容。修改详细方法时，搜索技能名、引用路径及本表使用者检查影响；不得用大段文字复制或字符串相等测试保证一致。
+5. 必选整包安装保证这些引用目标存在，结构校验检查路径和声明的章节。单技能使用时，短合同足以完成普通路径；请求触发所需详细方法但 owner 缺失时明确缺失及影响，不静默省略后声称完成，也不临时复制上游原则文件。
+6. 本表是设计与来源追溯材料，不是运行时必读清单。实施时按所在技能阶段写入对应内容；不新建一份手工维护的原则索引或注册表。
+
+所有主维护入口及参考文件均在既定 16 个技能内。新增的详细文件只有 `architect/references/design-review.md`、`figure-it-out/references/execution-methods.md` 和 `create-verification-skill/references/evidence-standards.md`；其余合入 Plan 已指定参考文件，不按原则数量增加文件。
 
 ### 全部普通技能与附属入口的去向
 
