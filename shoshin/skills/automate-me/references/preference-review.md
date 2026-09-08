@@ -1,7 +1,7 @@
-# 偏好审阅
+# Preference review
 
-先列出用户指定材料范围及可访问程度。每项候选保留原表达和上下文，再检查独立场合是否重复、是否被更具体的项目规则限制或被后续指令纠正。重复转述同一句话不是多份独立证据。
+List the user-selected material and its accessibility first. Retain each candidate's original wording and context. Check whether it recurs independently, is limited by a more specific project rule, or was corrected by a later instruction. Repeated retellings of one statement are not independent evidence.
 
-稳定偏好可跨任务适用；“这次不要提交”是局部例外；特定仓库的部署方式属于项目约束。频次只辅助判断，不能压过用户明确范围。冲突先尝试用适用条件解释；无法解释时列出竞争提案，请用户决定，不自行挑一个写入全局配置。
+A stable preference can apply across tasks. Do not commit this time is a local exception; a repository's deployment procedure is a project constraint. Frequency helps judgment but cannot override the user's explicit scope. First try to resolve conflicts through applicability conditions. If that fails, present competing proposals for the user to decide rather than choosing one for global configuration.
 
-比较现有规则与建议文本，已有条目足够就不新增。用户只要求建议时返回可审阅差异和目标位置。新技能需要独立工作价值与清晰触发，不以“个人风格”名义合并所有工程规则。
+Compare proposed text with existing rules and add nothing if an existing entry is sufficient. When the user requests suggestions only, return a reviewable diff and target location. A new skill needs independent practical value and a clear trigger; personal style is not a reason to combine all engineering rules.

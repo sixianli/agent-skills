@@ -1,27 +1,27 @@
-# 实施方法
+# Execution methods
 
-## 假设复查
+## Premise review
 
-两次修复依赖同一前提却失败，先写下共同前提、期望观测和实际反例。检查仪器是否经过真实路径，区分输入错误、观测误差和系统行为。选择能区分竞争解释的下一项检查，不继续堆积兼容分支。
+When two fixes based on the same premise fail, write down that premise, the expected observation, and actual counterexamples. Check whether the instrumentation reaches the real path. Distinguish invalid inputs, observation errors, and system behavior. Choose a next check that separates competing explanations instead of accumulating compatibility branches.
 
-若问题是资源或工作分布失衡，可统计各 actor 的份额，确认固定角色是否导致偏斜；若分布均匀就撤回该假设。这个方法不适用于所有缺陷，不能强制生成无关 census。
+For imbalances in resources or work distribution, measure each actor's share to determine whether fixed roles create skew. Reject that hypothesis if the distribution is uniform. This method does not apply to every defect; do not require an unrelated census.
 
-## 工具选择
+## Tool selection
 
-先做一个代表性样本以理解变换；重复多次且同样检查能重跑时才编写脚本或 codemod。验证输出与样本一致，再扩大范围。工具要限定输入和输出，失败可见，不覆盖用户已有内容。一次两处明确编辑无需工具化。
+Work through one representative sample to understand the transformation. Write a script or codemod when the operation repeats and the same check can be rerun. Verify the output against the sample before expanding scope. Bound tool inputs and outputs, make failures visible, and preserve existing user content. Two clear one-off edits do not need tooling.
 
-## 上下文与委派
+## Context and delegation
 
-先比较主 agent 顺序处理、工具过滤/批量查询和子代理。明确要改善的是证据覆盖、独立发现、主上下文噪声或等待时间，而不是“使用了多代理”。紧密依赖同一变化中状态、小修改或频繁往返留在主上下文。
+Compare sequential work by the primary agent, tool filtering or batched queries, and subagents. Identify whether the benefit is coverage, independent discovery, less noise in the main context, or reduced waiting time; using multiple agents is not itself a benefit. Keep work in the main context when it depends closely on the same changing state, is small, or requires frequent back-and-forth.
 
-自包含调查、大 trace 经工具缩减后仍需大量解释、重要独立审查可以有收益。只有实际收益值得额外总 token、上下文重建和核实成本，且当前宿主规则允许时才委派；默认继承有效模型，不固定模型表或代理数。
+Self-contained investigations, large traces that still need substantial interpretation after filtering, and important independent reviews can benefit. Delegate only when those benefits justify total extra tokens, context reconstruction, and verification costs, and current host rules permit it. Inherit the effective model by default rather than prescribing model tables or agent counts.
 
-提供任务、真实输入版本、必要约束、允许写入范围、预期产物/证据、最大覆盖范围和停止点。不同 agent 并不天然隔离文件系统；共享契约由唯一 owner 修改，共享应用由单一操作者控制。角色提示词不创建权限隔离。
+Provide the task, actual input version, necessary constraints, permitted write scope, expected artifacts and evidence, coverage ceiling, and stopping point. Different agents do not automatically have isolated filesystems. One owner edits shared contracts, and one operator controls a shared application. Role prompts do not create permission isolation.
 
-主 agent 抽查原始证据，尤其是跨边界接合处。停止重复无增量的评审，不无限增派。实际用量不可观测时记录不可得，不把短摘要当节省总 token 的证明；独立上下文不等于跨模型家族独立性。
+The primary agent spot-checks raw evidence, especially boundary connections. Stop reviews that add no new information instead of spawning indefinitely. Record usage as unavailable when it cannot be observed; a short summary does not prove lower total token use. Independent contexts are not independence across model families.
 
-## 阶段验收
+## Phase acceptance
 
-每个单元有固定输入、产物和可检查结果，先验证再叠加变化。阶段可以在明确批准的迁移设计中保留暂时不完整状态，必须注明影响、后续依赖和恢复路径；普通重构不因此获得破坏行为的许可。
+Each unit has fixed inputs, artifacts, and a checkable result. Verify it before layering on another change. An explicitly approved migration design may permit temporarily incomplete states, with their impact, dependencies, and recovery path recorded. Ordinary refactoring does not thereby gain permission to break behavior.
 
-阶段结果分为已验证、未验证、无法判断。最终逐项对照用户原始条件，未满足项保持开放。可执行检查、手工审查和真实操作的证据分别记录，不能互相冒充。正式受治理计划直接使用现有文档生命周期，不复制 PR 数量、固定模型验证线或新状态索引。
+Classify phase results as verified, unverified, or inconclusive. Check the user's original criteria individually at the end and leave unmet items open. Record executable checks, manual review, and real operations as distinct evidence. Use the existing lifecycle for governed plans rather than duplicating PR counts, fixed model-validation tracks, or state indexes.

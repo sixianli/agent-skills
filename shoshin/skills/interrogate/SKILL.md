@@ -1,16 +1,16 @@
 ---
 name: interrogate
-description: "对明确代码或 diff 做独立审查、挑战关键前提并核实发现，含保守注释审查；审查请求不自动应用修改，不固定多模型投票。"
+description: "Independently review specified code or a diff, challenge critical assumptions, and verify findings, including conservative comment review. Review requests do not authorize edits or require a fixed multi-model vote."
 ---
 
 # interrogate
 
-先确定审查意图、变更范围和真实基线，读取关联需求、调用者及已有测试。用户要求审查时保持只读。
+Establish the review intent, change scope, and actual baseline. Read related requirements, callers, and existing tests. Remain read-only when the user requests a review.
 
-按 [审查标准](references/review-criteria.md) 寻找会影响目标的正确性、契约和维护问题；关注隐藏状态、需要来回跳转才能理解的层次及任务相关冗余。只建议删除已确认的冗余，不因“可以更短”扩大改动。涉及注释时读 [注释审查](references/comment-review.md)，保留动机、公共契约、外部限制和安全要求，存疑先调查，不删。
+Use the [review criteria](references/review-criteria.md) to find correctness, contract, and maintainability issues that affect the goal. Look for hidden state, layers that require excessive navigation to understand, and redundancy relevant to the task. Recommend removing only confirmed redundancy; the possibility of shorter code does not justify expanding scope. For comments, read [comment review](references/comment-review.md). Preserve rationale, public contracts, external constraints, and safety requirements. Investigate uncertainty before deleting anything.
 
-默认主 agent 执行。仅当独立调查或审查有具体增益、值得额外 token 成本，且当前宿主允许时才委派；明确输入、证据输出、范围和停止点，核实返回产物并报告遗漏。不凭复杂度或工具可用性启动子代理。 需要独立视角时给审查者原需求、代码和必要上下文，不只给主 agent 的结论。实际工具权限才是隔离，角色提示词不是；记录实际审查方式，不声称普通子代理等价于跨家族多模型审查。某项失败或未覆盖需明确报告。
+The primary agent works by default. Delegate only when independent investigation or review offers a concrete benefit worth the additional token cost and the current host permits it. Specify the inputs, required evidence, scope, and stopping point. Verify returned artifacts and report omissions. Complexity or tool availability alone does not justify spawning subagents. Give an independent reviewer the original requirements, code, and necessary context, not just the primary agent's conclusions. Actual tool permissions provide isolation; a role prompt does not. Record the review method actually used. An ordinary subagent is not equivalent to review across model families. Report failed or uncovered review work explicitly.
 
-主审核实每个发现的具体触发、后果和证据，去重后分类为行动、考虑、记录、驳回；共识不等于成立，单个发现也可能正确。驳回说明缺失的上下文或反证。必要机制与历史调查使用发现到的 [how](../how/SKILL.md) / [why](../why/SKILL.md)。委派判断需要细节时仅读取 figure-it-out 的 [上下文与委派](../figure-it-out/references/execution-methods.md#上下文与委派)；新增层次需分析复杂度时仅读取 architect 的 [复杂度](../architect/references/design-review.md#复杂度)。跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+The lead reviewer verifies each finding's concrete trigger, consequence, and evidence, deduplicates it, and classifies it as Act on, Consider, Noted, or Dismissed. Consensus does not establish validity, and a lone finding may be correct. Explain missing context or counterevidence for dismissed findings. Use discovered [how](../how/SKILL.md) / [why](../why/SKILL.md) skills for necessary mechanism or history investigation. For delegation decisions, read only figure-it-out's [context and delegation](../figure-it-out/references/execution-methods.md#context-and-delegation). To assess added layers, read only architect's [complexity](../architect/references/design-review.md#complexity). Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-交付已核实的可行动发现、位置和最小验证，保留重要驳回与覆盖限制。用户授权应用后才修改；没有发现也要说明真实审查范围，不编造问题凑数。
+Deliver verified, actionable findings with locations and the smallest useful validation. Preserve material dismissals and coverage limits. Apply changes only when authorized. If there are no findings, state the actual review scope rather than inventing issues.

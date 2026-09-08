@@ -1,9 +1,9 @@
-# 证据标准
+# Evidence standards
 
-代码阅读说明实现路径；编译检查说明类型/构建约束；实际执行说明指定输入在指定版本的行为；真实用户路径及副作用观测才能支持相应功能可用。高一层证据也不自动覆盖未测试环境。
+Code reading establishes an implementation path. Compilation establishes type or build constraints. Execution establishes behavior for specified inputs and a specified version. A real user path and observed side effects support the corresponding feature's usability. Stronger evidence still does not cover untested environments automatically.
 
-记录版本、初始状态、输入动作、结果和证据路径。只有最终截图不足以证明操作链；需要操作过程及可见结果，涉及文件、数据或外部消息时也核实其副作用。内部 setter、直接数据库写入、测试专用端点不可冒充用户操作。
+Record the version, initial state, input actions, results, and evidence paths. A final screenshot alone does not prove the action chain. Capture the actions and visible results; also verify side effects involving files, data, or external messages. Internal setters, direct database writes, and test-only endpoints must not stand in for user actions.
 
-mock 只能证明被隔离边界内的行为；dry-run 也要观察它究竟跳过什么，名称不保证无网络或无写入。未获准真实外部副作用的部分说明未验证，不扩大权限。
+Mocks establish behavior only within the isolated boundary. Observe what a dry-run actually skips; its name does not guarantee no network traffic or writes. Mark unauthorized real external side effects as unverified rather than expanding permissions.
 
-代理摘要不是证明。抽查实际文件、命令退出码和原始证据，失败和未触达不能归为通过。证据放在清理目录外；清理后读取或校验其内容。敏感材料只保存当前验证所需内容，报告链接前核查披露范围。
+Agent summaries are not proof. Spot-check actual files, command exit codes, and raw evidence. Failures and unexercised paths cannot count as passes. Store evidence outside cleanup directories and read or validate it after cleanup. Retain only sensitive material needed for the current verification, and check disclosure scope before linking it in a report.

@@ -11,32 +11,32 @@ date: "2026-09-08"
 
 ## Current System
 
-源码已有 16 个技能（15 个独立叶技能和 shoshin 入口）、七份工作流参考、资源检查器和 TSV 日志助手。用户在本轮取消真实项目试点并要求完成源码，入口已接通；真实行为与安装验收仍未完成。
+The source contains 16 skills (15 independent leaf skills and the shoshin entrypoint), seven workflow references, a resource validator, and a TSV logging helper. The user canceled the real-project pilot and requested completion of the source. The entrypoint is connected; real behavior and installation acceptance remain incomplete.
 
-各 SKILL.md 可按显式源码路径审阅，包含任务范围与必要短合同，较长方法按条件加载 references。agents/openai.yaml 保留隐式调用策略，但源码存在不等于宿主已发现或安装。没有 MCP 服务、插件清单、调度器或公共代理层。
+Each SKILL.md can be reviewed through an explicit source path. It contains the task scope and necessary short contracts, with longer methods loaded conditionally from references. agents/openai.yaml preserves implicit invocation, but source presence does not mean host discovery or installation. There is no MCP service, plugin manifest, scheduler, or shared agent layer.
 
 ## Boundaries
 
-- 通用源码：shoshin/skills；只在该来源维护。
-- 宿主能力：工具、权限、技能发现及实际用户授权；包不替代它们。
-- 作者校验：validate-skills.py 复用当前 quick_validate.py，并检查本包声明的资源/owner/章节；不执行技能。
-- 确定性运行助手：show-me-your-work/scripts/log.sh，单一写者追加 TSV，保护既有表头并转义单元格。
-- 项目生成物：目标项目 .agents/skills/verify-<app>，跟随目标代码和实操能力维护。
-- 个人安装目标：~/.agents/skills，本轮尚未执行。
+- Shared source: shoshin/skills; maintain it only there.
+- Host capabilities: tools, permissions, skill discovery, and actual user authorization; the package does not replace them.
+- Author validation: validate-skills.py reuses current quick_validate.py and checks declared resources, owners, and sections; it does not execute skills.
+- Deterministic runtime helper: show-me-your-work/scripts/log.sh appends TSV through one writer, protecting the existing header and escaping cells.
+- Project-generated artifacts: the target project's .agents/skills/verify-<app>, maintained with its code and actual control tools.
+- Personal installation target: ~/.agents/skills; not installed in this run.
 
 ## Data Model
 
-技能以标准 YAML frontmatter 识别 name/description。元数据与运行方法分别放置，不引入额外运行注册表。
+Standard YAML frontmatter identifies skills by name/description. Metadata and execution methods live separately, without an additional runtime registry.
 
-跨技能链接表达名称、资源及可选章节；运行时以发现结果解析实际 owner。不存在 owner 时明确报告依赖缺口。引用详细方法不递归执行 owner 流程。
+Cross-skill links express a name, resource, and optional section. Runtime discovery resolves the actual owner. Report a dependency gap when the owner is absent. Reading a detailed method does not recursively execute its owner's workflow.
 
-决策日志有 ts、phase、decision、why、evidence、result 六列。控制字符折为单行，公式前缀保护及双引号转义保证以 TSV 读取；纠正通过追加，不重写历史。单一写者是当前合同，不声称具有多进程互斥锁。
+The decision log has six columns: ts, phase, decision, why, evidence, result. Control characters are flattened to one line; formula-prefix protection and double-quote escaping preserve TSV readability. Corrections append rather than rewrite history. Single-writer operation is the current contract, not a claim of a multiprocess mutex.
 
 ## Main Flows
 
-解释/审查使用独立叶技能；复杂任务按明确依赖组织单元，验证实际产物。验证生成要求真实用户路径、证据保留和自有资源清理；维护要求双向覆盖检查及失败后恢复。流程正文不会自动创建长期任务或远端交付。
+Explanations and reviews use independent leaf skills. Complex work follows explicit dependencies and verifies actual artifacts. Verification generation requires real user paths, preserved evidence, and cleanup of owned resources. Maintenance requires bidirectional coverage checks and recovery after failure. Workflow text does not automatically create persistent tasks or remote delivery.
 
-本轮曾在 JUST-RAG 运行资产 CLI，用户随后取消试点，未改动的本任务项目生成物已清理；完整 UI、模型调用、AC15/AC16 全路径和部分行为场景仍未通过。具体证据与未完成项保留在执行 Plan，不在架构中手工同步测试计数。
+An asset CLI was run in JUST-RAG during implementation. The user later canceled the pilot, and unchanged project artifacts created by this task were cleaned up. Full UI, model calls, complete AC15/AC16 paths, and some behavioral scenarios remain unpassed. Evidence and unfinished work stay in the execution Plan; this architecture document does not manually synchronize test counts.
 
 ## Backlog Links
 

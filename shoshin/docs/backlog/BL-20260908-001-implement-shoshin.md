@@ -15,16 +15,17 @@ reason: ""
 supersedes: ""
 superseded_by: ""
 ---
+
 # implement-shoshin
 
 ## Summary
 
-按已确认 PRD 与 Spec 实施 P0–P4 技能及参考流程。详细任务仅在 Plan 维护。本轮已完成 16 个技能源码；按用户最新指令停止真实项目试点，完整行为与安装验收仍开放。
+Implement P0–P4 skills and references according to the confirmed PRD and Spec. Maintain detailed tasks only in the Plan. Source for 16 skills is complete; the user stopped the real-project pilot, so full behavior and installation acceptance remain open.
 
 ## Origin
 
-- 来自当前会话中的范围讨论。[SOURCE: docs/prd-v0.1.md]
+- Scope discussion in the current conversation. [SOURCE: docs/prd-v0.1.md]
 
 ## Notes
 
-- 详细执行任务和验收仅在关联 Plan 维护；converted 表示已转为计划，不表示实施完成。
+- Detailed tasks and acceptance are maintained only in the linked Plan. converted means promoted to a plan, not implementation complete.

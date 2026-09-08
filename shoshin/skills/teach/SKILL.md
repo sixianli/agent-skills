@@ -1,18 +1,18 @@
 ---
 name: teach
-description: "根据学习者目标讲清真实代码或变更的机制与动机，复用调查证据形成连贯解释；用于教学请求，短问题不扩展为全面研究。"
+description: "Explain the mechanisms and rationale of real code or changes at the learner's requested depth, weaving existing evidence into a coherent account. Use for teaching requests; do not turn a short question into a full investigation."
 ---
 
 # teach
 
-输入是学习目标、相关代码/变化及已获得的调查。先从对话判断已有知识和所需深度，不机械问答或测验。
+Start with the learning goal, relevant code or change, and existing findings. Infer prior knowledge and needed depth from the conversation, without a scripted interview or quiz.
 
-需要新调查时按宿主发现结果使用 [how](../how/SKILL.md)；只有历史动机确实影响解释时使用 [why](../why/SKILL.md)。复用已有证据，版本变化时只重查相关部分。跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+When fresh investigation is needed, use [how](../how/SKILL.md) as discovered by the host. Use [why](../why/SKILL.md) only when historical rationale materially helps the explanation. Reuse evidence and recheck only relevant parts after version changes. Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-先定义对象及它解决的问题，再沿一个实际输入解释状态、数据和职责如何变化。将概念放回具体代码，说明关键边界与取舍；代码目录可辅助定位，不能替代机制讲解。
+First define the subject and the problem it solves. Then follow an actual input to explain how state, data, and responsibilities change. Ground concepts in concrete code and explain key boundaries and tradeoffs. A directory listing can help navigation but cannot replace a mechanism-based explanation.
 
-保留 why 的证据等级和未知，不把推断改成确定原因。以简体中文为默认，保留精确符号；深度服从用户请求，不强制一两句或固定逐图演示。图确能减少理解负担时再使用。
+Preserve why's evidence levels and unknowns; do not turn inference into a definite cause. Use English by default and preserve exact symbols. Match the user's requested depth rather than imposing a one- or two-sentence limit or a fixed sequence of diagrams. Use a diagram when it reduces the effort required to understand the subject.
 
-教学组织留在主会话，只有独立研究具有明确增益且符合当前委派规则时才拆分；不会因为 how 和 why 是两个技能就并行启动两个 agent。解释请求不修改代码或启动产品。
+Keep teaching in the main conversation. Split out research only when it has a clear independent benefit and complies with current delegation rules. Having separate how and why skills does not justify launching two agents in parallel. Explanation requests do not authorize code changes or starting the product.
 
-交付解释本身，自检读者能否把一个输入追踪到结果、是否能区分实现事实与历史推断。
+Deliver the explanation itself. Check whether a reader can trace an input to its result and distinguish implementation facts from historical inference.

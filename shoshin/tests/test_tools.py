@@ -31,10 +31,10 @@ class ReferenceTests(unittest.TestCase):
         return module.validate(self.root, QUICK, external)
 
     def test_resources_and_sections(self):
-        a = self.skill('alpha', '[method](references/method.md#中文方法)')
+        a = self.skill('alpha', '[method](references/method.md#naïve-method)')
         (a / 'references').mkdir()
         target = a / 'references/method.md'
-        target.write_text('# 中文方法\n')
+        target.write_text('# naïve-method\n')
         self.assertEqual(self.errors(), [])
         target.write_text('# Renamed\n')
         self.assertTrue(any('missing section' in e for e in self.errors()))
@@ -104,12 +104,12 @@ class LogTests(unittest.TestCase):
         return subprocess.run(['bash', str(self.script), str(self.path), *cells], capture_output=True, text=True, check=False)
 
     def test_first_write_and_append(self):
-        self.assertEqual(self.run_log('p1', '选择', '原因', 'artifact.txt', 'verified').returncode, 0)
-        self.assertEqual(self.run_log('p2', '纠正前一行', 'new evidence', 'other.txt', 'open').returncode, 0)
+        self.assertEqual(self.run_log('p1', 'choice ✓', 'reason', 'artifact.txt', 'verified').returncode, 0)
+        self.assertEqual(self.run_log('p2', 'correct the previous row', 'new evidence', 'other.txt', 'open').returncode, 0)
         rows = list(csv.reader(self.path.read_text().splitlines(), delimiter='\t'))
         self.assertEqual(rows[0], ['ts', 'phase', 'decision', 'why', 'evidence', 'result'])
-        self.assertEqual(rows[1][1:], ['p1', '选择', '原因', 'artifact.txt', 'verified'])
-        self.assertEqual(rows[2][1:], ['p2', '纠正前一行', 'new evidence', 'other.txt', 'open'])
+        self.assertEqual(rows[1][1:], ['p1', 'choice ✓', 'reason', 'artifact.txt', 'verified'])
+        self.assertEqual(rows[2][1:], ['p2', 'correct the previous row', 'new evidence', 'other.txt', 'open'])
         self.assertRegex(rows[1][0], r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
 
     def test_controls_and_formula_prefixes(self):

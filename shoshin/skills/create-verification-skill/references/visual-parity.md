@@ -1,7 +1,7 @@
-# 视觉比较
+# Visual comparison
 
-比较前固定版本、视口、DPR、字体加载、数据、滚动位置、动画时间与交互状态，保存变更前基线。基线缺失或环境不一致时只能描述观察，不能宣称视觉一致。
+Before comparing, fix the version, viewport, DPR, font loading, data, scroll position, animation time, and interaction state. Save a baseline before changes. Without a baseline or with inconsistent environments, describe observations only; do not claim visual parity.
 
-使用真实界面与固定截图方法取得前后图，保留原图和差异图。先用一个可控差异证明比较方法确能发现变化。像素精确请求要求零差异，不能把非零值说成一致。其他容差须来自实际验收合同，不临时扩大阈值。
+Capture before and after images from the real interface using the same screenshot method. Preserve originals and diff images. First introduce a controlled difference to show that the comparison detects changes. Pixel-exact acceptance requires zero difference; a nonzero result is not identical. Other tolerances must come from the actual acceptance contract, not an expanded threshold chosen during testing.
 
-差异可能来自实现、环境或错误基线：先辨明原因。更换基线或比较合同需报告具体变更并遵守已有授权；不能为了通过而篡改。共享组件先处理，共享浏览器实例单一操作者，独立组件只有实例与写入确实隔离且收益合理时才分工。
+Differences may come from implementation, environment, or a wrong baseline. Determine the cause first. Report any change to the baseline or comparison contract and follow existing authorization; never alter them just to pass. Handle shared components first. A shared browser instance has one operator. Divide independent components only when instances and writes are actually isolated and the benefit justifies it.

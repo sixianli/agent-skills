@@ -1,9 +1,9 @@
-# 复盘判断
+# Retrospective criteria
 
-## 机制选择
+## Mechanism selection
 
-先核对错误发生时是否已有清楚规则：有规则却遗漏是执行失误，不应复制到另一个技能。指引本身模糊或缺少关键停止条件时，才提出局部技能修正。
+Check whether a clear rule already existed when the error occurred. Ignoring an existing rule is an execution mistake, not a reason to copy it into another skill. Propose a local skill correction when the guidance itself is ambiguous or lacks a critical stopping condition.
 
-若不同场合重复出现同类失败，检查能否用类型、不变量、唯一数据源、脚本或测试直接约束。机制需要明确触发、可观察结果和维护 owner；没有这些条件的“一律加检查”只是新负担。
+If the same class of failure recurs in different contexts, assess whether types, invariants, one source of truth, scripts, or tests can constrain it directly. A mechanism needs an explicit trigger, observable result, and maintenance owner. Adding checks everywhere without those properties creates overhead.
 
-一次性环境故障记录影响即可，不包装成普遍经验。保留相反证据，区分根因与时间上的先后；仅有总结没有产物时明确证据不足。提案应用范围服从当前授权，不自动持久化个人记忆。
+Record the impact of one-off environment failures without turning them into universal lessons. Preserve counterevidence and distinguish causality from temporal sequence. If only a summary exists without artifacts, state that evidence is insufficient. Apply proposals within current authorization; do not persist personal memory automatically.

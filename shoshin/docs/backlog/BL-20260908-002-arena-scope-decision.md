@@ -11,20 +11,21 @@ source_idea: ""
 review_after: ""
 promoted_to: ""
 result: ""
-reason: "用户明确要求待定，未决定纳入当前实施范围。"
+reason: "Explicitly deferred by the user; not included in the current implementation scope."
 supersedes: ""
 superseded_by: ""
 ---
+
 # arena-scope-decision
 
 ## Summary
 
-用户明确 arena 先待定。仅在用户重新要求独立候选竞赛时评估，不作为 architect 或其他技能的前置依赖。
+The user explicitly deferred arena. Reassess only when the user requests independent candidate competition; it is not a prerequisite for architect or other skills.
 
 ## Origin
 
-- 来自当前会话中的范围讨论。[SOURCE: docs/prd-v0.1.md]
+- Scope discussion in the current conversation. [SOURCE: docs/prd-v0.1.md]
 
 ## Notes
 
-- 保持待定，不创建运行时技能目录，也不作为当前实施的前置依赖。
+- Keep deferred. Do not create a runtime skill directory or make it a prerequisite for current implementation.

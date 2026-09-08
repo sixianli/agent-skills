@@ -3,13 +3,13 @@
   "python": "3.11.2 (v3.11.2:878ead1ac1, Feb  7 2023, 10:02:41) [Clang 13.0.0 (clang-1300.0.29.30)]",
   "status_before": "?? .agents/\n",
   "sha256": {
-    "evaluation/清岚扫地机器人_RAG评测集_v1.0/scripts/validate_dataset.py": "49d782923d92627fe73aa2ea7d65733aa7d86d37792258cf434044664a4fca9f",
-    "evaluation/清岚扫地机器人_RAG评测集_v1.0/eval_dataset.jsonl": "24f1e709d3ffff369f4feab7d1252d6e0203a20efd0661920620c97f9399330d",
-    "evaluation/清岚扫地机器人_RAG评测集_v1.0/source_document_manifest.csv": "2c9f2c7025aa674dbdd8f906e8ad1317b6473fa525631e2ec1816809859c0767"
+    "evaluation/\u6e05\u5c9a\u626b\u5730\u673a\u5668\u4eba_RAG\u8bc4\u6d4b\u96c6_v1.0/scripts/validate_dataset.py": "49d782923d92627fe73aa2ea7d65733aa7d86d37792258cf434044664a4fca9f",
+    "evaluation/\u6e05\u5c9a\u626b\u5730\u673a\u5668\u4eba_RAG\u8bc4\u6d4b\u96c6_v1.0/eval_dataset.jsonl": "24f1e709d3ffff369f4feab7d1252d6e0203a20efd0661920620c97f9399330d",
+    "evaluation/\u6e05\u5c9a\u626b\u5730\u673a\u5668\u4eba_RAG\u8bc4\u6d4b\u96c6_v1.0/source_document_manifest.csv": "2c9f2c7025aa674dbdd8f906e8ad1317b6473fa525631e2ec1816809859c0767"
   },
   "command": [
     "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3",
-    "/Users/triggerjames/Documents/sxl_code_work_space/JUST-RAG/evaluation/清岚扫地机器人_RAG评测集_v1.0/scripts/validate_dataset.py"
+    "/Users/triggerjames/Documents/sxl_code_work_space/JUST-RAG/evaluation/\u6e05\u5c9a\u626b\u5730\u673a\u5668\u4eba_RAG\u8bc4\u6d4b\u96c6_v1.0/scripts/validate_dataset.py"
   ],
   "exit_code": 0,
   "stdout": "PASS: 486 questions, 54 source documents\n",

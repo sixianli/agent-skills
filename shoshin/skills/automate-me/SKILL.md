@@ -1,19 +1,19 @@
 ---
 name: automate-me
-description: "根据用户指定的跨会话材料整理稳定工作偏好并提出规则改进；区分一次性要求和项目限制，不自动扫描历史、创建个人模式或写配置。"
+description: "Extract stable working preferences from user-selected material across conversations and propose rule improvements. Distinguish one-off instructions and project constraints; do not scan history, create personal modes, or write configuration automatically."
 ---
 
 # automate-me
 
-输入必须是用户明确指定且可访问的跨会话材料和现有规则；缺少历史访问能力时使用用户提供材料并说明覆盖，不猜测过去偏好。
+Inputs must be accessible cross-conversation material explicitly selected by the user and existing rules. If historical access is unavailable, use supplied material and state coverage. Do not guess past preferences.
 
-1. 为候选偏好保留原表达、来源定位、时间/项目与适用范围；区分稳定偏好、单次指令、项目专属限制和冲突。详细方法见 [偏好审阅](references/preference-review.md)。
-2. 对照已有全局指令、项目规则和技能，已经表达准确的内容复用原位置；不默认生成 handle-mode，不因重复话题强造新技能。
-3. 提出有证据的修改文本、目标位置和影响范围；不确定冲突需用户决定，不能用出现次数覆盖更明确或较新的限定指令。
-4. 只按实际授权应用修改。整理建议本身不授权写记忆、配置或外部系统。需要技能创作时使用实际发现的 skill-creator；跨会话整理不执行当前项目任务或安排自动化。
+1. Retain each candidate preference's original wording, source location, date, project, and scope. Distinguish stable preferences, one-off instructions, project constraints, and conflicts. See [preference review](references/preference-review.md).
+2. Compare existing global instructions, project rules, and skills. Reuse the existing location when it already expresses the preference accurately. Do not generate a handle-mode by default or invent a skill because a topic recurs.
+3. Propose evidence-based replacement text, its target location, and affected scope. Unresolved conflicts need a user decision; frequency cannot override a more explicit or more recent qualifying instruction.
+4. Apply changes only with actual authorization. Recommendations do not authorize memory, configuration, or external writes. Use discovered skill-creator when authoring a skill. Cross-conversation preference review does not execute the current project's tasks or schedule automation.
 
-少量材料主 agent 直接处理。大量自包含片段的分析收益值得额外 token 且宿主允许时才委派，主 agent 负责跨片段冲突核对；详细判断仅读 figure-it-out 的 [上下文与委派](../figure-it-out/references/execution-methods.md#上下文与委派)。只有提案涉及反复工程失误的机制时仅读 reflect 的 [机制选择](../reflect/references/reflection-criteria.md#机制选择)，不调用其完整当前任务复盘。
+The primary agent handles small inputs directly. Delegate large, self-contained excerpts only when the analysis benefit justifies extra tokens and the host permits it. The primary agent checks conflicts across excerpts. For details, read only figure-it-out's [context and delegation](../figure-it-out/references/execution-methods.md#context-and-delegation). Read reflect's [mechanism selection](../reflect/references/reflection-criteria.md#mechanism-selection) only when a proposal concerns mechanisms for recurring engineering mistakes; do not run its entire current-task retrospective.
 
-跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-交付候选偏好、证据、冲突、已有承载处、具体提案和未采纳理由；不会把一次要求泛化为全局习惯，也不声称缺失的历史已搜索。
+Deliver candidate preferences, evidence, conflicts, existing locations, concrete proposals, and reasons for rejecting others. Do not generalize a one-off request into a global habit or claim to have searched unavailable history.

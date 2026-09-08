@@ -1,12 +1,12 @@
-# 设计草图
+# Design sketch
 
-按实际复杂度选择内容，不把模板全部变成必填仪式。
+Choose sections according to actual complexity. The template is not a mandatory checklist.
 
-- 用户或调用者如何使用：输入、动作和结果。
-- 当前机制与证据：要保持的行为及未知。
-- 数据、类型和接口：来源、所有者、状态转移和错误。
-- 模块责任及边界：谁解析、谁决定、谁执行副作用。
-- 重要替代方案：差异、约束及为何选择当前方案。
-- 验证与演进：关键不变量、首个实施单元、旧调用者迁移和风险。
+- User or caller usage: inputs, actions, and results.
+- Current mechanisms and evidence: behavior to preserve and unknowns.
+- Data, types, and interfaces: sources, owners, state transitions, and errors.
+- Module responsibilities and boundaries: who parses, decides, and performs side effects.
+- Material alternatives: differences, constraints, and reasons for the chosen design.
+- Verification and evolution: key invariants, first implementation unit, migration of existing callers, and risks.
 
-只读设计可在回复中给签名/伪代码，不默认创建可执行占位文件。不能把没有调用者的抽象当作已证明需要。
+A read-only design can present signatures or pseudocode in the response; it does not automatically create executable placeholder files. An abstraction without callers is not a demonstrated need.

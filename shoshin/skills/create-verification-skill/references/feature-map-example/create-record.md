@@ -1,17 +1,17 @@
-# 新建记录的文档形状
+# Documentation structure for creating a record
 
 ## Sub-features
 
-列出真实用户能执行的创建及取消行为，注明源码入口和覆盖范围。
+List creation and cancellation actions a real user can perform, with source entrypoints and coverage scope.
 
 ## How to get to it (user POV)
 
-说明权限、数据和初始页面/命令前提，以及用户怎样抵达入口。
+Describe permissions, data, and initial page or command prerequisites, and how the user reaches the entrypoint.
 
 ## Driving it with the verified tool
 
-填入已实跑的真实操作步骤、输入、成功条件及副作用检查。没有执行证据时标为未验证；不把本示例直接复制成可用命令。
+Provide real, executed actions, inputs, success criteria, and side-effect checks. Mark steps without execution evidence as unverified. Do not copy this example as a usable command.
 
 ## Gotchas
 
-记录失败后恢复方式、自有数据清理和证据保留位置；无法到达则记录具体前提和实际尝试。
+Record recovery after failure, cleanup of owned data, and evidence storage. If the feature cannot be reached, record concrete prerequisites and actual attempts.

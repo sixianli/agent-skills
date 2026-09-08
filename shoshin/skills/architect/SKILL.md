@@ -1,22 +1,22 @@
 ---
 name: architect
-description: "从调用者用法、数据与不变量设计类型、接口、所有权和模块边界；用于明确设计或必要结构取舍，设计请求完成后停止，不自动实现。"
+description: "Design types, interfaces, ownership, and module boundaries from caller usage, data, and invariants. Use for explicit design requests or necessary structural tradeoffs; stop after a design-only request rather than implementing automatically."
 ---
 
 # architect
 
-输入是需求、调用者目标和当前约束。已有系统先复用或通过发现机制使用 [how](../how/SKILL.md)；涉及历史兼容约束再使用 [why](../why/SKILL.md)，不重复探索已有可靠证据。
+Start with requirements, caller goals, and current constraints. For an existing system, reuse findings or discover [how](../how/SKILL.md). Use [why](../why/SKILL.md) when historical compatibility constraints matter. Do not repeat investigation already supported by reliable evidence.
 
-1. 先写使用者和维护者怎样完成任务，再推导类型、签名与模块边界。模型应表达真实关系和状态，不以可选字段堆积隐藏互斥关系。
-2. 确认数据来源、所有权和必要依赖；外部输入在明确边界解析，内部维护可说明的不变量。新增约束出现时检验“从一开始就有此约束”会如何设计，不自动扩大重构授权。
-3. 对重要未决取舍比较真正不同的可行方案及代价，不要求固定候选数或跨函数就多方案。评估理解路径和协调负担，不按文件行数或层数判断简洁。
-4. 涉及副作用时说明重复、取消与中断后的结果；涉及并发写入先判断共享是否必要，能分开所有权则分开，真实共享才用明确串行控制。
-5. 输出足以实施的草图、不变量、接口、取舍、风险和首个可验证步骤，参考 [设计模板](references/design-template.md)。设计请求到此停止；实现或重构仅依当前已授权范围继续，不因草图完成而自动写产品代码。
+1. Write how users and maintainers accomplish the task before deriving types, signatures, and module boundaries. Model real relationships and states rather than hiding mutual exclusion in bags of optional fields.
+2. Establish data sources, ownership, and necessary dependencies. Parse external inputs at explicit boundaries and maintain explainable internal invariants. When a new constraint appears, ask how the system would have been designed with that constraint from day one; this does not expand refactoring authorization.
+3. Compare genuinely different, viable options and their costs for material unresolved tradeoffs. Do not require a fixed number of candidates or multiple designs merely because code crosses function boundaries. Assess the effort to understand and coordinate the design, not file length or layer count.
+4. For side effects, explain results after repetition, cancellation, and interruption. For concurrent writes, first decide whether sharing is necessary. Separate ownership where possible; use explicit serialization for genuinely shared state.
+5. Deliver an implementable sketch, invariants, interfaces, tradeoffs, risks, and the first verifiable step, using the [design template](references/design-template.md) as needed. Stop here for a design request. Continue implementation or refactoring only within existing authorization; a completed sketch does not authorize product code changes.
 
-按任务需要读取 [边界](references/design-review.md#边界)、[替代方案](references/design-review.md#替代方案)、[复杂度](references/design-review.md#复杂度)、[领域建模](references/design-review.md#领域建模)、[重复与中断](references/design-review.md#重复与中断) 或 [共享状态](references/design-review.md#共享状态)，不全量加载。
+Read [boundaries](references/design-review.md#boundaries), [alternatives](references/design-review.md#alternatives), [complexity](references/design-review.md#complexity), [domain modeling](references/design-review.md#domain-modeling), [repetition and interruption](references/design-review.md#repetition-and-interruption), or [shared state](references/design-review.md#shared-state) as needed, not all at once.
 
-主 agent 可以自行比较方案；重大未决取舍有独立审查价值且成本合理时才按宿主规则委派，提供原需求和约束并核实结果。实际争议可使用发现到的 [interrogate](../interrogate/SKILL.md)，不依赖竞赛平台。
+The primary agent can compare options directly. Delegate under host rules only when independent review of a significant unresolved tradeoff is worth its cost. Supply the original requirements and constraints and verify the results. Use discovered [interrogate](../interrogate/SKILL.md) for actual disputes, without depending on a competition platform.
 
-跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-自检从调用者到结果的契约是否完整，是否标明未验证假设；骨架和伪代码不表示实现已完成。
+Check that the caller-to-result contract is complete and unverified assumptions are explicit. Scaffolding and pseudocode do not mean implementation is complete.

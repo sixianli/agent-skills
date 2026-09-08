@@ -1,5 +1,5 @@
-# 功能实施
+# Feature implementation
 
-先理解现有用户路径和数据契约，列出新增的可观察行为、失败结果和兼容要求。已有设计足够则直接实施；存在真实结构取舍才使用 architect，保持用户指定停止点。
+Understand existing user paths and data contracts. State the new observable behavior, failure results, and compatibility requirements. Implement directly when the existing design is sufficient. Use architect only for real structural tradeoffs, preserving the user's stopping point.
 
-按依赖逐个实现并验证，共享契约单一 owner。主 agent 默认直接写代码，独立产物的委派需有具体收益和明确写入边界。通过真实用户路径验收输入、状态和副作用，未覆盖环境单独说明；不自动进入 PR 或持续交付。
+Implement and verify in dependency order, with one owner for shared contracts. The primary agent writes code by default. Delegation of independent artifacts needs a concrete benefit and explicit write boundaries. Verify inputs, state, and side effects through real user paths and identify untested environments separately. Do not automatically proceed to a PR or continuous delivery.

@@ -1,7 +1,7 @@
-# 写作方法
+# Writing guidelines
 
-教程给可达成的产物、连续步骤和每一步的观察结果，失败时能定位前提。操作指南围绕用户目标，必要条件分支紧邻相应操作。参考按真实接口组织参数、限制和错误，不把未知写成确定事实。解释沿问题、机制、约束和取舍推进，给有依据的判断。
+A tutorial provides an achievable artifact, consecutive steps, and an observable result for each step, with prerequisites that can be checked when something fails. A how-to guide follows the user's goal and places conditional branches beside the relevant action. Reference material organizes parameters, limits, and errors around real interfaces without presenting unknowns as facts. An explanation develops the problem, mechanism, constraints, and tradeoffs, with evidence-based judgment.
 
-长句只有一个需要连在一起的意思就保留；多层条件难解析时拆开。明确“它”“这项”指向谁，同一概念不循环换近义词。用具体动词，但缺乏来源时宁可说明未知，也不发明数值。
+Keep a long sentence when it carries one connected thought; split it when nested conditions make it hard to parse. Make the referents of it and this explicit. Do not rotate synonyms for the same concept. Prefer concrete verbs, but state uncertainty rather than inventing numbers without sources.
 
-对照原文逐项核对数字、单位、范围、否定和置信措辞。表格用于并列比较，列表用于真实步骤；不要为排版创造分类或固定数量。写 PR 描述只解释问题、行为变化和验证，不包含未经执行的交付声明。
+Compare numbers, units, ranges, negations, and confidence language against the original. Use tables for parallel comparisons and lists for actual steps; do not invent categories or fixed counts for formatting. A PR description explains the problem, changed behavior, and validation, without claiming delivery actions that have not occurred.

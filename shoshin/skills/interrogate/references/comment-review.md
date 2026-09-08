@@ -1,7 +1,7 @@
-# 保守注释审查
+# Conservative comment review
 
-保留设计动机、公开契约、协议限制、兼容约束、安全要求和不明显的算法解释。注释与实现不符时先核对谁代表真实契约，不能默认实现正确。
+Preserve design rationale, public contracts, protocol limits, compatibility constraints, safety requirements, and non-obvious algorithm explanations. When a comment conflicts with implementation, determine which represents the actual contract; do not assume the implementation is correct.
 
-可建议删除已经证实重复显而易见代码、引用已删除符号或描述已不存在路径的注释，给出证据。未能确定的注释继续保留，必要时通过 how/why 调查。
+Recommend removing comments only when evidence shows they repeat obvious code, reference deleted symbols, or describe paths that no longer exist. Keep uncertain comments and investigate through how/why when necessary.
 
-若约束能由类型、测试或检查更可靠地表达，提出具体方案并按当前授权实施；未获准或机制未真正建立前保留约束注释。lint/类型抑制要查实际原因和版本，不一律删除。审查成果是分类意见，不是删除数量。
+If types, tests, or checks can express a constraint more reliably, propose a concrete replacement and implement it within current authorization. Preserve the constraint comment until the replacement is authorized and actually established. Investigate the reason and version behind lint or type suppressions rather than deleting them indiscriminately. The review produces classified findings, not a deletion count.

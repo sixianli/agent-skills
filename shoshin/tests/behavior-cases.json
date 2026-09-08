@@ -2,241 +2,241 @@
   {
     "id": "how-ordinary",
     "skill": "how",
-    "request": "只解释 scripts/validate_all.py 如何读取清单并汇总失败，不修改。"
+    "request": "Explain only how scripts/validate_all.py reads the registry and aggregates failures. Do not edit anything."
   },
   {
     "id": "how-negative",
     "skill": "how",
-    "request": "把这句话缩短：执行完成后返回结果。"
+    "request": "Shorten this sentence: Return the result after execution finishes."
   },
   {
     "id": "how-exception",
     "skill": "how",
-    "request": "仅解释动态注册的消费者；仓库里找不到注册配置。"
+    "request": "Explain dynamically registered consumers only; the registration configuration cannot be found in the repository."
   },
   {
     "id": "why-ordinary",
     "skill": "why",
-    "request": "追溯 JUST-RAG client.ts 的 done 完成检查为何加入，只查本地 Git。"
+    "request": "Trace why the done-completion check was added to JUST-RAG client.ts, using local Git only."
   },
   {
     "id": "why-negative",
     "skill": "why",
-    "request": "列出这个函数接受的参数，不讨论历史。"
+    "request": "List the parameters this function accepts, without discussing history."
   },
   {
     "id": "why-exception",
     "skill": "why",
-    "request": "找不到 PR 讨论时解释作者为什么用了该阈值。"
+    "request": "Explain why the author chose this threshold when the PR discussion cannot be found."
   },
   {
     "id": "blast-radius-ordinary",
     "skill": "blast-radius",
-    "request": "只读分析 log.sh 增加已有表头检查的影响，检查特殊字符与调用者。"
+    "request": "Read-only: assess the impact of adding existing-header validation to log.sh, including special characters and callers."
   },
   {
     "id": "blast-radius-negative",
     "skill": "blast-radius",
-    "request": "请把标题中的错别字改掉。"
+    "request": "Fix the typo in the title."
   },
   {
     "id": "blast-radius-exception",
     "skill": "blast-radius",
-    "request": "严格只读评估一个依赖外部调用者的 API 删除提议，消费者仓库不可用。"
+    "request": "Strictly read-only: assess a proposed API deletion with external consumers whose repository is unavailable."
   },
   {
     "id": "create-verification-skill-ordinary",
     "skill": "create-verification-skill",
-    "request": "为 JUST-RAG 的评测资产 CLI 生成验证技能并实跑，只用本地材料。"
+    "request": "Generate and exercise a verification skill for the JUST-RAG evaluation-asset CLI, using local material only."
   },
   {
     "id": "create-verification-skill-negative",
     "skill": "create-verification-skill",
-    "request": "这个正则是什么意思？"
+    "request": "What does this regular expression mean?"
   },
   {
     "id": "create-verification-skill-exception",
     "skill": "create-verification-skill",
-    "request": "生成聊天验证技能，但没有可用测试后端或测试身份。"
+    "request": "Generate a chat verification skill, but no test backend or test identity is available."
   },
   {
     "id": "tdd-ordinary",
     "skill": "tdd",
-    "request": "为日志的双引号读回缺陷增加回归证明，再修正。"
+    "request": "Add regression evidence for the log double-quote readback defect, then fix it."
   },
   {
     "id": "tdd-negative",
     "skill": "tdd",
-    "request": "只调整一处文档措辞。"
+    "request": "Change the wording in one documentation passage only."
   },
   {
     "id": "tdd-exception",
     "skill": "tdd",
-    "request": "缺陷只发生在不可访问硬件上，当前没有匹配测试工具。"
+    "request": "The defect occurs only on inaccessible hardware, and no matching test tool is available."
   },
   {
     "id": "typescript-best-practices-ordinary",
     "skill": "typescript-best-practices",
-    "request": "只读审查 JUST-RAG ChatMessage 状态与 SSE 解析边界，说明类型的真实限制。"
+    "request": "Read-only: review JUST-RAG ChatMessage states and the SSE parsing boundary, explaining the actual limits of its types."
   },
   {
     "id": "typescript-best-practices-negative",
     "skill": "typescript-best-practices",
-    "request": "解释 Python 列表切片。"
+    "request": "Explain Python list slicing."
   },
   {
     "id": "typescript-best-practices-exception",
     "skill": "typescript-best-practices",
-    "request": "项目 TS 4.8，需要校验配置对象字面量但不能升级编译器。"
+    "request": "This project uses TS 4.8 and needs configuration object-literal checking without a compiler upgrade."
   },
   {
     "id": "maintain-verification-skill-ordinary",
     "skill": "maintain-verification-skill",
-    "request": "维护 JUST-RAG verify-just-rag 的源码与地图，保持产品文件不变。"
+    "request": "Maintain the source references and map in JUST-RAG verify-just-rag, leaving product files unchanged."
   },
   {
     "id": "maintain-verification-skill-negative",
     "skill": "maintain-verification-skill",
-    "request": "用户只要求运行现有一项检查。"
+    "request": "The user asks only to run one existing check."
   },
   {
     "id": "maintain-verification-skill-exception",
     "skill": "maintain-verification-skill",
-    "request": "一次操作失败后 UI 留在错误弹窗；进程健康，且实例属于用户。"
+    "request": "An action failed and left an error modal in the UI. The process is healthy, and the instance belongs to the user."
   },
   {
     "id": "teach-ordinary",
     "skill": "teach",
-    "request": "解释 JUST-RAG SSE 的 final 与 done，让准备修改聊天代码的开发者理解两层状态。"
+    "request": "Explain final and done in JUST-RAG SSE so a developer about to edit chat code understands the two state layers."
   },
   {
     "id": "teach-negative",
     "skill": "teach",
-    "request": "只把上一句话说简单一点。"
+    "request": "Just explain the previous sentence more simply."
   },
   {
     "id": "teach-exception",
     "skill": "teach",
-    "request": "当前实现清楚，但历史设计记录缺失；请解释它为何这样设计。"
+    "request": "The current implementation is clear, but historical design records are missing. Explain why it was designed this way."
   },
   {
     "id": "interrogate-ordinary",
     "skill": "interrogate",
-    "request": "只读审查新日志脚本和资源校验器，给出真实触发与影响。"
+    "request": "Read-only: review the new logging script and resource validator, giving actual triggers and impact."
   },
   {
     "id": "interrogate-negative",
     "skill": "interrogate",
-    "request": "按已批准方案实现明确的小改动。"
+    "request": "Implement a clear small change according to the approved design."
   },
   {
     "id": "interrogate-exception",
     "skill": "interrogate",
-    "request": "独立审查代理失败，剩余结果都说通过，但部分文件无人检查。"
+    "request": "An independent review agent failed. The remaining reviewers report a pass, but some files were never checked."
   },
   {
     "id": "show-me-your-work-ordinary",
     "skill": "show-me-your-work",
-    "request": "为当前复杂任务记录一次方案选择和一次由证据触发的纠正。"
+    "request": "For the current complex task, log a design choice and a correction prompted by evidence."
   },
   {
     "id": "show-me-your-work-negative",
     "skill": "show-me-your-work",
-    "request": "给出一个简单计算结果。"
+    "request": "Give the result of a simple calculation."
   },
   {
     "id": "show-me-your-work-exception",
     "skill": "show-me-your-work",
-    "request": "只有工具产物没有原始会话记录，请核查日志真实性。"
+    "request": "Only tool artifacts are available, without the raw conversation. Check whether the log is truthful."
   },
   {
     "id": "technical-writing-ordinary",
     "skill": "technical-writing",
-    "request": "基于 JUST-RAG README 已有命令写一段评测资产操作说明。"
+    "request": "Write evaluation-asset operating instructions from existing commands in the JUST-RAG README."
   },
   {
     "id": "technical-writing-negative",
     "skill": "technical-writing",
-    "request": "请实际部署 README 中描述的系统。"
+    "request": "Actually deploy the system described in the README."
   },
   {
     "id": "technical-writing-exception",
     "skill": "technical-writing",
-    "request": "润色“当前仅在本地检查通过，真实模型质量未知”，要求具体但没有新证据。"
+    "request": "Polish this statement: Only local checks have passed; real model quality is unknown. Be concrete, but no new evidence is available."
   },
   {
     "id": "architect-ordinary",
     "skill": "architect",
-    "request": "为日志单写者与已有文件保护设计接口，先给设计不写代码。"
+    "request": "Design an interface for a single-writer log and protection of existing files. Show the design first without code changes."
   },
   {
     "id": "architect-negative",
     "skill": "architect",
-    "request": "修正文档拼写。"
+    "request": "Correct documentation spelling."
   },
   {
     "id": "architect-exception",
     "skill": "architect",
-    "request": "现有重构要求改变所有权，但外部兼容消费者范围未知。"
+    "request": "The refactor requires changing ownership, but the scope of external compatibility consumers is unknown."
   },
   {
     "id": "figure-it-out-ordinary",
     "skill": "figure-it-out",
-    "request": "按已批准设计完成技能包源码和检查，逐步核验，安装不在范围内。"
+    "request": "Complete the skill package source and checks from the approved design, verifying each step. Installation is out of scope."
   },
   {
     "id": "figure-it-out-negative",
     "skill": "figure-it-out",
-    "request": "只读总结这个 Plan。"
+    "request": "Read-only: summarize this Plan."
   },
   {
     "id": "figure-it-out-exception",
     "skill": "figure-it-out",
-    "request": "两次修正依赖同一假设但失败，剩余授权只允许修改验证助手。"
+    "request": "Two fixes based on the same assumption failed. Remaining authorization permits changes only to the verification helper."
   },
   {
     "id": "reflect-ordinary",
     "skill": "reflect",
-    "request": "复盘本次漏测日志特殊字符的过程，给具体机制建议，不修改规则。"
+    "request": "Review how special-character log cases were missed in this task. Propose concrete safeguards without changing rules."
   },
   {
     "id": "reflect-negative",
     "skill": "reflect",
-    "request": "整理用户跨会话的稳定偏好。"
+    "request": "Organize the user's stable preferences across conversations."
   },
   {
     "id": "reflect-exception",
     "skill": "reflect",
-    "request": "现有规则已写明要检查引用，但执行者遗漏；另有一次性网络故障。"
+    "request": "Existing rules already require reference checks, but the executor skipped them. There was also a one-off network failure."
   },
   {
     "id": "automate-me-ordinary",
     "skill": "automate-me",
-    "request": "根据用户指定材料整理偏好：两次要求中文；一次本项目不提交；另一个项目允许提交。只交建议。"
+    "request": "Extract preferences from user-selected material: two requests for Chinese responses, one no-commit instruction for this project, and permission to commit in another project. Suggestions only."
   },
   {
     "id": "automate-me-negative",
     "skill": "automate-me",
-    "request": "复盘本次测试漏项。"
+    "request": "Review the test omission in this task."
   },
   {
     "id": "automate-me-exception",
     "skill": "automate-me",
-    "request": "历史访问不可用，材料只含一次临时指令；判断能否形成全局规则。"
+    "request": "Historical access is unavailable, and the material contains only one temporary instruction. Assess whether it supports a global rule."
   },
   {
     "id": "shoshin-ordinary",
     "skill": "shoshin",
-    "request": "只解释一个小函数，保持只读。"
+    "request": "Explain a small function only, keeping the work read-only."
   },
   {
     "id": "shoshin-negative",
     "skill": "shoshin",
-    "request": "你好吗？"
+    "request": "How are you?"
   },
   {
     "id": "shoshin-exception",
     "skill": "shoshin",
-    "request": "修复工作需要真实后台，但只有静态代码且用户要求先看设计。"
+    "request": "The fix needs a real backend, but only static code is available and the user wants to review the design first."
   }
 ]

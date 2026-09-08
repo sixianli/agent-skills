@@ -1,22 +1,22 @@
 ---
 name: figure-it-out
-description: "对已有授权的复杂目标组织有依赖、可验证的实施单元，按证据调整假设；用于多阶段工作，不创建长期任务、自动调度或交付流水线。"
+description: "Organize an authorized complex goal into verifiable implementation units with explicit dependencies and revise assumptions using evidence. Use for multi-phase work; do not create persistent tasks, automatic scheduling, or delivery pipelines."
 ---
 
 # figure-it-out
 
-输入为目标、范围、约束和完成条件。明确最终可观察结果与当前未知，先用已有证据或发现到的 [how](../how/SKILL.md) 理解系统。分析/计划请求只交付相应结果，不变成实施授权。
+Start with the goal, scope, constraints, and completion criteria. State the final observable result and current unknowns. Understand the system through existing evidence or discovered [how](../how/SKILL.md). Analysis and planning requests authorize their respective deliverables, not implementation.
 
-1. 按真实依赖组织可验证单元，先处理会改变设计的高风险未知；每个单元说明输入、产物和通过条件。明确中间状态不等于最终完成。
-2. 比较直接执行、批量工具调用与确定性脚本，只有可重复转换或检查能获益时写工具，不强制每项非平凡工作产出脚本。先过滤大输出，再判断是否值得隔离上下文。
-3. 重复失败后写下共同前提，检查观察方法及反证，再决定新实验；不能不断添加补丁保住旧假设。若设计前提改变，使用 [architect](../architect/SKILL.md) 重新检验并保持当前批准范围。
-4. 执行已明确且获准部分，验证每个单元后继续。失败区分产物错误、检查错误和环境不足；保留、撤回或重新设计都要基于证据。不得降低验收标准掩盖问题。
-5. 复杂任务需要审阅选择过程时使用 [show-me-your-work](../show-me-your-work/SKILL.md)，不复制日志格式。最终对照原始目标逐项检查，报告真实完成和缺口。
+1. Organize verifiable units around actual dependencies. Address risky unknowns that could change the design first. Give each unit inputs, artifacts, and pass criteria. Intermediate progress is not final completion.
+2. Compare direct execution, batched tool calls, and deterministic scripts. Build tools when repeatable transformations or checks benefit; do not require a script for every nontrivial task. Filter large output before deciding whether isolated context is worthwhile.
+3. After repeated failures, state the shared premise, check the observation method and counterevidence, then choose another experiment. Do not keep patching to preserve an old hypothesis. If design assumptions change, use [architect](../architect/SKILL.md) to reassess within the approved scope.
+4. Execute clear, authorized work and continue after verifying each unit. Distinguish artifact defects, faulty checks, and inadequate environments. Keep, revert, or redesign based on evidence. Never lower acceptance standards to hide problems.
+5. Use [show-me-your-work](../show-me-your-work/SKILL.md) when a complex task needs a reviewable decision trail; do not duplicate its format. Finally, check each original goal and report actual completion and gaps.
 
-重复失败时读 [假设复查](references/execution-methods.md#假设复查)；批量工作读 [工具选择](references/execution-methods.md#工具选择)；大材料或考虑分工读 [上下文与委派](references/execution-methods.md#上下文与委派)；迁移允许中间状态时读 [阶段验收](references/execution-methods.md#阶段验收)。
+For repeated failures, read [premise review](references/execution-methods.md#premise-review). For batch work, read [tool selection](references/execution-methods.md#tool-selection). For large material or possible delegation, read [context and delegation](references/execution-methods.md#context-and-delegation). For migrations with permitted intermediate states, read [phase acceptance](references/execution-methods.md#phase-acceptance).
 
-默认主 agent 执行，复杂或可拆分不是委派理由。实际独立收益值得总 token 和协调成本且宿主允许时，限定输入、写入 owner、输出、人数和停止点；核实全部产物，失败/遗漏不能被多数成功覆盖。
+The primary agent works by default; complexity or decomposability alone does not justify delegation. When independent benefits justify total token and coordination costs and the host permits it, bound inputs, write ownership, outputs, agent count, and stopping points. Verify every artifact. Success elsewhere does not cancel a failure or omission.
 
-正式 Spec/Plan 在已采用治理的项目交给实际发现的 document-governance；需要验证真实产品时发现其项目验证技能，缺失或无法操作就报告对应缺口。跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+Use the discovered document-governance skill for formal Specs and Plans in projects that have adopted it. For real product verification, discover the project's verification skill; report gaps if it is missing or the product cannot be controlled. Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-本方法不创建 goal、heartbeat、持久 mode 或自动 PR。完成意味着用户条件满足，不能用一轮测试通过或剩余时间解释未交付目标。
+This method does not create a goal, heartbeat, persistent mode, or automatic PR. Completion means meeting the user's criteria; a passing test run or time remaining does not excuse an undelivered goal.

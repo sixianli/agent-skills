@@ -1,17 +1,17 @@
 ---
 name: why
-description: "追溯代码设计动机、历史取舍、回归与阈值来源，区分直接证据和推断；当前代码机制问题用 how，不自动扫描无关历史。"
+description: "Trace design rationale, historical tradeoffs, regressions, and the origins of thresholds while separating direct evidence from inference. Use how for current mechanisms; do not scan unrelated history automatically."
 ---
 
 # why
 
-输入为设计问题和代码锚点。只调查相关可访问来源，保持只读。
+Start with a design question and a code anchor. Investigate only relevant, accessible sources and remain read-only.
 
-1. 定位文件、符号和目标行，读取近期相关提交，再用 blame、文件改名历史、引入提交及父版本追到变化发生处；最后触碰该行不一定是原决策。
-2. 根据锚点发现相关 PR、ADR、工单或可用连接器；一个提交已回答则停止，不固定七类来源，也不为查询启用写权限或新接入。
-3. 每个重要结论按 [证据等级](references/evidence-levels.md) 标明 Direct、Supported、Inferred、Speculative 或 Unknown。当前代码能解释效果，不能单独证明作者为何选择它。
-4. 遇到相互矛盾材料，保留时间、适用范围和竞争解释；使用 [来源调查](references/source-investigation.md) 选择能区分解释的最小下一步。来源不可访问、未找到和未搜索分别说明。
+1. Locate the file, symbols, and target lines. Read recent relevant commits, then trace blame, renames, the introducing commit, and its parent version to the original change. The last edit to a line may not be the original decision.
+2. Discover relevant PRs, ADRs, issues, or available connectors from those anchors. Stop if one commit answers the question. Do not require seven source categories, enable write access, or add a connection merely to query it.
+3. Classify each material conclusion as Direct, Supported, Inferred, Speculative, or Unknown using the [evidence levels](references/evidence-levels.md). Current code can explain an effect; it cannot by itself establish the author's motivation.
+4. For conflicting accounts, preserve dates, applicability, and competing explanations. Use [source investigation](references/source-investigation.md) to choose the smallest next check that distinguishes them. Distinguish inaccessible sources, searches with no results, and sources not searched.
 
-默认主 agent 执行。仅当独立调查或审查有具体增益、值得额外 token 成本，且当前宿主允许时才委派；明确输入、证据输出、范围和停止点，核实返回产物并报告遗漏。不凭复杂度或工具可用性启动子代理。 多源调查需要详细成本判断时，通过 figure-it-out 仅读取 [上下文与委派](../figure-it-out/references/execution-methods.md#上下文与委派)。跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+The primary agent works by default. Delegate only when independent investigation or review offers a concrete benefit worth the additional token cost and the current host permits it. Specify the inputs, required evidence, scope, and stopping point. Verify returned artifacts and report omissions. Complexity or tool availability alone does not justify spawning subagents. For detailed cost decisions in a multi-source investigation, locate figure-it-out and read only [context and delegation](../figure-it-out/references/execution-methods.md#context-and-delegation). Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-交付证据支持的动机、推断、竞争解释与缺口；面向后续修改时总结应保留、可改变、应避免和仍有风险的约束。复查结论引用和置信措辞，不能用最近提交覆盖更早的相反证据。
+Deliver supported rationale, inferences, competing explanations, and gaps. If a change will follow, summarize constraints as Preserve, Change, Avoid, and Risk. Check citations and confidence language; a recent commit must not erase earlier contradictory evidence.

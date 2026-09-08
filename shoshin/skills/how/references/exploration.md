@@ -1,7 +1,7 @@
-# 探索方法
+# Exploration
 
-先从用户词汇找到入口：CLI 子命令、路由注册、事件订阅或公开 API。读取调用处与定义处，记录输入输出及同步/异步关系。搜索结果只用于定位，未命中不能单独证明不存在消费者。
+Find an entrypoint using the user's vocabulary: a CLI subcommand, route registration, event subscription, or public API. Read both callers and definitions, noting inputs, outputs, and synchronous or asynchronous relationships. Search results locate evidence; a search with no results does not by itself prove there are no consumers.
 
-追踪一个代表性成功路径，再追踪与问题有关的失败路径。查清谁创建、修改、保存和释放状态，注意闭包、队列、缓存、序列化字段与跨语言消费者。遇到第三方行为核对 lockfile 和安装源码，不能套用别的版本。
+Trace one representative success path, then relevant failure paths. Determine who creates, changes, stores, and releases state. Check closures, queues, caches, serialized fields, and consumers in other languages. Verify third-party behavior against the lockfile and installed source, not a different version.
 
-按问题列出已覆盖和未覆盖的分支。严格只读时不用运行项目来补证据，报告静态结论的限度。委派时分的是独立问题，不是目录；主 agent 抽查边界接合处和关键引用。
+Identify covered and uncovered branches for the question. Under strict read-only constraints, do not run the project to obtain evidence; state the limits of static findings. Delegate independent questions, not directories. The primary agent spot-checks boundary connections and key citations.

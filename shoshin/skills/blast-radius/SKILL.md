@@ -1,19 +1,19 @@
 ---
 name: blast-radius
-description: "分析 diff 或变更提议的影响范围、隐含消费者与关键安全前提；用于改动评估，默认只读，不因发现风险自动修复。"
+description: "Assess the impact of a diff or proposed change, including implicit consumers and critical safety assumptions. Work read-only by default; discovering a risk does not authorize fixing it."
 ---
 
 # blast-radius
 
-输入是明确 diff、基线或变更提议。先区分已实现行为与设想；不猜默认分支，不覆盖工作区。
+Start with an explicit diff, baseline, or proposed change. Distinguish implemented behavior from a proposal. Do not guess the default branch or overwrite the worktree.
 
-1. 解释变更改变的可观察契约及安全性依赖的关键前提。可能有多个关键前提，不强求归为一个。
-2. 沿实际调用者、配置、持久化字段、序列化格式、跨语言读取者与异步生命周期找影响；用 [影响检查](references/impact-review.md) 补查符号搜索遗漏的关系。
-3. 分别列出已确认风险、已排除风险和未验证条件；每项说明触发、后果、证据与最小检查。代码指向、逻辑排除、执行检查、真实应用复现是不同证据，不混为已验证。
-4. 严格只读时不写脚本或启动进程；已允许实验时选最小真实检查，报告结果实际证明的范围。发现缺陷交付结论，不自动修复。
+1. Explain the observable contract that changes and the critical assumptions its safety depends on. There may be several; do not force them into one.
+2. Trace actual callers, configuration, persisted fields, serialization formats, readers in other languages, and asynchronous lifecycles. Use the [impact review](references/impact-review.md) to check relationships symbol searches miss.
+3. Separate confirmed risks, cleared risks, and unverified conditions. For each, state the trigger, consequence, evidence, and smallest useful check. A code citation, logical elimination, executable check, and running-app reproduction are different kinds of evidence.
+4. Under strict read-only constraints, do not write scripts or start processes. If experiments are authorized, choose the smallest real check and report exactly what it proves. Deliver findings when a defect is found; do not fix it automatically.
 
-机制缺口时按发现结果使用 [how](../how/SKILL.md)，历史约束影响兼容性判断时使用 [why](../why/SKILL.md)。跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+Use [how](../how/SKILL.md) through host discovery for missing mechanism details, or [why](../why/SKILL.md) when historical constraints affect compatibility. Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-默认主 agent 执行。仅当独立调查或审查有具体增益、值得额外 token 成本，且当前宿主允许时才委派；明确输入、证据输出、范围和停止点，核实返回产物并报告遗漏。不凭复杂度或工具可用性启动子代理。
+The primary agent works by default. Delegate only when independent investigation or review offers a concrete benefit worth the additional token cost and the current host permits it. Specify the inputs, required evidence, scope, and stopping point. Verify returned artifacts and report omissions. Complexity or tool availability alone does not justify spawning subagents.
 
-交付改动解释、关键前提的证明程度、风险和排除理由；核对至少一个非显式调用关系。不得以搜索未命中、多人同意或编译成功证明线上安全。
+Deliver an explanation of the change, the degree of proof for its critical assumptions, risks, and reasons for clearing other risks. Check at least one relationship that is not an explicit call. Do not treat an empty search, reviewer agreement, or successful compilation as proof of production safety.

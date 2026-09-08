@@ -1,18 +1,18 @@
 ---
 name: technical-writing
-description: "编写或审查技术教程、操作指南、参考和原理解释，保持事实、术语及证据限定；文档生命周期由已采用的 document-governance 管理。"
+description: "Write or review technical tutorials, how-to guides, reference material, and explanations while preserving facts, terminology, and evidence qualifications. Use adopted document-governance for document lifecycle operations."
 ---
 
 # technical-writing
 
-输入为用途、受众和已有事实材料，交付适合该用途的技术文本；不因文案提到部署、PR 或提交就执行相应动作。
+Start with the purpose, audience, and existing factual material. Deliver technical prose suited to that purpose. Mentioning a deployment, PR, or commit in the text does not authorize performing it.
 
-先判断主要用途：教程让读者完成一次学习实践，操作指南解决具体任务，参考提供查找事实，解释说明机制和取舍。混合文档可以按区域分工，不机械强制整个文件只能一种模式。详细组织见 [写作方法](references/writing-guidelines.md)。
+Identify the main purpose first: a tutorial guides a learning exercise, a how-to guide solves a specific task, reference material supports factual lookup, and an explanation develops mechanisms and tradeoffs. Mixed documents can assign these purposes to separate sections; do not force an entire file into one mode. See [writing guidelines](references/writing-guidelines.md) for organization.
 
-用真实符号、文件、命令和术语，不凭具体感补造机制或数据。命令保留准确参数和前提，区分已执行结果与预期输出。改写不改变用户结构要求、条件、否定、数字和证据置信度。
+Use real symbols, files, commands, and terminology. Do not invent mechanisms or numbers merely to sound concrete. Preserve exact command arguments and prerequisites. Separate executed results from expected output. Rewriting must preserve the user's structural requirements, conditions, negations, numbers, and confidence levels.
 
-中文按自然语法写，不套用英语字数、冠词或 -ing 规则。先说结论再解释机制与影响；教程和指南提供可观察结果，长背景链接出去。必要技术术语首次解释，后续保持同一名称。
+Write natural English. Do not mechanically enforce word limits or rules about articles and -ing forms at the expense of clarity. Lead with the conclusion, then explain the mechanism and its consequences. Give observable results in tutorials and guides, and link to long background explanations. Explain unfamiliar technical terms on first use and keep their names consistent.
 
-正式文档创建、状态调整或归档且项目已采用治理体系时，发现并使用 document-governance；只做普通措辞编辑无需引入生命周期。缺失治理能力时交付可审阅文字及受限步骤，不能假装已治理完成。
+For formal document creation, status changes, or archiving in a project that has adopted governance, discover and use document-governance. Ordinary wording edits do not require introducing a lifecycle. If governance tools are missing, deliver reviewable prose and identify the blocked steps; do not claim governance is complete.
 
-交付前核对事实来源、命令和交叉引用，删空话但保留真实不确定性。主 agent 通常直接完成，不为每次写作启动审查者。
+Before delivery, verify factual sources, commands, and cross-references. Remove filler while preserving real uncertainty. The primary agent usually writes directly; do not launch a reviewer for every writing task.

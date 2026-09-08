@@ -86,7 +86,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/architect",
-      "description": "从调用者用法、数据与不变量设计类型、接口、所有权和模块边界；用于明确设计或必要结构取舍，设计请求完成后停止，不自动实现。",
+      "description": "Design types, interfaces, ownership, and module boundaries from caller usage, data, and invariants. Use for explicit design requests or necessary structural tradeoffs; stop after a design-only request rather than implementing automatically.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -96,7 +96,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/automate-me",
-      "description": "根据用户指定的跨会话材料整理稳定工作偏好并提出规则改进；区分一次性要求和项目限制，不自动扫描历史、创建个人模式或写配置。",
+      "description": "Extract stable working preferences from user-selected material across conversations and propose rule improvements. Distinguish one-off instructions and project constraints; do not scan history, create personal modes, or write configuration automatically.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -106,7 +106,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/blast-radius",
-      "description": "分析 diff 或变更提议的影响范围、隐含消费者与关键安全前提；用于改动评估，默认只读，不因发现风险自动修复。",
+      "description": "Assess the impact of a diff or proposed change, including implicit consumers and critical safety assumptions. Work read-only by default; discovering a risk does not authorize fixing it.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -116,7 +116,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/create-verification-skill",
-      "description": "为指定真实项目生成并实跑本地验证技能和功能地图，覆盖启动、诊断、用户操作、取证及清理；未实跑的产物只能称草稿。",
+      "description": "Generate and exercise a project-local verification skill and feature map for a specified real project, covering startup, diagnosis, user actions, evidence, and cleanup. Unexecuted output is only a draft.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -126,7 +126,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/shoshin",
-      "description": "为明确的工程请求选择必要的解释、调查、审查、设计、实施或复盘方法；简单任务直接完成，不默认多代理、长期模式或自动交付。",
+      "description": "Select the necessary explanation, investigation, review, design, implementation, or retrospective methods for a specific engineering request. Complete simple tasks directly; do not default to multiple agents, persistent modes, or automatic delivery.",
       "implicit_invocation": true,
       "has_tests": true,
       "checks": [
@@ -169,7 +169,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/figure-it-out",
-      "description": "对已有授权的复杂目标组织有依赖、可验证的实施单元，按证据调整假设；用于多阶段工作，不创建长期任务、自动调度或交付流水线。",
+      "description": "Organize an authorized complex goal into verifiable implementation units with explicit dependencies and revise assumptions using evidence. Use for multi-phase work; do not create persistent tasks, automatic scheduling, or delivery pipelines.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -179,7 +179,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/how",
-      "description": "解释代码机制、调用链、模块归属与边界；用于代码导读和修改前理解。历史动机交给 why，解释请求本身不修改代码。",
+      "description": "Explain code mechanisms, call chains, ownership, and boundaries for code walkthroughs and understanding before a change. Use why for historical rationale; explanation requests do not authorize edits.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -189,7 +189,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/interrogate",
-      "description": "对明确代码或 diff 做独立审查、挑战关键前提并核实发现，含保守注释审查；审查请求不自动应用修改，不固定多模型投票。",
+      "description": "Independently review specified code or a diff, challenge critical assumptions, and verify findings, including conservative comment review. Review requests do not authorize edits or require a fixed multi-model vote.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -199,7 +199,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/maintain-verification-skill",
-      "description": "维护指定项目已有验证技能与功能地图，双向核查源码覆盖并实跑用户路径；修正文档和助手，产品回归只报告，不自动创建 PR。",
+      "description": "Maintain an existing project verification skill and feature map through bidirectional source checks and real user paths. Correct documentation and helpers; report product regressions without automatically creating a PR.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -209,7 +209,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/reflect",
-      "description": "在用户要求复盘当前任务时，区分执行失误、技能缺陷、结构机制机会和一次性问题，提出有证据的改进；不挖掘无关历史或自动写记忆。",
+      "description": "When the user requests a retrospective on the current task, distinguish execution mistakes, skill defects, opportunities for structural safeguards, and one-off issues. Propose evidence-based improvements without mining unrelated history or writing memory automatically.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -219,7 +219,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/show-me-your-work",
-      "description": "为需要审阅决策过程的复杂任务记录单一 TSV 日志并核查证据；只记选择、转向、验证和阻塞，不为普通操作创建日志。",
+      "description": "Keep one TSV decision log and check its evidence for complex tasks whose decisions need review. Record choices, pivots, verification, and blockers; do not create logs for ordinary operations.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -229,7 +229,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/tdd",
-      "description": "在明确 TDD、失败测试、回归测试请求或缺陷已有有效本地测试路径时，建立失败前与修复后证据；不为每个小编辑强造测试框架。",
+      "description": "Establish failing-before and passing-after evidence when TDD, a failing test, or a regression test is requested, or a bug has a practical local test path. Do not force a test harness onto every small edit.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -239,7 +239,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/teach",
-      "description": "根据学习者目标讲清真实代码或变更的机制与动机，复用调查证据形成连贯解释；用于教学请求，短问题不扩展为全面研究。",
+      "description": "Explain the mechanisms and rationale of real code or changes at the learner's requested depth, weaving existing evidence into a coherent account. Use for teaching requests; do not turn a short question into a full investigation.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -249,7 +249,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/technical-writing",
-      "description": "编写或审查技术教程、操作指南、参考和原理解释，保持事实、术语及证据限定；文档生命周期由已采用的 document-governance 管理。",
+      "description": "Write or review technical tutorials, how-to guides, reference material, and explanations while preserving facts, terminology, and evidence qualifications. Use adopted document-governance for document lifecycle operations.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -259,7 +259,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/typescript-best-practices",
-      "description": "设计或审查 TypeScript 的状态、边界解析与调用契约，减少非法状态和重复类型；不因出现 ts 文件自动扩大重构范围。",
+      "description": "Design or review TypeScript state models, boundary parsing, and call contracts to reduce invalid states and duplicate types. The presence of a ts file does not justify expanding a refactor.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -269,7 +269,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/why",
-      "description": "追溯代码设计动机、历史取舍、回归与阈值来源，区分直接证据和推断；当前代码机制问题用 how，不自动扫描无关历史。",
+      "description": "Trace design rationale, historical tradeoffs, regressions, and the origins of thresholds while separating direct evidence from inference. Use how for current mechanisms; do not scan unrelated history automatically.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []

@@ -1,9 +1,9 @@
-# 功能地图示例
+# Feature map example
 
-这是写作形状示例，不是可执行验证技能。生成时从真实项目读取命令/选择器，替换为已核实路径；没有对应功能就不生成此条。
+This illustrates the writing structure; it is not an executable verification skill. During generation, inspect the real project's commands and selectors and replace examples with verified paths. Do not generate an entry if the feature does not exist.
 
-| 功能 | 用户入口 | 验证说明 |
+| Feature | User entrypoint | Verification guide |
 |---|---|---|
-| 新建记录 | 实际菜单或子命令 | [新建记录](create-record.md) |
+| Create a record | Actual menu or subcommand | [Create a record](create-record.md) |
 
-目标项目的地图列出全部已识别范围，不规定固定 3–5 项；不能因现有文件相互一致就断言没有漏项。
+The target project's map lists the entire identified scope, not a fixed three to five features. Consistency among existing files does not establish that no features are missing.

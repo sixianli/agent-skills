@@ -1,5 +1,5 @@
-# 调查
+# Investigation
 
-按当前问题选择 how；历史动机再使用 why。先确定只读范围，解释关键机制并给真实证据和未知。用户问是否确定时独立判断前提，不能迎合其诊断。
+Use how for the current question and why when historical rationale matters. Establish the read-only scope, explain key mechanisms, and provide actual evidence and unknowns. When the user asks whether something is certain, judge the premise independently rather than endorsing their diagnosis.
 
-发现缺陷只报告，不因调查结果自动修改。严格只读时不启动实验或创建脚本；需要实验才能确定时说明最小检查及缺口。交付答案或有依据的选择建议。
+Report defects without automatically changing code. Under strict read-only constraints, do not start experiments or create scripts. If an experiment is needed for certainty, explain the smallest check and the remaining gap. Deliver an answer or an evidence-based recommendation.

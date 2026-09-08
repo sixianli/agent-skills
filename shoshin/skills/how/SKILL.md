@@ -1,21 +1,21 @@
 ---
 name: how
-description: "解释代码机制、调用链、模块归属与边界；用于代码导读和修改前理解。历史动机交给 why，解释请求本身不修改代码。"
+description: "Explain code mechanisms, call chains, ownership, and boundaries for code walkthroughs and understanding before a change. Use why for historical rationale; explanation requests do not authorize edits."
 ---
 
 # how
 
-从问题及给定代码范围出发，默认只读。窄函数问题只追踪回答所需的路径；系统问题先说明解释范围，不把文件目录当作系统模型。
+Start from the question and supplied code scope. Work read-only by default. For a narrow function question, trace only the paths needed to answer it. For a system question, state the scope of the explanation; a directory tree is not a system model.
 
-1. 找到用户操作或调用入口，沿实际调用者追踪到输出，检查配置、注册、依赖注入与回调，不能凭同名符号连接调用链。
-2. 说明输入如何解析、数据如何改变、状态由谁拥有、异步任务如何开始及结束。区分内存、持久化、网络和进程边界。
-3. 对关键不变量找到代码或测试锚点；说明异常、取消与清理路径。无法追踪的动态行为保留为未知，不用猜测填图。
-4. 回答先给系统定位，再用一个具体请求串起机制、取舍与修改时要保留的边界。把源码证据与运行结果分开；检查引用确实支持相邻结论。
+1. Find the user action or call entrypoint and follow actual callers through to the output. Check configuration, registration, dependency injection, and callbacks. Matching symbol names alone do not establish a call chain.
+2. Explain how inputs are parsed, how data changes, who owns state, and how asynchronous work starts and ends. Distinguish memory, persistence, network, and process boundaries.
+3. Anchor key invariants in code or tests. Cover errors, cancellation, and cleanup. Leave untraceable dynamic behavior unknown instead of filling diagrams with guesses.
+4. Lead with the subsystem's role, then use a concrete request to connect mechanisms, tradeoffs, and boundaries a change must preserve. Separate source evidence from execution results. Check that each citation supports the adjacent claim.
 
-多模块、动态路由或需要覆盖检查时读 [探索方法](references/exploration.md)；组织长解释时读 [解释方法](references/explanation.md)。已有调查可复用，版本变化只重查相关事实。
+Read [exploration](references/exploration.md) for multiple modules, dynamic routing, or coverage checks; read [explanation](references/explanation.md) when organizing a long explanation. Reuse existing findings and recheck only relevant facts when the version changes.
 
-默认主 agent 执行。仅当独立调查或审查有具体增益、值得额外 token 成本，且当前宿主允许时才委派；明确输入、证据输出、范围和停止点，核实返回产物并报告遗漏。不凭复杂度或工具可用性启动子代理。 若大量材料使委派取舍不清，通过 figure-it-out 定位并仅读取 [上下文与委派](../figure-it-out/references/execution-methods.md#上下文与委派)。
+The primary agent works by default. Delegate only when independent investigation or review offers a concrete benefit worth the additional token cost and the current host permits it. Specify the inputs, required evidence, scope, and stopping point. Verify returned artifacts and report omissions. Complexity or tool availability alone does not justify spawning subagents. If the volume of material makes the delegation tradeoff unclear, locate figure-it-out and read only [context and delegation](../figure-it-out/references/execution-methods.md#context-and-delegation).
 
-跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-交付机制解释、证据与未知项；自检至少一条入口到结果的真实链。仅解释不启动应用、创建脚本或修复问题；运行实验需属于当前授权。
+Deliver the mechanism, evidence, and unknowns. Check at least one actual entry-to-result chain. An explanation alone does not authorize starting the application, creating scripts, or fixing issues; experiments must fall within the current authorization.

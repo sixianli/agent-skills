@@ -1,15 +1,15 @@
-# 取证
+# Forensics
 
-## 既有产物
+## Existing artifacts
 
-先识别真实 trace/profile/堆快照格式、捕获版本、负载和符号信息。使用合适解析器缩减信号，查询热点、阻塞或保留链，映射到文件与符号。没有源码映射就报告定位缺口；没有配对捕获或实验，相关性只能支持假设，不能称确认根因。
+Identify the actual trace, profile, or heap-snapshot format, capture version, workload, and symbol information. Reduce signals with an appropriate parser, query hotspots, blocking, or retention chains, and map them to files and symbols. Report missing source mappings. Without paired captures or experiments, correlation supports a hypothesis, not a confirmed root cause.
 
-## Live 路径
+## Live analysis
 
-先确认可操作目标及捕获权限。读取现有诊断与新增捕获分开说明；注入、热修改、重启都有副作用，不能称只读。按当前授权捕获真实信号再分析，不因技术上可注入就直接尝试。
+Confirm the controllable target and capture permissions first. Distinguish reading existing diagnostics from collecting a new capture. Instrumentation injection, hot changes, and restarts have side effects and are not read-only. Capture actual signals within current authorization, then analyze them. Technical ability to inject does not authorize an attempt.
 
-## 大产物
+## Large artifacts
 
-先用工具过滤，避免倾倒整个 trace。剩余解释仍大且自包含、有明确收益并符合宿主规则时才委派。详细判断通过 figure-it-out 仅读 references/execution-methods.md 的上下文与委派节，给定捕获、相关源码、输出和停止点；核实摘要和原始定位。
+Filter with tools before reading; do not dump an entire trace. Delegate only when the remaining interpretation is substantial and self-contained, has a clear benefit, and complies with host rules. Discover figure-it-out and read only the Context and delegation section of references/execution-methods.md. Supply the capture, relevant source, output requirements, and stopping point. Verify both summaries and raw locations.
 
-交付捕获、信号、源码归因、假设强度和缺口，诊断请求不修复。证据保留在获准位置，不扫描无关历史或服务。
+Deliver the capture, signals, source attribution, hypothesis strength, and gaps. Diagnosis requests do not authorize fixes. Keep evidence at an authorized location; do not scan unrelated history or services.

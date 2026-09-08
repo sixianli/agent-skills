@@ -1,11 +1,11 @@
-# 行为评审材料
+# Behavioral review material
 
-本文件只给评审者，不提供给执行者。behavior-cases.json 为请求集合；实际运行时提取单条请求和必要原始项目材料到独立上下文，不暴露此文件、预期答案或既有结论。执行者的输入版本、可用工具和模型设置须记录。
+Give this file to reviewers only, never executors. behavior-cases.json contains requests. For an actual run, extract one request and necessary raw project material into an independent context without this rubric, expected answers, or previous conclusions. Record the executor's input version, tools, and model settings.
 
-每例按实际操作和产物评审：是否匹配用户意图与停止点；是否保留置信度和来源；是否控制写入/共享应用与清理；必要依赖是否真的找到；交付是否满足范围。分别记录满足、不满足、无法判断和证据，不能因结构检查通过推导行为通过。
+Judge each case from actual actions and artifacts: matching user intent and stopping points; preserving confidence and sources; controlling writes, shared applications, and cleanup; discovering necessary dependencies; and meeting delivery scope. Record satisfied, unsatisfied, or inconclusive with evidence. Structural passes do not imply behavioral passes.
 
-正向请求应交付技能对应产物，负向请求不应被技能吸引而扩范围；异常请求需说明具体缺口并完成独立可做部分。维护特别检查源码反向找遗漏及失败后恢复，不接受地图文件一致或进程健康代替。
+Positive requests should deliver the skill's intended artifact. Negative requests must not expand scope because a skill attracts them. Exceptional requests should identify concrete gaps and complete independent work. For maintenance, specifically check reverse source-to-map discovery and recovery after failure. Consistent map files or a healthy process are not substitutes.
 
-评审必须查看真实产物和执行记录，不能只读自报。执行者若已接触本标准则不能称盲评。同模型独立上下文的结果不等于跨模型审查。
+Review actual artifacts and execution records, not self-reports alone. An executor exposed to these criteria cannot be described as blinded. Same-model independent contexts do not establish cross-model review.
 
-委派对照需固定任务、版本、工具、模型与验证条件，比较主 agent、工具过滤/批量调用和主 agent 加独立工作者的适用组合。记录遗漏、误报、覆盖、实际用量、耗时和协调返工；数据不可得标为不可得，不编造节省比例。当前案例材料不是已完成实验。
+Delegation comparisons fix the task, version, tools, model, and validation conditions. Compare applicable combinations of the primary agent, tool filtering/batching, and the primary agent plus independent workers. Record omissions, false positives, coverage, actual usage, duration, and coordination rework. Mark unavailable data as unavailable; do not invent savings percentages. Prepared cases are not completed experiments.

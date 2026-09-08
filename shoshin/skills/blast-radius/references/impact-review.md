@@ -1,7 +1,7 @@
-# 影响检查
+# Impact review
 
-从改动后的值反向找消费者：JSON 键、数据库列、URL、事件名和配置名可能没有函数调用关系。确认删除/重命名是否改变外部协议，读取端是否分版本发布。
+Work backward from changed values to their consumers. JSON keys, database columns, URLs, event names, and configuration names may have no function-call relationship. Check whether deletions or renames change an external protocol and whether readers ship on separate version schedules.
 
-对异步操作画出创建、排队、执行、取消、销毁顺序，核对回调是否晚于 owner 生命周期。对缓存查键、失效与持久化；对第三方 API 核对固定版本和本地补丁。
+For asynchronous operations, map creation, queueing, execution, cancellation, and destruction. Check whether callbacks can outlive their owner. For caches, inspect keys, invalidation, and persistence. For third-party APIs, check the pinned version and local patches.
 
-每条风险都要能描述具体坏路径。风险大小取决于真实触发条件和损害，不能凭 diff 行数或触及敏感模块定级。反证要展示为什么坏路径走不到，未知保留最小可执行验证。
+Every risk must describe a concrete failing path. Severity depends on actual trigger conditions and harm, not diff size or whether a sensitive module is touched. Evidence clearing a risk must show why the failing path is unreachable. For unknowns, retain the smallest executable check.

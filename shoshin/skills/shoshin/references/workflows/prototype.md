@@ -1,7 +1,7 @@
-# 原型
+# Prototype
 
-先确定原型要帮助选择的一个具体决定和观测条件，未确定决定时不要建原型。将实验放入获准的隔离目录，最小实现所需行为；不混入正式产品代码。
+Identify one concrete decision the prototype will inform and the observations needed. Do not prototype before there is a decision to make. Put the experiment in an authorized isolated directory and implement only the necessary behavior, separate from production code.
 
-需要比较真实不同方案时，通过 architect 仅读 references/design-review.md 的替代方案节。使用相同输入和操作比较结果，视觉原型实际渲染并操作，行为原型记录输入输出；不用源码阅读代替观察。
+To compare genuinely different options, discover architect and read only the Alternatives section of references/design-review.md. Compare results using identical inputs and actions. Render and operate visual prototypes; record inputs and outputs for behavioral prototypes. Code reading does not replace observation.
 
-交付证据、取舍、推荐及实验位置，明确其为原型。正式实施取决于实际授权；调查入口本身不授权写入实验。
+Deliver evidence, tradeoffs, a recommendation, and the experiment's location, clearly identifying it as a prototype. Production implementation depends on actual authorization; an investigation request alone does not authorize experiment writes.

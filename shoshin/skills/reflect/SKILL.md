@@ -1,17 +1,17 @@
 ---
 name: reflect
-description: "在用户要求复盘当前任务时，区分执行失误、技能缺陷、结构机制机会和一次性问题，提出有证据的改进；不挖掘无关历史或自动写记忆。"
+description: "When the user requests a retrospective on the current task, distinguish execution mistakes, skill defects, opportunities for structural safeguards, and one-off issues. Propose evidence-based improvements without mining unrelated history or writing memory automatically."
 ---
 
 # reflect
 
-输入仅限当前工作过程或用户明确指定的证据。直接使用可见过程、产物和可靠的当前任务定位；拿不到原始记录就说明范围，不能扫描其他任务替代。
+Use only the current work or evidence explicitly selected by the user. Work from visible events, artifacts, and a reliable locator for the current task. If raw records are unavailable, state the scope; do not scan other tasks as a substitute.
 
-1. 找到实际错误或摩擦及其结果，核查对应产物；一次性事故和泛泛建议不自动上升为持久规则。
-2. 分类执行失误、技能指引不足、可结构化约束和一次性问题。已有规则明确而未执行，应改执行方式，不堆重复文字。反复出现同类问题时读 [机制选择](references/reflection-criteria.md#机制选择)。
-3. 对每项提案给证据、原因、建议归属和具体改动；列出不采纳理由。能由类型、检查或工具稳定约束的机会优先评估具体机制，不能把所有偏好变成 lint。
-4. 按实际已有授权应用；只有复盘请求时交付提案，不自动修改技能、配置、记忆或创建外部工单。获准实质技能修改时使用当前发现的 skill-creator，并检查改动后的实际行为。
+1. Identify actual errors or friction and their consequences, and verify the corresponding artifacts. One-off incidents and generic advice do not automatically become lasting rules.
+2. Distinguish execution mistakes, insufficient skill guidance, enforceable constraints, and one-off issues. If an existing rule was clear but ignored, improve execution rather than adding duplicate text. For recurring failures, read [mechanism selection](references/reflection-criteria.md#mechanism-selection).
+3. Give each proposal evidence, a cause, an owner, and a concrete change. Explain rejected proposals. Where types, checks, or tools can reliably enforce a constraint, evaluate that mechanism first; not every preference belongs in lint.
+4. Apply only changes already authorized. A retrospective request alone yields proposals; it does not authorize editing skills, configuration, or memory, or filing external issues. For authorized substantive skill changes, use discovered skill-creator and check the resulting behavior.
 
-默认直接复盘；大材料或独立问题具有明确增益且成本合理时才依宿主规则委派，核实所有提案。详细取舍仅读 figure-it-out 的 [上下文与委派](../figure-it-out/references/execution-methods.md#上下文与委派)。跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+Reflect directly by default. Delegate under host rules only when large material or independent questions offer a clear benefit worth the cost, and verify all proposals. For details, read only figure-it-out's [context and delegation](../figure-it-out/references/execution-methods.md#context-and-delegation). Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-交付采纳建议、未采纳理由及已应用内容（如果获准并实际执行）。不承担跨会话个人偏好整理，也不把提案写成已修复事实。
+Deliver recommended improvements, reasons for rejecting others, and changes actually applied, if authorized. This skill does not organize personal preferences across conversations or present a proposal as a completed fix.

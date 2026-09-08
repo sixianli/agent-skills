@@ -1,11 +1,11 @@
-# 证据等级
+# Evidence levels
 
-| 等级 | 含义 | 表达 |
+| Level | Meaning | Wording |
 |---|---|---|
-| Direct | 当事人的设计记录、评审或提交明确说明该决定的原因 | 记录明确说明… |
-| Supported | 多条独立、相关证据共同支持解释，仍没有直接动机记录 | 这些证据支持… |
-| Inferred | 从代码、时序和约束推导出的合理解释 | 根据…推断，尚无直接记录 |
-| Speculative | 有可能，但不足以排除其他解释 | 一个待检验假设是… |
-| Unknown | 来源缺失或证据无法确定 | 目前无法确定… |
+| Direct | A participant's design record, review, or commit explicitly explains the decision | The record explicitly states... |
+| Supported | Several independent, relevant sources support the explanation, without a direct record of intent | This evidence supports... |
+| Inferred | A reasonable explanation derived from code, timing, and constraints | Based on... we infer...; no direct record has been found |
+| Speculative | Plausible, but the evidence cannot rule out alternatives | One hypothesis to test is... |
+| Unknown | Sources are missing or the evidence cannot establish the answer | We cannot currently determine... |
 
-等级按结论判断，不给整个项目统一置信度。引用记录的真实性也须检查；转述同一来源不是独立支持。改写和教学必须保留降低置信度的限定。没有聊天记录不表示没有发生讨论。
+Assign levels to individual conclusions, not an entire project. Check the authenticity of cited records. Retellings of the same source are not independent support. Rewriting and teaching must retain qualifications that lower confidence. Missing chat records do not mean no discussion occurred.

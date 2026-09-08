@@ -6,337 +6,337 @@ superseded_by: ""
 date: "2026-09-08"
 ---
 
-# Shoshin 详细实施 Plan
+# Shoshin Detailed Implementation Plan
 
 **Source Spec:** [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md]
 
-**Goal:** 按 P0–P4 完成确定技能与参考流程的适配、真实行为验证及最终交付，保持用户确认的范围。
+**Goal:** Complete P0–P4 adaptation, real behavioral verification, and delivery of confirmed skills and workflow references, preserving user-confirmed scope.
 
-**Architecture:** 独立技能提供能力，references 保存方法与流程，轻量入口按需选择；不增加 Cursor 兼容运行时、长期调度或公共委派层。源码集中在 shoshin，个人安装副本与目标项目生成物分开。
+**Architecture:** Independent skills provide capabilities, references hold methods and workflows, and a lightweight entrypoint selects them as needed. No Cursor-compatible runtime, persistent scheduler, or shared delegation layer. Source stays in shoshin, separate from personal installations and project-generated artifacts.
 
-## 执行状态与授权
+## Execution status and authorization
 
-本 Plan 已于 2026-09-08 收到实施授权并开始执行。用户指定 JUST-RAG 为真实试点，确认 unslop/bro 本轮只评估不新增入口，选择 Shoshin 新增内容采用 MIT 并保留上游归属。个人安装与发布尚未授权。当前 16 个技能及参考流程源码已完成。用户随后明确取消 JUST-RAG 试点并要求直接实施源码；P4 入口与登记按该新指令完成，真实项目、完整行为与安装后验收保持未完成，不能将源码存在视作原全部阶段通过。
+Implementation was authorized and began on 2026-09-08. The user selected JUST-RAG as the real pilot, approved assessment-only treatment of unslop/bro without new entrypoints, and chose MIT for new Shoshin content with upstream attribution retained. Personal installation and publishing remain unauthorized. Source for the 16 skills and workflows is complete. The user subsequently canceled the JUST-RAG pilot and requested source implementation directly. P4's entrypoint and registry were completed under that instruction; real-project, full behavioral, and post-installation acceptance remain incomplete. Source presence does not mean all original phases passed.
 
-PRD 规定范围，Spec 规定设计，Plan 只定义执行顺序。新的产品取舍先回写相应上层文档，不能在任务步骤中悄悄决定。名称和位置以 ADR 为准。[SOURCE: docs/prd-v0.1.md] [SOURCE: docs/adr/0001-shoshin-package-identity.md]
+The PRD defines scope, the Spec defines design, and the Plan defines execution order only. Record new product decisions in the appropriate upstream document first, not silently inside task steps. The ADR governs name and location. [SOURCE: docs/prd-v0.1.md] [SOURCE: docs/adr/0001-shoshin-package-identity.md]
 
-当前实施遵守本任务生效的 AGENTS 指令，包括已完成且验证通过的任务变更自动本地提交。执行时重新核对有效规则；这些步骤只约束本项目实施，不写成 Shoshin 安装后的通用 Git 或审批策略。[SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#适配约束及依据]
+Implementation follows this task's effective AGENTS instructions, including automatic local commits for completed, verified task changes. Recheck effective rules when executing. These steps govern this implementation, not Shoshin's general installed Git or approval policy. [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#adaptation-constraints-and-rationale]
 
-初始推进顺序为 P0 → P1 → P2 → P3 → P4。性能、取证等附属流程在基础能力形成后撰写与验证，P4 才接通入口。默认主 agent 执行；只有符合 R22、收益值得额外 token 成本且环境允许时才委派，可拆分或任务复杂本身不构成理由。
+The original order is P0 → P1 → P2 → P3 → P4. Write and verify performance, forensic, and other supporting workflows after foundations exist; connect the entrypoint in P4. The primary agent works by default. Delegate only under R22 when benefits justify extra tokens and the environment permits it; complexity or decomposability alone is insufficient.
 
 ## File Boundaries
 
-- Create：Spec 目标树中 `shoshin/README.md`、许可文件、`skills/`、必要 `scripts/`、有意义的 `tests/`；按阶段创建，不预建空技能。
-- Modify：本 Plan 的执行证据与完成项；当真实设计变化时更新 Spec/PRD；技能可安装后才按既有 schema 更新仓库根 `skills.json` 和 README 的说明。
-- Test：本包的结构/引用检查、脚本测试、行为场景与经授权的真实试点路径。
-- Not in scope：上游 cursor-plugins/pstack、既有 pstack-codex 项目、无关现有技能、个人 Codex 配置和安装目录。试点项目的修改、个人安装按其实际授权执行。
-- 不创建独立 swarm、recall、no-comments、make-bot-ui、Benny 或排除的 PR/编排运行目录。
-- 不提前修改仓库安装清单声称规划中的技能可用。纯文档阶段不更新其可安装列表。
+- Create: the Spec's target `shoshin/README.md`, licensing, `skills/`, necessary `scripts/`, and meaningful `tests/`, by phase, without placeholder skills.
+- Modify: this Plan's evidence and completed items; Spec/PRD for real design changes; root `skills.json` under its existing schema and README only once skills are installable.
+- Test: package structure/references, script tests, behavioral scenarios, and authorized real pilot paths.
+- Not in scope: upstream cursor-plugins/pstack, existing pstack-codex, unrelated skills, personal Codex configuration, and installation directories. Pilot edits and personal installation require their actual authorization.
+- Do not create standalone swarm, recall, no-comments, make-bot-ui, Benny, or excluded PR/orchestration runtime directories.
+- Do not prematurely update the installation registry to imply planned skills are available. The documentation-only phase does not change the installable list.
 
 ## Implementation Tasks
 
-各技能的委派实现以 Spec 的一手资料与适配矩阵为准，之前按少数技能列举的委派场景不是完整清单。[SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#子代理选择依据与逐项适配]
+Use the Spec's first-party evidence and adaptation matrices for delegation in every skill. Earlier examples covering only a few skills are not exhaustive. [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#subagent-evidence-and-individual-adaptations]
 
-### P0-01：确认基线、试点与现有能力
+### P0-01: Confirm baseline, pilot, and capabilities
 
-前置：收到技能实施指令。
+Prerequisite: an instruction to implement the skills.
 
-- [x] 读取当前仓库约定与 Git status，标出已有暂存和未提交修改；不把它们纳入任务提交。
-- [x] 执行 R21 来源限制：只读取指定 cursor-plugins/pstack 作为技能借鉴源；不读取或复用 pstack-codex 的设计、代码、运行时以及相关历史迁移材料。来源不明的现有结论回到允许目录核对，不沿用未核实内容。
-- [x] 重新核对上游版本、50 个技能入口和 23 个 Playbook 清单；逐项比较与 Spec 基线的差异，不自动接入新增范围。
-- [x] 用 openai-docs 核对当前技能发现、元数据、子代理和安装布局；以当前工具 schema 为执行依据。
-- [x] 盘点现有 skill-creator、document-governance、浏览器、终端与项目验证能力；在 Spec 对应合同中记录必要适配，不新建重复能力。
-- [ ] 选择真实试点：需要有可读代码、可运行检查和可观察用户路径。先从现有项目证据判断；涉及项目范围选择或必须修改时取得明确输入，不猜测用户选择。
-- [ ] 明确试点工作目录、已有改动、启动/停止方式、测试数据、网络/账号边界和证据保存位置。无法运行时报告具体缺口，不以临时玩具项目冒充真实验收。
+- [x] Read repository conventions and Git status; identify existing staged and unstaged changes and exclude them from task commits.
+- [x] Enforce R21: use only the specified cursor-plugins/pstack directory for skill adaptation. Do not read or reuse pstack-codex designs, code, runtime, or related historical migration material. Verify uncertain existing claims against the permitted source.
+- [x] Recheck upstream version, all 50 skill entrypoints, and 23 Playbooks against the Spec baseline. Do not adopt new scope automatically.
+- [x] Use openai-docs to verify current discovery, metadata, subagents, and installation layout; execute according to current tool schemas.
+- [x] Inventory skill-creator, document-governance, browser, terminal, and project verification capabilities. Record necessary adaptations in the Spec's contracts without duplicating capabilities.
+- [ ] Select a real pilot with readable code, executable checks, and observable user paths. Start from existing project evidence; obtain explicit input for project selection or required edits rather than guessing.
+- [ ] Establish the pilot directory, existing changes, startup/shutdown, test data, network/account boundaries, and evidence location. Report concrete blockers; a temporary toy project is not real acceptance.
 
-产物：经核实的适配依据与试点范围，记录在本任务下；不得填写未经执行的成功结果。
+Deliverable: verified adaptation basis and pilot scope recorded here. Never enter unexecuted success results.
 
-### P0-02：建立源码、元数据和依赖约定
+### P0-02: Establish source, metadata, and dependency conventions
 
-- [x] 创建 shoshin/README.md，写清真实已实现能力、范围、验证与源码/安装/项目生成物区别。
-- [x] 整理 LICENSE、THIRD_PARTY_NOTICES.md。借鉴部分保留 Lauren Tan/PStack 的 MIT 归属；确认仓库既有许可，无依据时不自行确定新许可。
-- [x] 将 Spec 的技能合同落实为每个技能都要表达的要素：触发、不触发、输入、步骤、输出、必要依赖、限制与验证。只作为作者检查，不建立运行时模板框架。
-- [x] 明确 skill name/目录 slug、agents/openai.yaml 调用策略；不把原版 disable-model-invocation、paths、mode、reminder 直接视为 Codex 合同。
-- [x] 内部资源使用相对路径；跨技能通过实际发现结果定位。确认完整必选集合安装后可用，缺失依赖的结果可解释。
-- [x] 按 Spec“23 条原则的明确落点”逐项落实：短执行合同写入指定 SKILL.md/流程正文，长方法写入唯一详细位置；不在本阶段预建空参考。[SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#23-条原则的明确落点]
-- [x] 每个引用在调用处声明读取条件、owner 技能、文件与主题节；跨技能仅读取材料，不触发 owner 完整流程或子代理。普通任务不加载全量原则。
-- [x] 以 Spec 指定使用者检查一致性，允许不同任务保留必要短规则，禁止复制详细方法；不新增原则注册表或重复索引。
-- [ ] 跨阶段引用单独记录验收范围：P1/P2 可验证正文自包含路径及依赖缺失的报告；依赖 P3 owner 的详细路径在其技能可发现后补验，P4 完整检查通过前不得宣称整包引用已验证。不预建占位 SKILL.md，也不因暂缺 owner 复制一份方法。
+- [x] Create shoshin/README.md with actual capabilities, scope, checks, and source/installation/project-artifact distinctions.
+- [x] Prepare LICENSE and THIRD_PARTY_NOTICES.md, retaining Lauren Tan/PStack MIT attribution. Check existing repository licensing; do not choose a new license without a basis.
+- [x] Express the Spec's authoring requirements in each skill: triggers, non-triggers, inputs, steps, outputs, dependencies, limits, and verification. This is an author check, not a runtime template framework.
+- [x] Define skill names/directory slugs and agents/openai.yaml invocation policy. Do not equate upstream disable-model-invocation, paths, mode, or reminder with Codex contracts.
+- [x] Use relative internal resources and actual discovery for cross-skill references. Establish usability of the installed required set and understandable missing-dependency outcomes.
+- [x] Implement the Spec's 23 principle placements: short contracts in assigned SKILL.md/workflow bodies, longer methods in their sole detailed location. Do not precreate empty references. [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#explicit-placement-of-all-23-principles]
+- [x] At each reference, state the read condition, owning skill, file, and topic. Cross-skill reading does not invoke the owner's workflow or a subagent. Ordinary tasks do not load all principles.
+- [x] Check consistency across the Spec's consumers, allowing necessary short local rules without copying detailed methods or adding a principle registry/index.
+- [ ] Record cross-phase reference acceptance separately. P1/P2 can verify self-contained paths and missing-dependency reporting. Verify detailed paths owned by P3 after those skills become discoverable. Do not claim whole-package reference acceptance before P4, create placeholders, or copy methods to bypass missing owners.
 
-### P0-03：建立最小有效验证入口
+### P0-03: Establish the smallest useful validation entrypoint
 
-- [x] 编写 scripts/validate-skills.py，仅检查本包必要结构、内部资源、已声明依赖和不应出现的运行依赖；避免把正常来源说明中的 Cursor 字样误判为残留执行指令。
-- [x] 优先调用现有 quick_validate.py，不平行实现一套相同 frontmatter 校验器。
-- [x] 为断链、缺依赖、重复名称等真实机制增加小型失败样例；不以 SKILL.md 大段文本相等作为测试。
-- [x] 将代表性行为用例和评审标准分离，保存为测试材料；明确人工/代理评审结果不能由结构测试自动推导。
-- [x] 暂不注册未完成技能；先有可用产物再接入 skills.json 的聚合验证。
+- [x] Write scripts/validate-skills.py for necessary package structure, resources, declared dependencies, and excluded runtime dependencies. Do not misclassify Cursor mentions in source attribution as residual execution instructions.
+- [x] Reuse quick_validate.py rather than implementing a parallel frontmatter validator.
+- [x] Add small failing fixtures for broken links, missing dependencies, duplicate names, and similar mechanisms, not long SKILL.md string comparisons.
+- [x] Separate representative behavioral requests from reviewer criteria as test material. Structural tests do not imply human/agent behavioral results.
+- [x] Register usable artifacts in skills.json aggregate validation, not unfinished skills.
 
-P0 通过条件：有一致作者规则、可执行结构检查、明确试点与行为验收方案，无重复框架。
+P0 passes with consistent author rules, executable structural checks, a defined pilot and behavioral acceptance approach, and no duplicate framework.
 
-### P0-04：设计委派对照验收
+### P0-04: Design delegation comparison
 
-P0 准备用例和比较方法；各技能在对应阶段具备可执行产物后运行，P4 汇总结果。不得为 P0 验收先实现全部技能。
+Prepare cases and methods in P0, run them after each skill has executable artifacts in its phase, and summarize in P4. Do not implement all skills merely to pass P0.
 
-- [ ] 逐项检查 Spec 的 16 个技能和纳入方法的工作流：记录原版强制分工、条件式替代及不适合委派的情形，覆盖 why、automate-me、日志审计与取证。
-- [ ] 选择代表性任务对照主代理、主代理加工具过滤/并行调用、主代理加子代理三种适用方案；无需在每个真实用户任务上重复做实验。
-- [ ] 固定任务、代码/材料版本、可用工具与模型设置，比较正确性、遗漏、误报、证据覆盖、总用量、耗时和协调返工；用量不可观测则明确标记，不能据此宣称更省 token。
-- [ ] 覆盖小改动、紧耦合缺陷、多源调查、大 trace、独立审查及共享应用操作；将清楚的成功/失败倾向写入对应技能，不把少数试点外推为统一数值阈值。
-- [ ] 区分主上下文占用与总 token；检查为节省摘要长度是否丢失必要证据。明确退出条件，不无限增加代理或评审轮数。
-- [ ] 当前只完成文献研究与静态适配评估，本项实跑未开始；不得称为已验证性能优化。
+- [ ] Check all 16 skills and adopted workflows in the Spec, recording upstream mandatory delegation, conditional alternatives, and unsuitable cases, including why, automate-me, log audits, and forensics.
+- [ ] Compare representative tasks using the primary agent, the primary agent with tool filtering/parallel calls, and the primary agent with subagents where applicable. Do not repeat experiments on every real user task.
+- [ ] Fix tasks, code/material versions, tools, and model settings. Compare correctness, omissions, false positives, evidence coverage, total usage, time, and coordination rework. Mark unobservable usage unavailable; do not claim token savings from it.
+- [ ] Cover small edits, tightly coupled defects, multi-source research, large traces, independent review, and shared-app operation. Record clear success/failure tendencies in relevant skills without extrapolating a few pilots into universal numerical thresholds.
+- [ ] Distinguish main-context occupancy from total tokens. Check that shorter summaries retain necessary evidence. Define stopping conditions; do not add agents or rounds indefinitely.
+- [ ] Only literature research and static adaptation assessment are complete; execution comparisons have not begun and are not verified performance improvements.
 
-### P1-01：how
+### P1-01: how
 
-文件：skills/how/SKILL.md、必要 agents/openai.yaml、references/exploration.md、references/explanation.md。
+Files: skills/how/SKILL.md, agents/openai.yaml as needed, references/exploration.md, references/explanation.md.
 
-- [x] 提取入口→调用链→数据变化→所有权→边界→未知的探索方法。
-- [x] 删除固定 Cursor Task 参数、固定模型名及复杂问题自动委派的规定；调用技能不等于启动子代理。
-- [x] 定义复杂任务的独立分工、必要上下文、结果核实与未覆盖项，默认只读。
-- [ ] 验收一个窄函数问题和一个真实跨模块问题；抽查引用与调用关系。
-- [ ] 用“仅解释，不修改”请求确认不写代码、不改变 Git；无法追踪时明确说未知。
+- [x] Extract entrypoint → call chain → data changes → ownership → boundaries → unknowns.
+- [x] Remove fixed Cursor Task parameters, model names, and automatic delegation for complex questions. Skill invocation is not subagent creation.
+- [x] Define independent work, necessary context, verification, and uncovered scope for complex tasks; read-only by default.
+- [ ] Verify a narrow function question and a real cross-module question; spot-check references and call relationships.
+- [ ] Use an explanation-only request to confirm no code/Git changes and explicit unknowns for untraceable behavior.
 
-映射：AC01、AC02、AC03、AC08。
+Mapping: AC01, AC02, AC03, AC08.
 
-### P1-02：blast-radius
+### P1-02: blast-radius
 
-文件：skills/blast-radius/SKILL.md、references/impact-review.md。依赖：how；历史问题的 why 接入在 P1-05 后补验。
+Files: skills/blast-radius/SKILL.md, references/impact-review.md. Dependencies: how; verify why's historical dependency after P1-05.
 
-- [x] 定义 diff/变更提议输入；追踪调用者、持久化、序列化和异步生命周期。
-- [x] 将“关键安全前提”与证明等级分开，区分已确认风险、已排除风险和未验证条件。
-- [x] 严格只读时不自动创建脚本、启动进程或访问会产生副作用的路径；允许实验时使用最小有效检查。
-- [ ] 在真实 diff 上验证至少一条关键前提及一条非显式调用关系；无法证明时保持未验证。
-- [ ] 负向检查：不会因发现问题直接修复、启动 arena 或创建 PR。
+- [x] Define diff/proposal inputs and trace callers, persistence, serialization, and asynchronous lifecycles.
+- [x] Separate critical safety assumptions from proof levels and distinguish confirmed, cleared, and unverified risks.
+- [x] Under strict read-only constraints, do not create scripts, start processes, or enter side-effecting paths. Use the smallest useful check when experiments are allowed.
+- [ ] Verify at least one critical assumption and one non-explicit call relationship on a real diff; retain unverified status without proof.
+- [ ] Negative check: findings do not trigger fixes, arena, or PR creation.
 
-映射：AC02、AC03、AC04。
+Mapping: AC02, AC03, AC04.
 
-### P1-03：create-verification-skill
+### P1-03: create-verification-skill
 
-文件：skills/create-verification-skill/SKILL.md、references/feature-map-example/、references/evidence-standards.md；真实生成物位于获准试点的 .agents/skills/verify-<app>/。
+Files: skills/create-verification-skill/SKILL.md, references/feature-map-example/, references/evidence-standards.md. Generated artifacts belong in the authorized pilot's .agents/skills/verify-<app>/.
 
-- [x] 接入 skill-creator；从项目读取启动、操作、观测、隔离和清理方法，不留下示例占位命令。
-- [x] 输出 Launch、Doctor、Drive、Evidence、Cleanup、Helpers 与功能地图；各功能有用户路径和通过条件。
-- [ ] 使用真实工具检查应用控制能力，不把内部 setter、直接写数据库或 mock 当成 UI 复现。
-- [x] 实际执行启动→健康检查→一个功能→取证→清理；再检查证据文件仍存在。
-- [ ] 检查失败迭代也清理自己创建的资源；已有用户实例与数据不受影响。
-- [x] 能力或账号缺失时生成结果标为草稿/受阻，不宣称验证技能已交付可用。
+- [x] Use skill-creator and read actual startup, control, observation, isolation, and cleanup methods from the project, without placeholder commands.
+- [x] Produce Launch, Doctor, Drive, Evidence, Cleanup, Helpers, and a feature map with user paths and pass criteria.
+- [ ] Check application control with real tools; internal setters, direct database writes, and mocks are not UI reproductions.
+- [x] Execute startup → health check → one feature → evidence → cleanup, then verify evidence files survive.
+- [ ] Confirm failed iterations also clean owned resources without affecting existing user instances/data.
+- [x] Mark output draft/blocked when tools or accounts are missing rather than claiming a usable delivered skill.
 
-映射：AC04、AC05、AC07、AC12。
+Mapping: AC04, AC05, AC07, AC12.
 
-### P1-04：tdd
+### P1-04: tdd
 
-文件：skills/tdd/SKILL.md。
+File: skills/tdd/SKILL.md.
 
-- [x] 保留明确测试目标下的先失败、修复、再通过步骤，默认使用现有有效测试路径。
-- [x] 修正按断言名称判废、强制独立红态提交、所有缺陷都要新增测试的规则。
-- [x] 在真实缺陷上记录测试名称、失败原因、修复后结果与必要邻近检查。
-- [ ] 验证昂贵或不清楚的测试路径能选择恰当替代证据；不降低断言适配错误实现。
+- [x] Retain fail → fix → pass for clear test targets, using an existing practical test path by default.
+- [x] Correct assertion-name rejection, mandatory separate red-state commits, and tests-for-every-defect rules.
+- [x] Record test names, failure causes, passing-after results, and adjacent checks for a real defect.
+- [ ] Verify appropriate alternative evidence for expensive or unclear test paths, without weakening assertions to fit incorrect behavior.
 
-映射：AC04、AC12。
+Mapping: AC04, AC12.
 
-### P1-05：why
+### P1-05: why
 
-文件：skills/why/SKILL.md、references/evidence-levels.md、references/source-investigation.md。
+Files: skills/why/SKILL.md, references/evidence-levels.md, references/source-investigation.md.
 
-- [x] 用代码锚点建立 Git/PR 调查路径；按当前可用连接器发现相关来源。
-- [x] 保留 Direct/Supported/Inferred/Speculative/Unknown 的实质区别，可用中文说明。
-- [x] 不强制固定七类来源或打开写权限获取 MCP；没有 gh 登录或外部来源时明确缺口。
-- [x] 对真实设计问题查证历史；反向检查是否用当前代码替作者编动机。
-- [ ] 验证证据矛盾和数据源不可用时不会伪造来源；补验 blast-radius 的历史依赖。
+- [x] Establish Git/PR investigation from code anchors and discover relevant sources through available connectors.
+- [x] Preserve the substantive Direct/Supported/Inferred/Speculative/Unknown distinction with clear explanations.
+- [x] Do not require seven source categories or write access to obtain MCP. State gaps without gh authentication or external sources.
+- [x] Investigate a real design question historically; check that current code is not used to invent author motivation.
+- [ ] Verify conflicting evidence and unavailable sources do not produce fabricated citations; verify blast-radius's historical dependency.
 
-映射：AC02、AC03、AC07。
+Mapping: AC02, AC03, AC07.
 
-### P1-06：typescript-best-practices
+### P1-06: typescript-best-practices
 
-文件：skills/typescript-best-practices/SKILL.md、references/patterns.md。
+Files: skills/typescript-best-practices/SKILL.md, references/patterns.md.
 
-- [x] 整理判别联合、边界 schema、派生类型、穷尽检查与必要品牌类型实例。
-- [x] 采用试点固定版本；避免不兼容语法，修改 paths 触发假设和一律禁止 as 的表述。
-- [x] 对真实代码做范围内类型修改或审查，证明改善的是非法状态和调用契约，不只是增加类型层。
-- [x] 跑受影响的类型/行为检查；保留清楚且无需强化的普通类型。
+- [x] Provide discriminated unions, boundary schemas, derived types, exhaustiveness, and justified brands.
+- [x] Use the pilot's pinned version, avoid unsupported syntax, and revise paths-trigger assumptions and blanket as prohibitions.
+- [x] Review or edit real code within scope to demonstrate improved invalid-state prevention and call contracts, not merely more types.
+- [x] Run affected type/behavior checks; retain clear ordinary types that need no strengthening.
 
-映射：AC02、AC04、AC12。
+Mapping: AC02, AC04, AC12.
 
-### P1-G：基础阶段验收
+### P1-G: Foundation acceptance
 
-- [ ] 六个技能各有正向、负向、异常场景结果，结构与引用检查通过。
-- [ ] 试点验证技能确实执行成功，或明确标记未完成并保留阻塞；没有实操不得关闭 P1。
-- [ ] 说明静态与运行证据的界限，检查无未授权远端操作。
-- [ ] 将可用技能登记到 skills.json，遵循既有聚合验证，不注册后续空目录。
-- [ ] 按独立目的本地提交已完成的变更；只暂存本任务内容，运行 git diff --cached --check。
+- [ ] Each of the six skills has positive, negative, and exceptional results, with structural/reference checks passing.
+- [ ] The pilot skill actually ran successfully, or remains explicitly incomplete with blockers. Do not close P1 without real operations.
+- [ ] Explain static/runtime evidence boundaries and check for unauthorized remote actions.
+- [ ] Register usable skills in skills.json under existing aggregate validation, not future empty directories.
+- [ ] Commit completed changes locally by independent purpose, staging only task content and running git diff --cached --check.
 
-### P2-01：maintain-verification-skill
+### P2-01: maintain-verification-skill
 
-文件：skills/maintain-verification-skill/SKILL.md。前置：P1-03 生成物真实可用。
+File: skills/maintain-verification-skill/SKILL.md. Prerequisite: a genuinely usable P1-03 artifact.
 
-- [ ] 校验地图索引、功能文件与源码证据；每个功能均有明确结果。
-- [x] 按 Spec 维护合同实施源码→地图的反向检查：确定近期变更范围，从实际入口、路由或命令识别未收录的用户功能，以源码证据核实后补齐地图、前提与验证方法；基线或检查范围不足时报告限制。[SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#验证维护的覆盖与恢复合同]
-- [x] 源码分析默认直接完成，仅在收益值得额外 token 成本时委派，真实共享应用由单一操作者控制。
-- [x] 首次 Drive 和每个新会话前运行 Doctor；失败或意外行为后重新诊断。进程健康但界面残留弹窗或卡住时，先恢复已知状态，再继续功能验证。
-- [x] 恢复仅涉及获准控制的状态与自有资源；不能安全恢复则报告阻塞，不重启用户已有实例或删除用户数据。Doctor 因技能漂移失败时，范围内修正后有界重试一次，不无限重复。
-- [ ] 按地图执行实际功能；无法到达的路径记录前提与尝试，不标为通过。产品回归判断基于有效操作前提，排除前一失败残留状态造成的连锁误报。
-- [x] 将文档漂移、助手脚本缺陷、产品回归分开；修改限验证技能自身，产品缺陷只报告。
-- [ ] 修复验证助手后重跑受影响路径，确保清理不破坏证据。
-- [ ] AC15：准备源码新增“导出”等真实可识别入口、但地图与现有功能文件仍彼此一致的场景，确认维护发现遗漏并补齐验证；同时检查无新增功能时不会凭空扩充地图。
-- [ ] AC16：让一次 Drive 失败并留下进程仍健康的无效界面状态，确认下一操作前重新诊断并恢复；恢复不可用时停止相关验证并报告阻塞，不误报多个产品回归。核查恢复后证据仍存活、无用户资源受损。
+- [ ] Check map index, feature files, and source evidence, with an explicit result per feature.
+- [x] Implement source → map checks from the Spec: establish recent-change scope, identify unmapped user features from actual entrypoints/routes/commands, verify source evidence, and add map entries, prerequisites, and methods. Report baseline/scope limits. [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#verification-maintenance-coverage-and-recovery-contract]
+- [x] Analyze source directly by default, delegating only when benefits justify tokens; one operator controls the shared real app.
+- [x] Run Doctor before first Drive and every fresh session, and after failure/surprise. Restore known UI state after modals/hangs even if the process is healthy.
+- [x] Recover only authorized state and owned resources. Report blocked when unsafe; never restart existing user instances or delete user data. For skill-drift Doctor failure, correct within scope and retry once, not indefinitely.
+- [ ] Exercise mapped features. Record prerequisites and attempted routes for unreachable paths without passing them. Classify regressions only under valid conditions, excluding cascades from leftover failure state.
+- [x] Distinguish documentation drift, helper defects, and product regressions. Edit verification-owned files only; report product defects.
+- [ ] Rerun affected paths after helper fixes and verify cleanup preserves evidence.
+- [ ] AC15: prepare a real identifiable new source entrypoint, such as export, while the existing map/files remain consistent. Confirm maintenance finds and verifies the omission; also check that no new feature means no invented map expansion.
+- [ ] AC16: fail a Drive and leave invalid UI state with a healthy process. Confirm rediagnosis/recovery before the next action; if recovery is unavailable, stop and report blocked rather than multiple false regressions. Verify surviving evidence and unharmed user resources.
 
-映射：AC05、AC15、AC16。以上为待实施与实跑验收，文档补齐不表示场景已通过。
+Mapping: AC05, AC15, AC16. These are implementation and execution acceptance requirements; complete documentation does not mean the scenarios passed.
 
-### P2-02：teach
+### P2-02: teach
 
-文件：skills/teach/SKILL.md。前置：how、why。
+File: skills/teach/SKILL.md. Prerequisites: how, why.
 
-- [x] 按使用者目标与现有知识选择概念、机制和动机；不固定问答节奏或英语输出。
-- [x] 复用调查结果，保留 why 的不确定性，不重做全部探索。
-- [ ] 在真实子系统教学中检查连贯性、证据与深度；只在有用时提供图示。
-- [ ] 验证“解释这个变化”不触发修改，以及短问题不会被扩成全面研究。
+- [x] Select concepts, mechanisms, and rationale by learner goals and existing knowledge, without a fixed Q&A cadence. The later English-only decision sets the default output language to English.
+- [x] Reuse findings, preserve why's uncertainty, and avoid repeating full exploration.
+- [ ] Verify coherence, evidence, and depth while teaching a real subsystem; use diagrams only when useful.
+- [ ] Verify an explanation request does not trigger edits and a short question does not become a broad investigation.
 
-### P2-03：interrogate 与保守注释审查
+### P2-03: interrogate and conservative comment review
 
-文件：skills/interrogate/SKILL.md、references/review-criteria.md、references/comment-review.md。
+Files: skills/interrogate/SKILL.md, references/review-criteria.md, references/comment-review.md.
 
-- [ ] 明确审查意图与范围；独立视角有望发现主 agent 遗漏且值得额外 token 成本时，提供必要需求、代码与证据作为独立审查输入，由主审核实、去重和分类。
-- [x] 移除固定跨家族模型、默认四人、失败时自动另开 PR 改配置的行为。
-- [x] 注释审查保留设计动机、公共契约、外部限制及安全要求；存疑时调查/建议，不删。
-- [x] 验收一个真实 diff，包含确实成立与因上下文被驳回的发现；多代理自报不直接成为结论。
-- [x] 审查请求本身不修改；用户单独要求应用已确认修改时再进入实施。
+- [ ] Establish intent and scope. When independent review can find omissions worth extra tokens, provide requirements, code, and evidence; the lead verifies, deduplicates, and classifies results.
+- [x] Remove fixed cross-family models, default four-reviewer teams, and automatic configuration-fix PRs after failures.
+- [x] Preserve rationale, public contracts, external constraints, and safety comments. Investigate or propose when uncertain; do not delete.
+- [x] Review a real diff with both established and contextually dismissed findings; agent reports are not conclusions by themselves.
+- [x] Review alone does not edit. Implement confirmed changes when the user separately authorizes application.
 
-### P2-04：show-me-your-work
+### P2-04: show-me-your-work
 
-文件：skills/show-me-your-work/SKILL.md、references/decision-log-template.tsv、scripts/log.sh 及必要脚本测试。
+Files: skills/show-me-your-work/SKILL.md, references/decision-log-template.tsv, scripts/log.sh, and necessary script tests.
 
-- [x] 审查原 log.sh 及 MIT 归属；保留单行单元格、特殊字符和表格公式注入防护。
-- [x] 明确单一写者和记录粒度；只记录选择、转向、验证和阻塞，不复制运行日志。
-- [x] 适配当前任务证据定位，不假设 Cursor transcript 路径；拿不到原始证据时标注审计范围。
-- [x] 测试参数错误、首次写入、再次追加、制表/换行、公式前缀和写入失败；检查结果而非实现调用次数。
-- [x] 用一次真实复杂任务抽查日志，每个关键记录都能找到对应产物；纠错保留历史。
+- [x] Review upstream log.sh and MIT attribution; retain single-line cells, special-character handling, and spreadsheet formula-injection protection.
+- [x] Define one writer and decision-level granularity: choices, pivots, verification, blockers, not copied execution logs.
+- [x] Adapt task-evidence location without assuming Cursor transcript paths; state audit scope when raw evidence is unavailable.
+- [x] Test invalid arguments, first write, append, tabs/newlines, formula prefixes, and write failures through outcomes, not implementation call counts.
+- [x] Audit a real complex task log, locating artifacts for each critical entry and preserving history through corrections.
 
-### P2-05：technical-writing 独立技能
+### P2-05: Standalone technical-writing
 
-文件：skills/technical-writing/SKILL.md、必要 references/writing-guidelines.md。
+Files: skills/technical-writing/SKILL.md and references/writing-guidelines.md as needed.
 
-- [x] 借鉴教程/操作指南/参考/解释的用途区分、术语一致与消歧义。
-- [x] 适配中文、代码片段格式和仓库规范；不机械套英语字数、冠词与 -ing 规则。
-- [x] 明确与 document-governance 的分工，正式文档生命周期仍由治理技能处理。
-- [ ] 对真实操作指南和原理解释分别验证；PR/提交文案写作不自动触发远端操作。
+- [x] Adapt tutorial/how-to/reference/explanation purposes, consistent terminology, and disambiguation.
+- [x] Adapt language, code formatting, and repository conventions without mechanical English word-count, article, or -ing rules. The later English-only decision replaces the original Chinese-language adaptation.
+- [x] Define the division with document-governance, which still owns formal document lifecycle.
+- [ ] Verify a real how-to guide and explanation; PR/commit prose does not automatically trigger remote actions.
 
-### P2-06：分别评估 unslop 与 bro
+### P2-06: Assess unslop and bro separately
 
-这是评估任务，不预先承诺新增两个技能。
+This is assessment, not a commitment to create two skills.
 
-- [x] 对照现有指令和 technical-writing，列出 unslop 的独立文本编辑价值、重复部分、触发和不触发边界。
-- [x] 用一份含空话但有证据限定的文本检查是否能保留意义、事实和置信度，避免为了具体而编造机制。
-- [x] 明确 bro 仅重述上一条回复；与 teach 的调查教学、technical-writing 的材料组织分开。
-- [x] 比较独立入口与自然语言“说简单点”的实际收益，形成采用/不采用建议。
-- [x] 取得这两项的明确范围决定后更新 PRD/Spec；只有决定采用才创建目录和登记。否则记录评估完成，不将技能实现标为完成。
+- [x] Compare existing instructions and technical-writing, identifying unslop's independent editing value, overlap, triggers, and non-triggers.
+- [x] Check that filler-heavy text with evidence qualifications retains meaning, facts, and confidence without invented mechanisms for specificity.
+- [x] Define bro as rewording only the previous response, separate from teach's researched teaching and technical-writing's material organization.
+- [x] Compare a standalone entrypoint with a natural-language request to simplify wording, and recommend adoption or rejection.
+- [x] Update PRD/Spec after explicit decisions. Create/register only if adopted; otherwise record assessment completion, not skill implementation.
 
-### P2-07：吸收验证与评测专项方法
+### P2-07: Adapt specialized verification and evaluation methods
 
-文件：skills/create-verification-skill/references/visual-parity.md；tests/ 中必要行为评测材料。
+Files: skills/create-verification-skill/references/visual-parity.md and necessary behavioral evaluation material under tests/.
 
-- [x] 视觉验证明确视口、字体、数据、动画、状态、截图方法和变更前基线；像素精确请求不得把非零差异说成一致。
-- [x] 区分基线错误与实现错误；不能改阈值或基线制造通过。确需改变验收合同先报告并按授权修改。
-- [ ] 用可控的真实界面验证比较方法，包括差异被正确发现的场景。
-- [x] 借鉴 eval 的盲评方法：执行者不接收评分标准，评审按匿名产物和证据判断；不得泄露隔离测试信息后声称盲评。
-- [x] 不增加固定跨家族评测、自动模型调用服务或 arena 前置依赖。
+- [x] Define viewport, fonts, data, animation, state, screenshot method, and pre-change baseline. Nonzero differences cannot satisfy pixel-exact requests.
+- [x] Distinguish baseline and implementation errors; never alter thresholds/baselines to pass. Report necessary acceptance-contract changes and follow authorization.
+- [ ] Verify comparison on a controllable real interface, including a detectable difference.
+- [x] Adapt blinded evaluation: executors do not see scoring criteria; reviewers judge anonymous artifacts and evidence. Do not claim blindness after disclosing isolated test information.
+- [x] Add no fixed cross-family evaluation, automatic model-call service, or arena prerequisite.
 
-P2 通过条件：相应 AC03–AC09、AC11–AC12 有结果；表达技能评估结论明确，不能将待定当作阻塞其他独立能力的理由。
+P2 passes with results for relevant AC03–AC09 and AC11–AC12 and clear writing-skill assessments. Deferred decisions do not block independent capabilities.
 
-### P3-01：architect
+### P3-01: architect
 
-文件：skills/architect/SKILL.md、references/design-template.md、references/design-review.md（边界、替代方案、复杂度、领域建模、重复与中断、共享状态）。
+Files: skills/architect/SKILL.md, references/design-template.md, references/design-review.md (Boundaries, Alternatives, Complexity, Domain modeling, Repetition and interruption, Shared state).
 
-- [x] 从调用者用法推导类型、接口、所有权、状态和模块边界，说明必要替代方案与取舍。
-- [x] 复用 how，涉及历史约束时用 why；只有有实际争议才使用 interrogate。
-- [x] 删除 arena 必需依赖、跨函数就必须多候选以及默认设计后直接实现的策略。
-- [ ] 验收一个真实设计任务，能说明不变量、复杂度归属和首个实施步骤。
-- [ ] 用“先看设计，不写代码”及“重构前先讨论”验证停止点，未授权时不落产品代码。
+- [x] Derive types, interfaces, ownership, state, and module boundaries from usage, with necessary alternatives and tradeoffs.
+- [x] Reuse how, use why for historical constraints, and interrogate only for actual disputes.
+- [x] Remove required arena, multiple candidates for every function boundary, and default implementation after design.
+- [ ] Verify a real design task with invariants, complexity ownership, and the first implementation step.
+- [ ] Verify stopping points for design-first/no-code and discuss-before-refactoring requests; no unauthorized product code.
 
-### P3-02：figure-it-out
+### P3-02: figure-it-out
 
-文件：skills/figure-it-out/SKILL.md、references/execution-methods.md（假设复查、工具选择、上下文与委派、阶段验收）。前置：基础分析、验证、architect、按需日志。
+Files: skills/figure-it-out/SKILL.md, references/execution-methods.md (Premise review, Tool selection, Context and delegation, Phase acceptance). Prerequisites: basic analysis, verification, architect, and optional logging.
 
-- [x] 将复杂目标拆成有依赖的可验证单元，先处理高风险未知，再执行已明确部分。
-- [x] 保留 multi-phase-plan 的阶段/证据思想，不复制 PR 模板和检查器；用户要求正式 Spec/Plan 时路由 document-governance。
-- [ ] 验证一次假设失败后重新检查前提，记录保留/撤回决定；不偷偷扩大范围。
-- [x] 不创建长期任务、goal、heartbeat、云编排或自动交付流程。
-- [ ] 在获准真实任务上核查最终结果与原始完成条件，缺口保持开放。
+- [x] Decompose complex goals into dependent verifiable units, address risky unknowns first, then execute clear work.
+- [x] Retain multi-phase-plan's phase/evidence methods without copying PR templates/checkers; route formal Spec/Plan requests to document-governance.
+- [ ] Verify reassessing a failed hypothesis and recording keep/revert decisions without hidden scope expansion.
+- [x] Create no persistent tasks, goals, heartbeats, cloud orchestration, or automatic delivery.
+- [ ] Check a real authorized task's result against its original completion criteria, retaining gaps.
 
-### P3-03：reflect
+### P3-03: reflect
 
-文件：skills/reflect/SKILL.md、references/reflection-criteria.md。
+Files: skills/reflect/SKILL.md, references/reflection-criteria.md.
 
-- [x] 仅在复盘请求下读取当前任务或明确给定的证据范围；不扫描其他项目，不承担 recall。
-- [x] 分类执行失误、技能不足、结构机制机会和一次性问题；已有规则明确时不新增重复文字。
-- [x] 默认直接复盘，独立分析有明确收益且值得额外 token 成本时才委派；核实提案来源和目标技能。
-- [x] 输出具体提案、证据、建议归属及不采纳理由，根据已有授权决定是否应用；未获授权时仅交付提案，不重复询问同范围已有授权。
-- [ ] 实际验收一份包含重复规则、一次性故障和可改进机制的会话材料，验证只提取有意义改进。
-- [ ] 负向验证：没有明确授权不写记忆、不创建 backlog 外部工单、不把个人偏好挖掘当作本技能任务。
+- [x] Read the current task or explicitly selected evidence only on a retrospective request, without scanning other projects or taking on recall.
+- [x] Distinguish execution mistakes, insufficient guidance, structural safeguards, and one-offs; do not duplicate clear existing rules.
+- [x] Reflect directly by default; delegate only worthwhile independent analysis and verify proposal sources/targets.
+- [x] Deliver concrete proposals, evidence, owners, and rejection reasons. Apply under existing authorization, otherwise proposals only; do not ask again about authorized scope.
+- [ ] Exercise material containing duplicate rules, one-off failures, and improvable mechanisms; extract only meaningful improvements.
+- [ ] Negative checks: no unauthorized memory writes or external backlog issues; preference mining is not this skill's task.
 
-### P3-04：撰写跨技能参考流程
+### P3-04: Write cross-skill workflows
 
-文件：skills/shoshin/references/workflows/ 下七份文件；本阶段只形成参考流程，不创建未完成的入口 SKILL.md。
+Files: seven files under skills/shoshin/references/workflows/. This phase writes references only, not an unfinished entrypoint SKILL.md.
 
-- [x] investigation.md：请求分类、只读调查、置信度与交付边界。
-- [x] bug-fix.md：原症状与预期→复现→排除假设→机制证据→范围内修复→同路径及邻近验证。tdd 是其中按需步骤。
-- [x] feature.md：理解现有系统→数据与行为契约→必要设计→实现→真实验收，不默认开 PR。
-- [x] refactoring.md：固定原行为→目标结构与批准边界→小步变更→等价检查；不把已存在缺陷混入结构调整。
-- [x] prototype.md：一个具体决策、隔离实验、观测和选择；原型不被描述成正式产品。
-- [x] performance.md：工作负载与噪声→基线→单一假设→前后测量→回归检查→保留/撤回。吸收 hillclimb 方法，不建立长期循环。
-- [x] forensics.md：区分 live 与既有 artifact；信号提取、源码映射、因果限度。运行时注入/热修改必须明确不是只读。
-- [ ] 分别用已有真实试点证据检查流程可执行性；性能至少有可比较测量，取证至少有真实 trace/profile。环境缺失的专项保留未验证，不以文字完整通过。
-- [x] 每份只写顺序、调用条件和证据门槛，不复制叶技能正文，不反向调用入口造成循环。
+- [x] investigation.md: request classification, read-only investigation, confidence, and delivery boundaries.
+- [x] bug-fix.md: symptom/expectation → reproduction → competing-hypothesis checks → mechanism evidence → in-scope fix → same-path/adjacent verification. tdd is conditional.
+- [x] feature.md: understand system → data/behavior contracts → necessary design → implementation → real acceptance, without default PRs.
+- [x] refactoring.md: establish behavior → target structure/approval → small changes → equivalence checks, without mixing existing defects into structural work.
+- [x] prototype.md: one decision, isolated experiment, observations, selection; not a production product.
+- [x] performance.md: workload/noise → baseline → one hypothesis → before/after measurement → regression checks → keep/revert. Adapt hillclimb without persistent loops.
+- [x] forensics.md: distinguish live and existing artifacts, extract signals, map source, limit causality. Injection/hot changes are explicitly not read-only.
+- [ ] Verify workflows against actual pilot evidence. Performance needs comparable measurements and forensics a real trace/profile. Missing environments remain unverified; complete prose is not a pass.
+- [x] Each file contains sequence, invocation conditions, and evidence requirements, without copied leaf bodies or recursive entrypoint calls.
 
-### P3-05：automate-me
+### P3-05: automate-me
 
-文件：skills/automate-me/SKILL.md、references/preference-review.md。安排在 P3，与 reflect 保持独立职责；保留已有任务编号。
+Files: skills/automate-me/SKILL.md, references/preference-review.md. In P3 with responsibilities distinct from reflect; retain existing task IDs.
 
-- [x] 明确触发为用户要求整理个人工作方式，输入仅限用户指定且可访问的跨会话材料与现有规则。
-- [x] 区分稳定偏好、一次性指令、项目特有限制和相互冲突的要求，每条候选保留来源与适用范围。
-- [x] 对照现有全局指令、项目规则及技能，优先复用已有承载位置，不新增重复规则或无必要的模式技能。
-- [x] 输出候选偏好、证据、冲突、建议归属和具体修改提案；仅按实际授权应用，不自动修改记忆、配置或外部系统。
-- [x] 与 reflect 的当前任务复盘、figure-it-out 的复杂任务执行分开，不引入 recall 或长期调度。
-- [ ] 验收包含重复偏好、单次例外和冲突要求的材料；验证不会把一次要求泛化为全局偏好，也不会在来源不足时编造历史。
-- [ ] 验证用户只要求整理建议时不写配置；缺少历史访问能力时使用用户提供材料并说明覆盖限制。
+- [x] Trigger on a user request to organize working preferences, using only selected accessible cross-conversation material and existing rules.
+- [x] Distinguish stable preferences, one-offs, project constraints, and conflicts, retaining sources and applicability.
+- [x] Compare global instructions, project rules, and skills; reuse existing locations without duplicate rules or unnecessary mode skills.
+- [x] Deliver candidates, evidence, conflicts, owners, and concrete proposals. Apply only as authorized; no automatic memory, configuration, or external changes.
+- [x] Remain separate from reflect's current-task review and figure-it-out's complex execution, without recall or persistent scheduling.
+- [ ] Exercise repeated preferences, local exceptions, and conflicts. Do not generalize one-off instructions or invent history from insufficient sources.
+- [ ] Verify suggestions-only requests do not write configuration; use supplied material and state coverage limits when history is unavailable.
 
-映射：R20；AC02、AC03、AC06、AC07、AC12。当前技能正文与参考已编写，行为验收逐项记录于下文；未勾选项仍未完成。
+Mapping: R20; AC02, AC03, AC06, AC07, AC12. Bodies/references are written; behavior acceptance is recorded below. Unchecked items remain incomplete.
 
-P3 通过条件：AC02、AC03、AC06、AC08、AC11 有真实验收；automate-me 的偏好整理有对应证据，arena 仍不在依赖图中。
+P3 passes with real AC02, AC03, AC06, AC08, and AC11 acceptance and automate-me preference evidence. arena remains outside the dependency graph.
 
-### P4-01：轻量入口
+### P4-01: Lightweight entrypoint
 
-文件：skills/shoshin/SKILL.md、agents/openai.yaml。原前置为需要调用的技能和参考流程已验证；本轮用户取消试点并要求直接实施后，按结构/脚本验证完成源码接通，未执行行为验收仍单列开放。
+Files: skills/shoshin/SKILL.md, agents/openai.yaml. Originally required verified dependent skills/workflows. After the user canceled the pilot and requested direct implementation, source was connected with structural/script validation; unexecuted behavior acceptance remains separately open.
 
-- [x] 分类解释、调查、审查、设计、实现与复盘，保留用户要求的停止点。
-- [x] 简单任务直接做；复杂任务只选择必要能力，禁止固定代理树和“跨函数即 architect”。
-- [x] 明确 prototype/性能/live 取证可能产生副作用，不能因调查入口而获得修改权限。
-- [ ] 检查小修改、只读问题、缺陷、设计、教学、复盘各自路由及不触发场景。
-- [ ] 验证入口没有把排除 Playbook、外部消息、自动 PR、goal 或持久 mode 带回。
+- [x] Classify explanation, investigation, review, design, implementation, and retrospective requests, preserving stopping points.
+- [x] Complete simple work directly; select necessary capabilities for complex work without fixed agent trees or architect at every function boundary.
+- [x] State that prototypes, performance work, and live forensics may have side effects; investigation does not grant mutation permission.
+- [ ] Check routing and non-triggers for small edits, read-only questions, defects, design, teaching, and retrospectives.
+- [ ] Verify the entrypoint does not restore excluded Playbooks, external messages, automatic PRs, goals, or persistent modes.
 
-### P4-02：整包复核与安装前交付
+### P4-02: Package review and pre-installation delivery
 
-- [ ] 核对 23 条原则的落点和引用章节；普通任务仅凭本技能正文完成，条件性任务能找到唯一详细方法，缺失 owner 时明确报告。检查原版硬编码路径、全量原则加载及递归技能调用没有被带回。
-- [ ] 以边界解析、重复失败、共享应用和阶段验收场景验证短合同与详细方法相容；不新增逐句匹配提示词的测试。
-- [ ] 按 AC14 验收普通任务、复杂但紧密依赖的任务、具有独立审查价值的任务：前两者默认不委派；后者记录具体收益与成本取舍，限制代理数量、上下文和输出，不以多代理数量作为质量指标。实际用量可得时记录，无数据不声称节省 token。
-- [ ] 按 AC13 检查借鉴内容与运行依赖的来源，确认没有直接或间接引入 pstack-codex；来源声明中的排除说明不当作运行依赖误报。
-- [ ] 用实际文件清单逐项核对 Spec 的 50 个入口和 23 个 Playbook 去向；检查必需引用不存在落空。
-- [x] 检查目标目录与 ADR 一致，不存在 engineering-skills 旧包目录或第二维护副本。
-- [x] 验证技能元数据和跨技能依赖在拟安装布局下可解析；检查现有同名技能，给出差异，不覆盖。
-- [x] 在 skills.json 登记完整已验证集合，更新仓库 README 的真实说明和包 README 的能力/依赖/安装步骤。
-- [ ] 运行聚合检查；脚本新增行为有对应测试；整理实际执行的行为证据及剩余限制。
-- [x] 准备安装目标与具体变更清单，按用户已给出的安装授权执行；未授权时交付已验证源码，不声称安装完成。
+- [ ] Check all 23 principle placements and referenced sections. Ordinary tasks use their own body; conditional tasks find one detailed method and report missing owners. No restored hardcoded paths, read-all principles, or recursive skill execution.
+- [ ] Verify short/detail contract consistency with boundary parsing, repeated failures, shared apps, and phase acceptance; no sentence-matching prompt tests.
+- [ ] Verify AC14 with ordinary tasks, complex tightly coupled tasks, and tasks benefiting from independent review. The first two stay direct by default; the third records benefits/costs and bounds agents, context, and output. Agent count is not a quality metric. Record observable usage; no unsupported savings claims.
+- [ ] Check AC13 source and runtime-dependency provenance, excluding direct/indirect pstack-codex use without treating exclusion statements as dependencies.
+- [ ] Compare actual files with all 50 entrypoints and 23 Playbook dispositions in the Spec; no missing required references.
+- [x] Check directories against the ADR, without an old engineering-skills package or a second maintenance copy.
+- [x] Verify metadata and cross-skill references in the proposed installation layout; inspect collisions and present differences without overwriting.
+- [x] Register the complete validated set in skills.json and update truthful root/package README descriptions, capabilities, dependencies, and installation steps.
+- [ ] Run aggregate checks; cover new script behavior with tests and summarize actual behavioral evidence and remaining limits.
+- [x] Prepare installation targets and concrete changes, then follow actual installation authorization. Without it, deliver validated source, not an installation claim.
 
-### P4-03：获准后的安装验收
+### P4-03: Post-authorization installation acceptance
 
-- [ ] 保留安装前内容或可恢复来源，只更新明确属于 Shoshin 的目标，不处理无关技能。
-- [ ] 使用确认的方式安装到 ~/.agents/skills/；不从该副本反向维护源码。
-- [ ] 在用户获准的新 Codex 任务中验证发现、显式/隐式触发、内部资源、跨技能引用；不要为验证擅自创建用户侧任务。
-- [ ] 在无法访问原仓库路径的布局中证明无绝对路径依赖；个人安装成功不等于适用于所有项目。
-- [ ] 返回版本、目标目录、实际安装验证结果和未完成项。
+- [ ] Preserve prior content or recoverable sources and update only targets established as Shoshin-owned, not unrelated skills.
+- [ ] Install to ~/.agents/skills/ using the confirmed method; do not maintain source backward from that copy.
+- [ ] Verify discovery, explicit/implicit triggers, resources, and dependencies in a user-authorized fresh Codex task. Do not create a separate user task without permission merely to test.
+- [ ] Prove no absolute-path dependency in a layout without source-repository access. Personal installation success does not establish usability in every project.
+- [ ] Report version, target directories, actual installation checks, and unfinished work.
 
 ## Verification
 
-### 当前文档阶段
+### Initial documentation phase
 
-已执行命令及结果由本次文档交付报告给出；不勾选以上任何技能实施项。
+The documentation delivery report records executed commands/results. These do not complete skill implementation checkboxes above.
 
 ```bash
 python3 /Users/triggerjames/.codex/skills/document-governance/scripts/validate_docs.py --strict shoshin
@@ -344,11 +344,11 @@ python3 scripts/validate_all.py
 git diff --check
 ```
 
-治理工具绝对路径仅用于当前机器的文档操作，运行技能不得依赖它；其他机器按当时启用技能的位置解析。聚合校验使用既有仓库清单，不会因此验证尚未实现的 Shoshin 技能。
+The absolute governance-tool path is only for this machine's documentation work, not a runtime skill dependency. Other machines resolve their enabled skill location. Aggregate validation uses the existing registry and does not thereby verify unimplemented Shoshin skills.
 
-### 未来实施阶段
+### Implementation phase
 
-以下入口现已创建；本次真实执行结果见下文，不因命令出现在计划中而推定通过。
+These entrypoints now exist. Actual results are below; a planned command does not imply a pass.
 
 ```bash
 python3 shoshin/scripts/validate-skills.py
@@ -358,74 +358,80 @@ git diff --check
 git diff --cached --check
 ```
 
-各阶段追加对应真实项目命令、输入、版本/提交、结果与证据路径。格式建议为“任务 ID；执行对象；命令或交互路径；结果；证据；限制”，不维护与源码重复的根目录状态缓存。固定基线和失败前后证据不可由截图最终态、文件时间或代理自报代替。
+For each phase, add actual project commands, inputs, versions/commits, results, and evidence paths. Suggested fields: task ID; execution target; command or interaction path; result; evidence; limits. Do not maintain a root state cache duplicating source. Final screenshots, file times, and agent reports cannot replace fixed baselines and before/after failure evidence.
 
-结构检查不证明触发正确；触发正确不证明实际行为；本机行为不证明安装布局或其他账号可用。清楚报告每个层次。
+Structural validity does not prove correct triggering; triggering does not prove behavior; local behavior does not prove installation layout or other-account usability. Report each level clearly.
 
-## 待定选择与阻塞处理
+## Deferred choices and blockers
 
-- arena 由 Backlog 保存，未经选择不创建目录、不作为阶段依赖。
-- automate-me 已由用户确认纳入，原 Backlog 转入本 Plan 的 P3-05；不再列为待定。
-- unslop 与 bro 的 P2 评估可先完成；是否新增入口取决于明确决定，不合并三种用途。
-- 试点选择、实际操作能力、原创许可和同名安装冲突只在相应步骤成为必要决策时询问；继续不依赖它们的已授权工作。
-- 上游变化产生新能力时，先区分修复与扩范围；Plan 不承接明确排除项。
+- arena stays in Backlog, without a directory or phase dependency until selected.
+- automate-me is confirmed; its former Backlog entry is promoted to P3-05 and no longer deferred.
+- P2 assessments of unslop and bro can proceed first; entrypoints depend on explicit decisions, without merging the three purposes.
+- Ask about pilot choice, actual control tools, original-content licensing, and installation collisions only when needed at the relevant step. Continue independent authorized work.
+- For new upstream capabilities, distinguish fixes from scope expansion. The Plan does not absorb excluded items.
 
 ## Closure Checklist
 
-- [ ] 所有确定范围的任务完成，有对应真实证据；未通过项不得勾选。
-- [ ] 结构、行为与安装后验收分别说明；未获准安装时明确交付为源码，安装任务保持未完成。
-- [ ] PRD、Spec 与实际产物一致；实现后按真实结构补充 Architecture，不提前编造当前架构。
-- [ ] 待定或剩余未来工作有 Backlog 源记录，不创建 TODO/INDEX 或额外状态缓存。
-- [ ] 本地提交按目的拆分，每次审查 staged diff 并通过检查，报告哈希与最终工作区状态。
-- [ ] 达到完成、拒绝或替代等真实关闭条件后，使用 document-governance 的 archive_doc.py 归档 Spec/Plan；文档写完不等于实施关闭。
+- [ ] All confirmed tasks have real completion evidence; never check unpassed items.
+- [ ] Distinguish structural, behavioral, and post-installation acceptance. Without installation authorization, label delivery as source and leave installation incomplete.
+- [ ] PRD, Spec, and artifacts agree. Add Architecture after implementation from actual structure, not invented current architecture.
+- [ ] Deferred or remaining future work has Backlog source records, without TODO/INDEX or additional state caches.
+- [ ] Split local commits by purpose, review each staged diff, pass checks, and report hashes and final worktree state.
+- [ ] On actual completion, rejection, or supersession, archive Spec/Plan with document-governance's archive_doc.py. Finished prose is not implementation closure.
 
-## 2026-09-08 实施证据与未完成项
+## 2026-09-08 Implementation evidence and unfinished work
 
-### 基线与已确认选择
+### Baselines and confirmed choices
 
-- agent-skills 起始 HEAD `7f6b92a9389b06f26f5350170fdbd80589e93562`，main 跟踪 origin/main，起始本地领先 8 个提交、工作区干净；没有 fetch，远端比较仅为本地跟踪证据。
-- 允许参考源重新核对为 `71ed0d1076fec562c1b74ee353121a8d00f75382` / PStack 0.15.0；实际列出 50 个 SKILL.md、23 个 Playbook。逐路径 SHA-256 与 Spec 去向比对见 `shoshin/tests/evidence/upstream-inventory.json`。没有引入其他迁移项目的方法或运行依赖。
-- 当前 skill-creator、document-governance 和终端能力可用；OpenAI Build skills 与 Subagents 官方页已重新打开，确认元数据、发现路径及按有效宿主规则委派。没有固化模型表或修改用户配置。
-- 用户选择 JUST-RAG；基线 `efb58712923a43e523d4e4184c509c12289dfd71`，开始干净。项目验证技能生成于该项目 `.agents/skills/verify-just-rag/`，不进入通用源码。
-- 用户确认 unslop/bro 只评估、不新增入口；MIT 用于新增内容并保留 Lauren Tan 归属。原 ADR 历史保持不改写。
+- agent-skills started at `7f6b92a9389b06f26f5350170fdbd80589e93562`, main tracking origin/main, eight local commits ahead, clean worktree. No fetch occurred; remote comparisons used local tracking evidence only.
+- The permitted source was rechecked at `71ed0d1076fec562c1b74ee353121a8d00f75382` / PStack 0.15.0: 50 SKILL.md files and 23 Playbooks. See `shoshin/tests/evidence/upstream-inventory.json` for per-path SHA-256 values and Spec dispositions. No methods/runtime dependencies came from other migration projects.
+- skill-creator, document-governance, and terminal capabilities were available. Official OpenAI Build skills and Subagents pages were reopened to check metadata, discovery, and host-governed delegation. No model table was frozen or user configuration changed.
+- The user selected JUST-RAG at clean baseline `efb58712923a43e523d4e4184c509c12289dfd71`. Its verification skill was generated under `.agents/skills/verify-just-rag/`, outside shared source.
+- The user chose assessment-only unslop/bro and MIT for new content with Lauren Tan attribution. The ADR's historical decision remains intact.
 
-### 已执行检查
+### Executed checks
 
-| 对应任务 | 对象与方法 | 实际结果和证据 | 限制 |
+| Task | Target and method | Actual result and evidence | Limits |
 |---|---|---|---|
-| P0-03、P2-04 | `python3 -m unittest discover -s shoshin/tests -v` | 初始 3 个边界失败、独立审查再发现 3 个失败；修正及新增范围检查后 18 项通过。`tests/evidence/tools-before.txt`、`review-regressions-before.txt`、`tools-after.txt` | 确定性助手检查，不证明所有技能触发 |
-| P0-03、P4-02 部分 | `python3 shoshin/scripts/validate-skills.py` | 16 个技能资源与声明链接通过 | 包括 shoshin 入口；自然语言外部依赖仍需宿主发现 |
-| P1-01、P1-05 | 独立上下文实际执行 how/why，调查 JUST-RAG SSE 完成与历史 | `tests/evidence/how-why-just-rag.md` 有 App→客户端→路由→应用服务链、Git 引入提交与证据等级 | 同模型独立上下文；该次调查仅静态，非运行复现 |
-| P1-03 | 目标技能 helper 执行 Doctor→原资产 CLI→证据→清理 | `tests/evidence/just-rag-assets.json`：486 题、54 份来源，退出 0，自有临时目录清理，证据读回、Git 状态一致 | 仅评测资产路径；非完整 RAG、上传、OIDC 或模型质量验收 |
-| P1-06 | JUST-RAG `npm run lint && npm test -- --reporter=dot` | ESLint、TypeScript/e2e 类型检查通过；10 文件 50 tests 通过。`tests/evidence/just-rag-web-checks.txt` | 现有 jsdom/单元测试，非真实浏览器服务链 |
-| P2-03 | interrogate 独立审查新工具并做最小复现 | `tests/evidence/tools-independent-review.md`；正确问题与驳回均有依据，问题已复现并修复 | 未用跨模型家族评审，不声称权限隔离 |
-| P2-04 | 单一 TSV 决策记录与实际产物核查 | `tests/evidence/decisions.tsv` | 仅当前可见任务证据，没有扫描私人原始会话 |
-| P4-02 部分 | 将 16 个完整技能复制到临时独立布局并调用校验器 | `tests/evidence/copied-layout.json`：资源检查退出 0；个人目标未发现同名碰撞 | 未移走源码、未在新宿主任务测试发现，不等于安装验收 |
+| P0-03, P2-04 | `python3 -m unittest discover -s shoshin/tests -v` | Three initial boundary failures and three more from independent review; fixes and additional scope checks yielded 18 passes. `tests/evidence/tools-before.txt`, `review-regressions-before.txt`, `tools-after.txt` | Deterministic helper checks, not all skill triggers |
+| P0-03, part of P4-02 | `python3 shoshin/scripts/validate-skills.py` | Resources and declared links passed for 16 skills | Includes shoshin; natural-language external dependencies still require host discovery |
+| P1-01, P1-05 | Actual how/why use in an independent context to investigate JUST-RAG SSE completion/history | `tests/evidence/how-why-just-rag.md`: App → client → route → application service, introducing Git commits, and evidence levels | Same-model independent context; static investigation, not runtime reproduction |
+| P1-03 | Target helper: Doctor → original asset CLI → evidence → cleanup | `tests/evidence/just-rag-assets.json`: 486 questions, 54 sources, exit 0, owned temporary cleanup, evidence readback, unchanged Git state | Evaluation assets only, not full RAG, uploads, OIDC, or model quality |
+| P1-06 | JUST-RAG `npm run lint && npm test -- --reporter=dot` | ESLint and TypeScript/e2e type checks passed; 10 files, 50 tests passed. `tests/evidence/just-rag-web-checks.txt` | Existing jsdom/unit tests, not the real browser/service chain |
+| P2-03 | interrogate independently reviewed new tools with minimal reproductions | `tests/evidence/tools-independent-review.md`: established and dismissed findings have evidence; defects reproduced and fixed | No cross-family review or claim of permission isolation |
+| P2-04 | One TSV decision trail checked against artifacts | `tests/evidence/decisions.tsv` | Visible task evidence only; no private raw conversation scans |
+| Part of P4-02 | Copy 16 complete skills to a temporary independent layout and run validator | `tests/evidence/copied-layout.json`: exit 0; no same-name personal-target collisions found | Source remained available; no fresh-host discovery test, so not installation acceptance |
 
-### unslop 与 bro 评估
+### unslop and bro assessments
 
-unslop 的独立价值是对给定文本集中编辑；原版无条件应用会与当前表达规则和 technical-writing 重复。比如“系统显著提升体验，但仅在本地验证”可以改为“目前只做了本地验证，体验改善尚未验证”，不能补造提速数值或删掉证据限制。本轮用户选择只交评估，保持无入口；这不是将它合并成 technical-writing 的广泛触发器。
+unslop offers focused editing of supplied text, but unconditional upstream use overlaps with existing writing rules and technical-writing. For example, "The system significantly improves the experience, but was checked only locally" can become "Only local checks have run; improved user experience has not been verified." Do not invent speedup figures or remove evidence limits. The user selected assessment only, with no entrypoint; this is not a broad trigger merged into technical-writing.
 
-bro 只重述上一条回复，不负责代码研究。自然语言“说简单点”已能表达同一目标；本轮没有独立入口收益证据，用户选择暂不新增。teach 继续负责有调查依据的教学，technical-writing 负责文档组织，三者职责未合并。
+bro rewords the previous response and does no code research. A natural-language request to simplify wording already expresses that goal. This run found no demonstrated benefit for a separate entrypoint, and the user deferred creating it. teach retains evidence-based teaching and technical-writing retains document organization; their responsibilities are not merged.
 
-### 当前未通过与继续条件
+### Unpassed items and conditions for continuation
 
-- 48 个正向/负向/异常请求与独立评审标准已分开准备，位于 tests/behavior-cases.json 和 tests/reviewer-rubric.md；只有上表及后续实际报告对应的场景运行过，不将材料数量当通过数。
-- P0-04 的三种执行方式成本/覆盖对照尚未实跑；没有可观测总用量，不声称省 token。
-- 完整 JUST-RAG 服务与 UI 尚未就绪：本地 8000/5432/9000 未发现监听，Docker 报 OrbStack socket 不存在。用户随后先选择本轮仅 CLI，再明确取消 JUST-RAG 试点以节省 token。停止后续项目测试；本任务新建且逐文件核对未变的 verify-just-rag 已移除，JUST-RAG 最终 Git 工作区干净。没有启动模型或迁移已有数据库。
-- P2-01 的 AC15 新功能遗漏及 AC16 失败状态恢复需要真实受控应用验证，不能以技能文字和资产 CLI 替代。用户取消试点后生成物已清理，该实操验收保持未完成。
-- 性能比较、真实 trace/profile 与视觉差异敏感性尚无本轮匹配证据，相应专项流程未验收。
-- P1/P2/P3 尚未全部达到原行为通过条件。按用户最新指令，P4 入口与完整 skills.json 源码登记已完成；个人安装未执行。未执行验收不被改写为通过。
-- Spec/Plan 保持 active，不归档；Architecture v0.1 只记录实际已有源码及边界。剩余实施继续在本 Plan，不创建额外 TODO/INDEX 或状态缓存。
+- The 48 positive/negative/exceptional requests and separate reviewer criteria are prepared in tests/behavior-cases.json and tests/reviewer-rubric.md. Only scenarios corresponding to actual reports above or later were run; material count is not pass count.
+- P0-04's three execution-method cost/coverage comparisons have not run. No observable total usage supports token-savings claims.
+- Full JUST-RAG services/UI were unavailable: no listeners on local 8000/5432/9000, and Docker reported a missing OrbStack socket. The user first chose CLI-only verification, then canceled the pilot to save tokens. Further project tests stopped. The newly created verify-just-rag files were compared individually, confirmed unchanged, and removed; JUST-RAG ended clean. No model was started or existing database migrated.
+- P2-01 AC15 feature omissions and AC16 failure-state recovery need a real controlled application, not skill text or an asset CLI. Generated pilot artifacts were cleaned after cancellation; this practical acceptance remains incomplete.
+- No matching evidence exists for performance comparison, real trace/profile analysis, or visual-difference sensitivity; those workflows remain unaccepted.
+- P1/P2/P3 have not met all original behavioral criteria. Under the user's later instruction, P4's entrypoint and complete skills.json source registration are done; personal installation is not. Unexecuted acceptance remains unpassed.
+- Spec/Plan remain active and unarchived. Architecture v0.1 records actual source and boundaries only. Continue remaining implementation in this Plan, without another TODO/INDEX or state cache.
 
-### 用户调整本轮交付范围
+### User adjustment to this delivery scope
 
-用户在环境选择中先要求“本轮仅验证本地 CLI，完整 UI 验收保留未完成”，随后明确“我不想在 JUST-RAG 这个项目里面去进行测试了，因为太浪费 token 了，你直接实施 plan 就行了”。本轮据此停止全部后续 JUST-RAG 试点和额外代理行为评测，完成 16 个技能的源码、资源、脚本、清单和文档；必要本包结构/脚本检查继续执行。
+Translated user instructions first limited this run to local CLI verification while leaving full UI acceptance incomplete, then stated: "I do not want to test in JUST-RAG anymore because it wastes too many tokens. Just implement the plan." Accordingly, all further JUST-RAG pilot work and additional agent behavioral evaluations stopped. Source, resources, scripts, registry, and documentation for 16 skills were completed, with necessary package structure/script checks continuing.
 
-因此，本轮源码实施可交付，但原 Plan 的真实项目、全量行为对照、性能/视觉/取证和安装后验收不勾选。个人安装和远端发布仍未授权。本轮不再为补这些证据追加试点或模型调用。
+Source implementation is therefore deliverable, while the original Plan's real-project, full behavioral comparison, performance/visual/forensic, and post-installation acceptance remain unchecked. Personal installation and remote publishing remain unauthorized. This run does not add pilots or model calls to fill those gaps.
 
-最终本包检查：16 个技能在复制布局下引用通过；18 项工具测试通过；根 `python3 scripts/validate_all.py` 的全部检查通过；文档 strict 校验为 0 warnings；`git diff --check` 通过。未执行的真实行为与安装验收继续保持开放。
+Final implementation checks: references passed for 16 skills in a copied layout; 18 helper tests passed; all root `python3 scripts/validate_all.py` checks passed; strict document validation reported 0 warnings; `git diff --check` passed. Unexecuted real behavior and installation acceptance remain open.
 
-### 入口命名调整
+### Entrypoint rename
 
-用户要求将入口名称改为 `shoshin`。入口目录、SKILL 名称、展示元数据、默认提示词、根技能登记、行为用例标识与文档中的目标路径同步使用该名称；技能职责和交付边界保持不变。
+The user requested the entrypoint name `shoshin`. Its directory, SKILL name, display metadata, default prompt, root registration, behavioral case IDs, and documentation target paths now use that name. Responsibilities and delivery boundaries are unchanged.
+
+### English-only package
+
+The user requested accurate, idiomatic English throughout Shoshin, checked against the permitted PStack source. Translate skill bodies, references, metadata, design documents, test requests, and narrative evidence. Preserve IDs, source hashes, timestamps, outcomes, and unchecked acceptance. Historical user statements and reports are identified as translations rather than verbatim English records. Exact external Unicode paths retain their values through JSON escapes; do not rename external resources. Translate test input text into English while retaining Unicode boundary coverage. English replaces the previous default Chinese-output guidance.
+
+Translation checks completed: all 105 tracked package files have no CJK text or filenames; 16 skill metadata files retain valid descriptions, invocation prompts, and implicit-invocation policy; all 73 upstream source hashes match the recorded baseline. Plan checkbox states and document lifecycle metadata are unchanged. External-path JSON decodes identically. Test logic and assertion structure are unchanged; English fixtures retain Unicode anchor and log round-trip coverage. Package structure/references and the root aggregate checks passed, including 18 Shoshin tests; strict documentation validation reported 0 warnings, and git diff --check passed. These checks validate this language conversion, not the previously unexecuted behavioral or installation acceptance.

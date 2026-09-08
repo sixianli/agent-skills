@@ -105,184 +105,184 @@
       "sha256": "c87bd7536f772f8a403ad8155535ee17a1bbec9a353156693eb3bb1520c87ae3",
       "decision": "adapted method",
       "spec_row": "attack-the-premise",
-      "target": "`figure-it-out/SKILL.md`：重复失败后检查共同前提",
-      "detail": "`figure-it-out/references/execution-methods.md` 的假设复查节；多次修复依赖同一假设时读，actor 分布调查只用于适合问题"
+      "target": "`figure-it-out/SKILL.md`: inspect shared premises after repeated failures",
+      "detail": "Premise review in `figure-it-out/references/execution-methods.md`; read when fixes share a failing assumption. Actor-distribution analysis only where applicable"
     },
     {
       "source": "skills/principle-boundary-discipline/SKILL.md",
       "sha256": "62ac2862c2caa22dd14531f51c9c6bb445ceb198ca98a687e25b4d47c1f10a28",
       "decision": "adapted method",
       "spec_row": "boundary-discipline",
-      "target": "`architect/SKILL.md`：标识外部输入、解析边界和内部不变量",
-      "detail": "`architect/references/design-review.md` 的边界节；设计验证位置或适配器时读"
+      "target": "`architect/SKILL.md`: external inputs, parsing boundaries, internal invariants",
+      "detail": "Boundaries in `architect/references/design-review.md`; for parser placement or adapters"
     },
     {
       "source": "skills/principle-build-the-lever/SKILL.md",
       "sha256": "458b269eab8e95a1573276955312f7d2a13ae8599879a9efc748248f6bc34b56",
       "decision": "adapted method",
       "spec_row": "build-the-lever",
-      "target": "`figure-it-out/SKILL.md`：比较直接执行与确定性工具的收益",
-      "detail": "`figure-it-out/references/execution-methods.md` 的工具选择节；批量转换或需要可重复检查时读，不强制产出脚本"
+      "target": "`figure-it-out/SKILL.md`: compare direct work with deterministic tools",
+      "detail": "Tool selection in `figure-it-out/references/execution-methods.md`; for batch transformations or repeatable checks, not mandatory scripts"
     },
     {
       "source": "skills/principle-encode-lessons-in-structure/SKILL.md",
       "sha256": "77044c83a9ac6df78fc643887ea5f1f11f082adaf14b717c060cdaed03cce863",
       "decision": "adapted method",
       "spec_row": "encode-lessons-in-structure",
-      "target": "`reflect/SKILL.md`：区分执行失误、规则缺陷和结构机制机会",
-      "detail": "`reflect/references/reflection-criteria.md` 的机制选择节；证据显示反复出现同类问题时读"
+      "target": "`reflect/SKILL.md`: distinguish execution mistakes, rule defects, and structural safeguards",
+      "detail": "Mechanism selection in `reflect/references/reflection-criteria.md`; for evidenced recurring failures"
     },
     {
       "source": "skills/principle-exhaust-the-design-space/SKILL.md",
       "sha256": "8583310d7297b7823d75494faa57b003564d436807febecdecbd8321abe5cf6e",
       "decision": "adapted method",
       "spec_row": "exhaust-the-design-space",
-      "target": "`architect/SKILL.md`：重要未决取舍比较必要方案",
-      "detail": "`architect/references/design-review.md` 的替代方案节；存在真实不同设计时读，不强制 arena 或候选数量"
+      "target": "`architect/SKILL.md`: compare necessary options for important unresolved tradeoffs",
+      "detail": "Alternatives in `architect/references/design-review.md`; for truly different designs, no mandatory arena or candidate count"
     },
     {
       "source": "skills/principle-experience-first/SKILL.md",
       "sha256": "58903529d733b1c1a7c9ccf127d45ef3c7d0d9f0b81164a4dc6b80efe6f2912b",
       "decision": "adapted method",
       "spec_row": "experience-first",
-      "target": "`architect/SKILL.md`：从使用者与维护者的实际操作判断设计",
-      "detail": "无；直接结合输入和接口设计"
+      "target": "`architect/SKILL.md`: judge designs from user and maintainer actions",
+      "detail": "None; integrated with inputs and interface design"
     },
     {
       "source": "skills/principle-fix-root-causes/SKILL.md",
       "sha256": "ba4cd38da1dcc8fe5432feb64457cba95594736a9b21b2ebf8f8c52aee068707",
       "decision": "adapted method",
       "spec_row": "fix-root-causes",
-      "target": "`tdd/SKILL.md`：失败必须对应目标缺陷，修复机制而非削弱检查",
-      "detail": "无；tdd 只承担回归验证部分"
+      "target": "`tdd/SKILL.md`: failures correspond to the target defect; fix mechanisms, not assertions",
+      "detail": "None; tdd handles regression verification only"
     },
     {
       "source": "skills/principle-foundational-thinking/SKILL.md",
       "sha256": "864b827e8199d946ce58beca0f89c4ed4099ed6e426fb698a3aaa45de2a9eea2",
       "decision": "adapted method",
       "spec_row": "foundational-thinking",
-      "target": "`architect/SKILL.md`：先确认数据、所有权与必要依赖",
-      "detail": "无；与设计步骤合写"
+      "target": "`architect/SKILL.md`: establish data, ownership, necessary dependencies first",
+      "detail": "None; integrated with design steps"
     },
     {
       "source": "skills/principle-guard-the-context-window/SKILL.md",
       "sha256": "9f60e2c79b35f865cb103462f9128c6760b70f603475d1e535e5930f61840f66",
       "decision": "adapted method",
       "spec_row": "guard-the-context-window",
-      "target": "`figure-it-out/SKILL.md`：先过滤输出，再按收益选择上下文隔离",
-      "detail": "`figure-it-out/references/execution-methods.md` 的上下文与委派节；大材料、独立调查或委派取舍不清时读，采用本 Spec 的研究结论"
+      "target": "`figure-it-out/SKILL.md`: filter output before choosing context isolation",
+      "detail": "Context and delegation in `figure-it-out/references/execution-methods.md`; for large material, independent research, or unclear tradeoffs, following this Spec's research"
     },
     {
       "source": "skills/principle-laziness-protocol/SKILL.md",
       "sha256": "9006579e9e3f33955d17569733db688ae65f22577dc3b21803d219a5a8445aff",
       "decision": "adapted method",
       "spec_row": "laziness-protocol",
-      "target": "`architect/SKILL.md`：评估实际协调负担，不按行数或固定层数决定",
-      "detail": "`architect/references/design-review.md` 的复杂度节；新增层次或重构取舍时读"
+      "target": "`architect/SKILL.md`: assess actual coordination costs, not line/layer counts",
+      "detail": "Complexity in `architect/references/design-review.md`; for added layers or refactoring tradeoffs"
     },
     {
       "source": "skills/principle-make-operations-idempotent/SKILL.md",
       "sha256": "540738217c3da7bf513b9886924ad6a2bc77e58be867f5bd2e1831c74bf2ce70",
       "decision": "adapted method",
       "spec_row": "make-operations-idempotent",
-      "target": "`architect/SKILL.md`：涉及可重复副作用时询问重复和中断后的结果",
-      "detail": "`architect/references/design-review.md` 的重复与中断节；命令、重试或生命周期设计时读，不移入调度运行时"
+      "target": "`architect/SKILL.md`: explain repeated and interrupted side effects",
+      "detail": "Repetition and interruption in `architect/references/design-review.md`; for commands, retries, lifecycles, not scheduler runtime"
     },
     {
       "source": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
       "sha256": "09978915a4a11990cf0a9a02d9c08cc59e0b7a04c5c24b83aa560fbe4146f75b",
       "decision": "adapted method",
       "spec_row": "migrate-callers-then-delete-legacy-apis",
-      "target": "`shoshin/SKILL.md`：重构时路由 refactoring 流程",
-      "detail": "`shoshin/references/workflows/refactoring.md` 的调用者迁移节；仅在已授权的内部 API 整体迁移时读"
+      "target": "`shoshin/SKILL.md`: route refactoring",
+      "detail": "Caller migration in `shoshin/references/workflows/refactoring.md`; only for an authorized complete internal API migration"
     },
     {
       "source": "skills/principle-minimize-reader-load/SKILL.md",
       "sha256": "42551c5dc74cd578163c148da552db3ff67d29b78600ef216bfd311fb828fe69",
       "decision": "adapted method",
       "spec_row": "minimize-reader-load",
-      "target": "`interrogate/SKILL.md`：审查不必要的追踪层次和隐藏状态",
-      "detail": "`architect/references/design-review.md` 的复杂度节；与 laziness-protocol 共用判定方法，不另写一份"
+      "target": "`interrogate/SKILL.md`: review unnecessary navigation layers and hidden state",
+      "detail": "Complexity in `architect/references/design-review.md`, shared with laziness-protocol"
     },
     {
       "source": "skills/principle-model-the-domain/SKILL.md",
       "sha256": "bbadbb9a723fac3f76e782ae45665eb94058ec10993e4bae36d4dc6b0e4eac07",
       "decision": "adapted method",
       "spec_row": "model-the-domain",
-      "target": "`architect/SKILL.md`：模型表达真实关系与状态",
-      "detail": "`architect/references/design-review.md` 的领域建模节；状态/所有权存在歧义时读"
+      "target": "`architect/SKILL.md`: model actual relationships and states",
+      "detail": "Domain modeling in `architect/references/design-review.md`; for state/ownership ambiguity"
     },
     {
       "source": "skills/principle-never-block-on-the-human/SKILL.md",
       "sha256": "d82bce9ab9193249d1ec0d514202d89602f0fd3d312174d622c2dd222bae5a2e",
       "decision": "adapted method",
       "spec_row": "never-block-on-the-human",
-      "target": "各技能保留自身授权停止点；不新增通用正文段落",
-      "detail": "无；实际授权规则来自宿主和用户，拒绝原版“可逆即可先做”的泛化"
+      "target": "Each skill retains its own authorization stopping points, without a new generic paragraph",
+      "detail": "None; host/user authorization governs. Reject the blanket upstream assumption that reversible means authorized"
     },
     {
       "source": "skills/principle-outcome-oriented-execution/SKILL.md",
       "sha256": "beedcaed75572a6a1662d47f16da203c2bd2c9dbffbbd678d4ba187d67b7e670",
       "decision": "adapted method",
       "spec_row": "outcome-oriented-execution",
-      "target": "`figure-it-out/SKILL.md`：阶段可有明确限定的中间状态，最终必须满足目标",
-      "detail": "`figure-it-out/references/execution-methods.md` 的阶段验收节；计划迁移允许短期不完整时读"
+      "target": "`figure-it-out/SKILL.md`: bounded intermediate states may exist, but the final goal must be met",
+      "detail": "Phase acceptance in `figure-it-out/references/execution-methods.md`; for approved temporarily incomplete migrations"
     },
     {
       "source": "skills/principle-prove-it-works/SKILL.md",
       "sha256": "ae13d287984a5864312b6286899d4ee2b60f8272b5e5e8fcc586a7c3ea51020b",
       "decision": "adapted method",
       "spec_row": "prove-it-works",
-      "target": "`create-verification-skill/SKILL.md`：运行实际路径并记录证据和限制",
-      "detail": "`create-verification-skill/references/evidence-standards.md`；设计观测或判断代理自报、截图、mock 等证据是否充分时读"
+      "target": "`create-verification-skill/SKILL.md`: exercise actual paths and record evidence/limits",
+      "detail": "`create-verification-skill/references/evidence-standards.md`; for observation design or judging agent reports, screenshots, mocks"
     },
     {
       "source": "skills/principle-redesign-from-first-principles/SKILL.md",
       "sha256": "a1c7fd0a96b40e12a74bceb0e6bb20a9666dd844dcabfb624acb27da23b929fe",
       "decision": "adapted method",
       "spec_row": "redesign-from-first-principles",
-      "target": "`architect/SKILL.md`：新约束出现时重新检验整体设计，不自动扩大重构授权",
-      "detail": "无；与设计步骤合写"
+      "target": "`architect/SKILL.md`: reassess the design when constraints change without expanding authorization",
+      "detail": "None; integrated with design steps"
     },
     {
       "source": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
       "sha256": "05294b40448e927c5da1c7b6f5c6b9fed3744637e3833d2d948b9154a9dd00bb",
       "decision": "adapted method",
       "spec_row": "separate-before-serializing-shared-state",
-      "target": "`architect/SKILL.md`：先确认共享写入是否必要，再确定独立所有权或串行控制",
-      "detail": "`architect/references/design-review.md` 的共享状态节；设计并发写入时读"
+      "target": "`architect/SKILL.md`: determine whether sharing is necessary, then separate ownership or serialize",
+      "detail": "Shared state in `architect/references/design-review.md`; for concurrent writes"
     },
     {
       "source": "skills/principle-sequence-verifiable-units/SKILL.md",
       "sha256": "761390804ee36c32f5338d8db47ec54463d40ff96dbb296dfafabcd5f2593eec",
       "decision": "adapted method",
       "spec_row": "sequence-verifiable-units",
-      "target": "`figure-it-out/SKILL.md`：按可检查单元组织工作",
-      "detail": "`figure-it-out/references/execution-methods.md` 的阶段验收节；与 outcome-oriented-execution 共用，明确单元边界可包含哪些中间状态"
+      "target": "`figure-it-out/SKILL.md`: organize checkable units",
+      "detail": "Phase acceptance in `figure-it-out/references/execution-methods.md`, shared with outcome-oriented-execution; define allowed intermediate states"
     },
     {
       "source": "skills/principle-subtract-before-you-add/SKILL.md",
       "sha256": "a983a50e732c1ed315eba7aaf47a61329e31c4794eb1ab9d25d9945265b31e03",
       "decision": "adapted method",
       "spec_row": "subtract-before-you-add",
-      "target": "`interrogate/SKILL.md`：只建议删除已确认且任务相关的冗余",
-      "detail": "无；与审查步骤合写"
+      "target": "`interrogate/SKILL.md`: recommend deleting only confirmed, task-relevant redundancy",
+      "detail": "None; integrated with review steps"
     },
     {
       "source": "skills/principle-test-behavior-not-implementation/SKILL.md",
       "sha256": "87e40efe4e486f7ea639d2ed1fc0abe6c93b8fd0e89a81218086909d2470a52e",
       "decision": "adapted method",
       "spec_row": "test-behavior-not-implementation",
-      "target": "`tdd/SKILL.md`：断言可观察契约，检查能否捕获目标缺陷",
-      "detail": "无；正文用必要的短例子解释，不复制原版错误的断言名称黑名单"
+      "target": "`tdd/SKILL.md`: assert observable contracts and verify defect detection",
+      "detail": "None; short necessary examples inline, without the upstream invalid assertion-name blacklist"
     },
     {
       "source": "skills/principle-type-system-discipline/SKILL.md",
       "sha256": "c83da8031ffb4c86410030d3e261f659598fca2b7d8158fd9dc269d70a3a025e",
       "decision": "adapted method",
       "spec_row": "type-system-discipline",
-      "target": "`typescript-best-practices/SKILL.md`：检查非法状态、来源类型与穷尽处理",
-      "detail": "`typescript-best-practices/references/patterns.md` 的类型表达节；选择具体 TS 表达或处理断言时读"
+      "target": "`typescript-best-practices/SKILL.md`: invalid states, source-derived types, exhaustiveness",
+      "detail": "Type expressions in `typescript-best-practices/references/patterns.md`; for TS representations or assertions"
     },
     {
       "source": "skills/recall/SKILL.md",

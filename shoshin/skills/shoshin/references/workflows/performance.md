@@ -1,9 +1,9 @@
-# 性能实验
+# Performance experiments
 
-先确定用户受影响的操作、数据规模、状态和并发，选能复现投诉的工作负载。固定指标、单位、环境、噪声处理和验收条件，先验证测量能区分不同负载，再捕获基线与回归结果。
+Identify the affected user action, data size, state, and concurrency. Choose a workload that reproduces the complaint. Fix metrics, units, environment, noise handling, and acceptance criteria. Verify that the measurement distinguishes workloads before capturing baseline and post-change results.
 
-从真实 trace 形成单一机制假设：例如重复计算可缓存但需明确失效；固定开销占主导可批量；用户未用结果的成本可延后；关键等待可调整执行时机。trace 证明成本，不证明代码可以删除。
+Form one mechanism hypothesis from a real trace. Repeated computation might be cached with explicit invalidation; dominant fixed overhead might be batched; work whose results are unused might be deferred; critical waits might be rescheduled. A trace establishes cost, not that code can be deleted.
 
-一次改变一个假设，保持工作负载和测量方法一致，交错重复前后测量并记录分布；共享测量环境不并发争用。新结果超过噪声且行为检查通过才保留，否则撤回该次实验修改。没有差异时也可基于可证明的简化取舍，不宣称提速。
+Change one hypothesis at a time, preserving workload and measurement method. Interleave repeated before and after measurements and record distributions. Do not contend concurrently for a shared measurement environment. Keep a change only when its improvement exceeds noise and behavior checks pass; otherwise revert the experimental change. With no measured improvement, a demonstrable simplification may still justify a tradeoff, but do not claim a speedup.
 
-结果包括基线、之后值、单位、样本、环境、证据和限制；两端不是同一场景不能算改进比率。没有目标证据时停止猜测，检查观测方法和前提；不降低阈值、不强制尝试次数、不创建长期循环。
+Report baseline, post-change values, units, samples, environment, evidence, and limits. Different scenarios cannot yield a valid improvement ratio. Without target evidence, stop guessing and check observations and premises. Do not lower thresholds, require a fixed attempt count, or create a persistent loop.

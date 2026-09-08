@@ -1,5 +1,5 @@
-# 解释方法
+# Explanation
 
-先说明这个部分服务谁、解决什么问题。定义读者需要的新概念，然后沿一次实际输入讲清流转、状态变化和结果。目录和符号放在相应机制旁，不先倾倒文件清单。
+Start with whom this component serves and the problem it solves. Define unfamiliar concepts the reader needs, then follow an actual input through its flow, state changes, and result. Place directories and symbols beside the mechanisms they explain rather than opening with a file inventory.
 
-将设计权衡与作者动机分开：代码可证明当前约束，历史意图需要 why 的来源。图仅在能缩短理解路径时使用，图中连线也须有证据。末尾保留影响当前判断的未知及最小验证方法，不把不相关的探索全部列出。
+Separate design tradeoffs from the author's motivation. Code can establish current constraints; historical intent needs why's sources. Use diagrams only when they make understanding faster, and support their edges with evidence too. End with unknowns that affect the current judgment and the smallest way to verify them, not a list of unrelated exploration.

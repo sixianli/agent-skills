@@ -7,47 +7,47 @@ superseded_by: ""
 date: "2026-09-08"
 ---
 
-# ADR 0001：采用 Shoshin 名称及独立源码包位置
+# ADR 0001: Adopt the Shoshin name and a separate source package
 
 ## Context
 
-用户希望从 PStack 借鉴适合 Codex 的工程技能，名字不必严肃，但应有辨识度。讨论中曾使用 engineering-skills 作为暂定名称，也比较过 ducksmith、measure-twice 等候选。用户最终明确接受 Shoshin。
+The user wants to adapt PStack engineering skills for Codex. The name need not be formal but should be distinctive. engineering-skills was an early working name; ducksmith and measure-twice were also considered. The user explicitly accepted Shoshin.
 
-需要把源码维护位置与安装位置分开，防止维护过程中在多个副本分别修改，或把项目专用验证配置混入通用包。agent-skills 仓库 README 建议 *-skill 包名；本次遵循用户明确选定的 shoshin 目录，不改名为 shoshin-skill。
+Source maintenance and installation locations must be separate to prevent divergent edits across copies or project-specific verification configuration entering the shared package. The agent-skills README recommends *-skill package names; this decision follows the user's explicit shoshin directory choice rather than renaming it shoshin-skill.
 
 ## Decision
 
-采用 **Shoshin** 作为展示名、**shoshin** 作为包目录名，源代码包位于 `agent-skills/shoshin/`。
+Use **Shoshin** as the display name and **shoshin** as the package directory at `agent-skills/shoshin/`.
 
-当前机器上的源码根是 `/Users/triggerjames/Documents/sxl_code_work_space/agent-skills/shoshin/`。该绝对路径只用于本机定位，不写进运行时技能的依赖或调用指令。
+On the current machine, the source root is `/Users/triggerjames/Documents/sxl_code_work_space/agent-skills/shoshin/`. This absolute path is only a local locator, not a runtime dependency or invocation instruction.
 
-- 包的受治理文档根为 `shoshin/docs/`。对治理工具传入 `shoshin` 作为 project root，SOURCE 中的 `docs/` 相对这个根解析。
-- 通用技能源码位于 `shoshin/skills/<skill-name>/`。
-- 个人安装目标为 `~/.agents/skills/<skill-name>/`，安装副本不是独立维护来源。具体更新方式由实施前验证决定；不得覆盖同名用户技能。
-- 项目专用验证技能生成到目标项目 `.agents/skills/verify-<app>/`，不进入 Shoshin 通用源码目录。
-- 本次只建立文档，不创建运行时占位技能、不安装、不发布。详细目标树属于 Spec，不把将来目录当成当前实现。
+- The governed documentation root is `shoshin/docs/`. Pass `shoshin` as the project root to governance tools; `docs/` in SOURCE references resolves relative to it.
+- Shared skill source lives at `shoshin/skills/<skill-name>/`.
+- The personal installation target is `~/.agents/skills/<skill-name>/`. Installed copies are not independent maintenance sources. Determine the update method through pre-implementation verification and never overwrite an unrelated user skill with the same name.
+- Generate project verification skills at the target project's `.agents/skills/verify-<app>/`, outside Shoshin's shared source.
+- At the time of this decision, the task creates documentation only: no placeholder runtime skills, installation, or publishing. The Spec owns the target tree; planned directories are not current implementation.
 
 ## Options Considered
 
-### Shoshin 独立源码包
+### Separate Shoshin source package
 
-短而稳定，表达保持好奇、愿意检查假设的态度；用户已明确接受。源码和文档集中，可独立验证和安装。
+Short and stable, expressing curiosity and willingness to question assumptions. Explicitly accepted by the user. Source and documentation stay together and can be validated and installed independently.
 
-### 沿用 engineering-skills
+### Retain engineering-skills
 
-用途直白，但只是早期临时名字，不符合用户最终选择。
+Clear in purpose, but only an early working name and contrary to the user's final choice.
 
-### 沿用 PStack 名称并整体复制
+### Retain PStack and copy the entire package
 
-容易与上游和既有迁移项目混淆，并暗示保留原版完整编排能力，不符合已确认范围。
+Likely to be confused with upstream and existing migration projects, and suggests retaining the full original orchestration system, contrary to confirmed scope.
 
 ## Consequences
 
-- 后续文档、目录和安装说明统一使用 Shoshin/shoshin。
-- 不因新增技能、修改安装形式而另建重复维护目录。
-- 保留上游 MIT 归属与来源记录，不冒充完整原版或跨宿主行为等价版本。
-- 本 ADR 记录命名与位置这一项持久决定。要修改该决定时创建后继 ADR，不改写本条历史。
-- 当前没有技能实现，不创建声称描述当前运行系统的 Architecture 文档。实现后按真实结构补充。
+- Subsequent documentation, directories, and installation instructions use Shoshin/shoshin consistently.
+- Adding skills or changing installation form does not create duplicate maintenance locations.
+- Preserve upstream MIT attribution and source records. Do not claim a complete copy or behavioral equivalence across hosts.
+- This ADR records one durable decision: name and location. Change it through a successor ADR rather than rewriting this historical decision.
+- No skills were implemented when this ADR was accepted. Do not create an Architecture document claiming to describe a running system before implementation; add it later from the actual structure.
 
 ## Links
 

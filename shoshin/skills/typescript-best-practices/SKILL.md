@@ -1,17 +1,17 @@
 ---
 name: typescript-best-practices
-description: "设计或审查 TypeScript 的状态、边界解析与调用契约，减少非法状态和重复类型；不因出现 ts 文件自动扩大重构范围。"
+description: "Design or review TypeScript state models, boundary parsing, and call contracts to reduce invalid states and duplicate types. The presence of a ts file does not justify expanding a refactor."
 ---
 
 # typescript-best-practices
 
-先读取项目固定 TypeScript 版本、tsconfig、schema 库及附近惯例；只处理当前任务的类型问题。
+Read the project's pinned TypeScript version, tsconfig, schema library, and nearby conventions first. Address only type problems within the current task.
 
-- 外部数据以 unknown 进入，在真实输入边界解析为领域类型；内部复用已验证不变量，但不忽略不可信反序列化与运行期突变。
-- 用判别联合表达互斥状态，让错误组合无法构造；普通数组或简单对象已足以让操作完整定义时，不为“更严格”新增类型层。
-- 从权威 schema、函数或已有类型派生；实际存在语义混用风险时才引入品牌类型。类型断言需有验证或明确局部不变量依据，不能机械删除所有 as，也不能双重断言掩盖错误。
-- 分支穷尽检查应让新增变体产生编译错误。具体 TS 表达见 [类型表达](references/patterns.md#类型表达)；satisfies 等语法必须满足项目版本。
+- Accept external data as unknown and parse it into domain types at actual input boundaries. Reuse validated invariants internally without overlooking untrusted deserialization or runtime mutation.
+- Use discriminated unions for mutually exclusive states so invalid combinations cannot be constructed. Do not add a type layer merely to be stricter when ordinary arrays or simple objects already make operations total.
+- Derive types from authoritative schemas, functions, or existing types. Introduce branded types only when values are actually at risk of semantic confusion. Assertions require validation or an explicit local invariant; neither mechanically remove every as nor hide errors with double assertions.
+- Exhaustiveness checks should produce a compiler error when a new variant is added. See [type expressions](references/patterns.md#type-expressions) for concrete TypeScript examples. Syntax such as satisfies must be supported by the project's version.
 
-设计解析位置或适配器边界时，按发现结果定位 architect，仅读取 [边界](../architect/references/design-review.md#边界)。跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+When deciding where parsing belongs or how adapter boundaries work, discover architect and read only [boundaries](../architect/references/design-review.md#boundaries). Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-交付代码或审查意见取决于用户请求，审查不自动改动。运行受影响的类型与行为检查，证明被阻止的非法状态或调用错误；不能只展示类型层增加或“编译通过”。
+Deliver code or review findings according to the user's request; review does not authorize edits. Run affected type and behavior checks to demonstrate the invalid state or call error being prevented. Extra type layers or successful compilation alone are not sufficient evidence.

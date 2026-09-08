@@ -1,41 +1,41 @@
 ---
 name: shoshin
-description: "为明确的工程请求选择必要的解释、调查、审查、设计、实施或复盘方法；简单任务直接完成，不默认多代理、长期模式或自动交付。"
+description: "Select the necessary explanation, investigation, review, design, implementation, or retrospective methods for a specific engineering request. Complete simple tasks directly; do not default to multiple agents, persistent modes, or automatic delivery."
 ---
 
 # shoshin
 
-先识别用户要的结果和停止点：解释、调查、审查、设计、实施、复盘或偏好整理。简单问题与明确小修改直接完成，不为了入口存在而加载多个技能；闲聊和普通文字重述不使用工程流程。
+Identify the user's intended result and stopping point: explanation, investigation, review, design, implementation, retrospective, or preference review. Complete simple questions and clear small edits directly. Do not load multiple skills merely because this entrypoint exists. Casual conversation and ordinary rewording do not need an engineering workflow.
 
-## 选择必要方法
+## Select the necessary method
 
-| 任务 | 读取条件与方法 |
+| Task | When and what to read |
 |---|---|
-| 当前代码机制 | 需要调查时使用 [how](../how/SKILL.md)；已有证据足够就直接解释 |
-| 设计动机与历史 | 使用 [why](../why/SKILL.md)，保留未知与竞争解释 |
-| 学习理解 | 使用 [teach](../teach/SKILL.md)，不默认重新运行 how/why 全调查 |
-| diff 影响或安全前提 | 使用 [blast-radius](../blast-radius/SKILL.md)，默认只读 |
-| 代码/注释审查 | 使用 [interrogate](../interrogate/SKILL.md)，不自动修复 |
-| 结构与接口设计 | 真正需要取舍时使用 [architect](../architect/SKILL.md)；设计请求完成后停止 |
-| 复杂实施 | 多阶段依赖需要组织时使用 [figure-it-out](../figure-it-out/SKILL.md)，保持原始完成条件 |
-| 回归验证 | 明确 TDD 或有效测试目标时使用 [tdd](../tdd/SKILL.md) |
-| TypeScript 契约 | 任务涉及类型状态/边界问题时使用 [typescript-best-practices](../typescript-best-practices/SKILL.md) |
-| 项目验证能力 | 要生成验证技能时使用 [create-verification-skill](../create-verification-skill/SKILL.md)；维护已有产物用 [maintain-verification-skill](../maintain-verification-skill/SKILL.md) |
-| 决策过程 | 复杂工作确需审阅轨迹时使用 [show-me-your-work](../show-me-your-work/SKILL.md) |
-| 技术材料 | 按用途使用 [technical-writing](../technical-writing/SKILL.md)，文案不授权对应外部动作 |
-| 当前任务复盘 | 仅用户要求复盘时使用 [reflect](../reflect/SKILL.md) |
-| 跨会话偏好 | 仅用户指定材料并要求整理时使用 [automate-me](../automate-me/SKILL.md) |
+| Current code mechanisms | Use [how](../how/SKILL.md) when investigation is needed; explain directly when existing evidence is sufficient |
+| Design rationale and history | Use [why](../why/SKILL.md), preserving unknowns and competing explanations |
+| Learning and understanding | Use [teach](../teach/SKILL.md); do not rerun a full how/why investigation by default |
+| Diff impact or safety assumptions | Use [blast-radius](../blast-radius/SKILL.md), read-only by default |
+| Code or comment review | Use [interrogate](../interrogate/SKILL.md), without automatic fixes |
+| Structure and interface design | Use [architect](../architect/SKILL.md) for real tradeoffs; stop after completing a design request |
+| Complex implementation | Use [figure-it-out](../figure-it-out/SKILL.md) when multi-phase dependencies need organization, preserving the original completion criteria |
+| Regression verification | Use [tdd](../tdd/SKILL.md) for explicit TDD or a practical test target |
+| TypeScript contracts | Use [typescript-best-practices](../typescript-best-practices/SKILL.md) for type-state or boundary issues in scope |
+| Project verification capability | Use [create-verification-skill](../create-verification-skill/SKILL.md) to generate one and [maintain-verification-skill](../maintain-verification-skill/SKILL.md) to maintain an existing artifact |
+| Decision trail | Use [show-me-your-work](../show-me-your-work/SKILL.md) when complex work needs reviewable decisions |
+| Technical material | Use [technical-writing](../technical-writing/SKILL.md) according to purpose; prose does not authorize the external actions it describes |
+| Current-task retrospective | Use [reflect](../reflect/SKILL.md) only when the user requests a retrospective |
+| Cross-conversation preferences | Use [automate-me](../automate-me/SKILL.md) only when the user selects material and requests preference review |
 
-跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-## 选择流程
+## Select the workflow
 
-只读调查需要多步时读 [调查](references/workflows/investigation.md)；获准缺陷修复读 [缺陷修复](references/workflows/bug-fix.md)；新增行为读 [功能](references/workflows/feature.md)；行为保持的结构变化读 [重构与调用者迁移](references/workflows/refactoring.md)。不能因跨函数或 diff 较大就触发架构评审。
+Read [investigation](references/workflows/investigation.md) for multi-step read-only investigation, [bug fix](references/workflows/bug-fix.md) for authorized defect repair, [feature](references/workflows/feature.md) for new behavior, and [refactoring and caller migration](references/workflows/refactoring.md) for behavior-preserving structural changes. Crossing function boundaries or a large diff does not automatically require architectural review.
 
-围绕一个真实决策的隔离实验才读 [原型](references/workflows/prototype.md)；需可比较性能证据时读 [性能](references/workflows/performance.md)；既有 trace 或获准 live 诊断读 [取证](references/workflows/forensics.md)。原型写文件、测量启动进程和 live 注入可能有副作用，调查入口本身不授权这些动作。
+Read [prototype](references/workflows/prototype.md) only for an isolated experiment that informs a real decision, [performance](references/workflows/performance.md) when comparable performance evidence is needed, and [forensics](references/workflows/forensics.md) for existing traces or authorized live diagnosis. Prototype file writes, measurement processes, and live instrumentation can have side effects; an investigation request alone does not authorize them.
 
-工作流需要详细材料时，同样按名称发现 owner，仅读指定章节；假设复查、工具选择、上下文与阶段方法由 figure-it-out 的 [实施方法](../figure-it-out/references/execution-methods.md) 维护；设计取舍由 architect 的 [设计审查](../architect/references/design-review.md) 维护。不要递归调用本入口，也不要预加载全部方法。
+For detailed workflow material, discover the owner by name and read only the specified section. figure-it-out owns premise review, tool selection, context, and phase methods in [execution methods](../figure-it-out/references/execution-methods.md). architect owns design tradeoffs in [design review](../architect/references/design-review.md). Do not invoke this entrypoint recursively or preload every method.
 
-默认主 agent 执行；只有明确独立收益值得额外总 token 与核实成本、且宿主允许时才委派。保持写入归属，真实共享应用由单一操作者控制。技能调用不是子代理创建，也不创建用户侧独立任务。
+The primary agent works by default. Delegate only when clear independent benefits justify total additional tokens and verification costs and the host permits it. Preserve write ownership and give shared real applications one operator. Invoking a skill neither spawns a subagent nor creates a separate user-facing task.
 
-交付与用户目标相符的结果、证据和实际限制。用户明确不执行某类验收时记录未验证，不暗中扩大测试；不能把未验证改写为通过。入口不建立持久 mode、定时任务、自动 PR 或外部消息流程。
+Deliver results, evidence, and actual limits that match the user's goal. If the user explicitly excludes an acceptance check, record it as unverified without silently expanding testing. Never rewrite unverified as passed. This entrypoint does not establish persistent modes, scheduled tasks, automatic PRs, or external messaging workflows.

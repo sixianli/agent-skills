@@ -1,33 +1,33 @@
-# 设计审查方法
+# Design review methods
 
-## 边界
+## Boundaries
 
-列出来自 CLI、配置、网络、存储和第三方 SDK 的不可信输入，在进入内部模型处解析并返回明确错误。将外部表示留在适配器内，不让所有调用者重复理解传输结构。纯业务转换与执行副作用分离到有实际收益的程度，不为形式拆层。
+Identify untrusted inputs from the CLI, configuration, network, storage, and third-party SDKs. Parse them into the internal model with explicit errors. Keep external representations inside adapters rather than making every caller understand transport structures. Separate pure domain transformations from side effects where it has a real benefit, not merely to create layers.
 
-内部类型的可信前提必须真实成立：不可信反序列化、动态修改或外部回调会形成新边界。不要把“信任内部”解释成跳过这些输入检查。
+The premises for trusting internal types must actually hold. Untrusted deserialization, dynamic mutation, and external callbacks create new boundaries. Trusting internal types does not mean skipping those input checks.
 
-## 替代方案
+## Alternatives
 
-只有真实未决选择才比较：例如同步处理和队列、拥有状态和借用状态。用同一用户行为、异常和演进需求检验每个方案，说明哪个约束淘汰了哪个方案。机械修改不为了候选数量发明设计。
+Compare actual unresolved choices, such as synchronous processing versus a queue, or owned versus borrowed state. Test each against the same user behavior, errors, and evolution requirements. State which constraint eliminates each option. Do not invent designs to satisfy a candidate count for a mechanical change.
 
-## 复杂度
+## Complexity
 
-从调用者完成一次任务需要知道什么、跨多少地方保持一致、失败时要修改哪些位置判断成本。深模块可隐藏复杂实现；单纯多包一层转发没有这种收益。长文件未必难懂，短函数串联也可能泄露时序和内部状态。
+Assess what a caller must know to complete a task, how many places must stay consistent, and which locations must change after failure. A deep module can hide a complex implementation; another forwarding layer alone cannot. A long file may be easy to understand, while a chain of short functions can expose timing and internal state.
 
-保留清楚的普通代码；只在已授权范围消除实际重复、隐藏状态或不必要协调，不能把个人偏好包装为阻塞问题。
+Preserve clear, ordinary code. Remove actual duplication, hidden state, or unnecessary coordination only within the authorized scope. Do not present personal preferences as blockers.
 
-## 领域建模
+## Domain modeling
 
-先写实体间真实关系，再选择状态模型或数据结构。找唯一真源，避免布尔值与可选字段互相约束却无人维护。领域有真实多态才用变体；普通列表的所有操作已对空值有定义时不强化类型。
+Describe actual relationships between entities before choosing state models or data structures. Find one source of truth. Avoid booleans and optional fields whose mutual constraints have no owner. Use variants for real domain polymorphism. Do not strengthen an ordinary list's type when all its operations are already defined for empty input.
 
-## 重复与中断
+## Repetition and interruption
 
-枚举第一次、相同请求再次到达、执行到一半中断及重启后的观察结果。幂等不是“异常时忽略”，而是重复请求仍产生正确的可辨识结果。明确身份、资源所有权、何时持久化以及哪些副作用不能安全重试；不能用一次内存检查保证跨进程幂等。
+Enumerate observable results on first execution, repeated delivery of the same request, interruption midway, and restart. Idempotency means repeated requests still produce the correct, identifiable result, not ignoring exceptions. Define identity, resource ownership, persistence timing, and side effects that cannot safely be retried. One in-memory check cannot guarantee idempotency across processes.
 
-清理只移除本次拥有的资源，重复清理应能辨识已清理状态；证据独立于临时数据生命周期。无法确定某个外部操作是否执行时，先查询事实而非盲目重放。
+Cleanup removes only resources owned by the run and must recognize an already-cleaned state. Evidence has a lifecycle independent of temporary data. If an external operation's execution is uncertain, query what happened before replaying it blindly.
 
-## 共享状态
+## Shared state
 
-先问是否必须写同一个对象。独立事实可各有 owner，在读取时组合；不同字段写同一文件仍是共享写入。确需唯一状态时，用实际锁、原子条件更新或单一执行者保障串行，文字角色不构成互斥。
+First ask whether writers must modify the same object. Independent facts can have separate owners and be combined on read. Writing different fields of one file is still shared writing. When one shared state is necessary, serialize it with an actual lock, atomic conditional update, or single executor. Role descriptions do not provide mutual exclusion.
 
-明确取消、中断和失败如何释放资源，并给出能够检查的状态。共享浏览器/应用只允许单一操作者；代码阅读可以独立，状态操作不可交叉。
+Define how cancellation, interruption, and failure release resources, with inspectable states. Shared browsers and applications have one operator. Code reading can be independent; state-changing actions cannot interleave arbitrarily.

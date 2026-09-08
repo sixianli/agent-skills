@@ -7,114 +7,114 @@ superseded_by: ""
 date: "2026-09-08"
 ---
 
-# Shoshin 产品需求 v0.1
+# Shoshin Product Requirements v0.1
 
 ## Goals
 
-借鉴 PStack 的工程方法，为 Codex 建立一套保持好奇、先理解再行动、用证据检验判断的技能包。目标是改善代码理解、设计、修改、验证、技术表达和复盘，不复制 Cursor 的完整运行和编排系统。
+Adapt PStack's engineering methods into a Codex skill package that stays curious, understands before acting, and tests judgments against evidence. Improve code understanding, design, changes, verification, technical communication, and retrospectives without copying Cursor's entire runtime and orchestration system.
 
-本文记录当前会话中用户已确认的需求，作为产品范围的权威来源。包名与位置由 ADR 固定，技术设计由 Spec 规定，实施顺序由 Plan 规定。文档建立完成不代表技能已经实现或获准安装。
+This document records user-confirmed requirements from the conversation and is authoritative for product scope. The ADR fixes the package name and location, the Spec defines the technical design, and the Plan defines implementation order. Completing these documents does not mean the skills are implemented or installation is authorized.
 
 ## Target Users
 
-主要使用者是使用 Codex 开展多项目开发的用户本人。交流默认使用简体中文，保留有助于精确表达的技术术语。使用者重视机制解释、架构与所有权、真实复现、行为保持、明确证据和适度自主执行。
+The primary user develops multiple projects with Codex and values explanations of mechanisms, architecture and ownership, real reproductions, behavior preservation, explicit evidence, and proportionate autonomy. The package is English-only following the user's language decision; retain technical terms that improve precision. The earlier conversation used Simplified Chinese, but that is no longer the package's default language requirement.
 
 ## Scope
 
 ### Included
 
-- R01：采用名称 **Shoshin**，目录标识为 `shoshin`，集中维护可供 Codex 使用的技能源码。
-- R02：建立代码机制理解、设计依据追溯、教学解释和修改影响分析能力。
-- R03：建立有意义的回归验证、项目验证技能生成与维护能力；真实行为证据不能由编译、静态阅读或代理自报替代。
-- R04：建立 TypeScript 实践、独立代码审查、保守注释审查和技术写作能力。
-- R05：建立复杂任务的设计、实施方法和按需决策日志。
-- R06：保留 `reflect`，安排在 P3，基于当前工作过程提出有证据的技能或机制改进。
-- R07：最后建立轻量入口，按任务选择必要技能与流程；简单任务直接完成，不默认多层委派。
-- R08：吸收 PStack Playbook 中的有效操作顺序；记录每一项的保留、适配或排除去向，不能只搬 SKILL.md。
-- R09：源码、个人安装副本和目标项目生成的验证技能有明确归属；引用不依赖本机仓库绝对路径。
-- R10：用文档固定需求、技术范围、目标目录和实施验收，避免后续改变名称、扩大范围或把待定项当作承诺。
+- R01: Use the name **Shoshin** and directory identifier `shoshin` to maintain Codex skill source in one place.
+- R02: Provide code-mechanism explanation, design-rationale investigation, teaching, and change-impact analysis.
+- R03: Provide meaningful regression verification and generation and maintenance of project verification skills. Compilation, static reading, and agent reports cannot replace real behavior evidence.
+- R04: Provide TypeScript practices, independent code review, conservative comment review, and technical writing.
+- R05: Provide design and execution methods for complex tasks and decision logs when needed.
+- R06: Retain `reflect` in P3 to propose evidence-based skill or mechanism improvements from the current work.
+- R07: Build the lightweight entrypoint last. Select necessary skills and workflows by task; complete simple tasks directly without default multi-level delegation.
+- R08: Incorporate useful operation sequences from PStack Playbooks. Record whether each is retained, adapted, or excluded; migrating only SKILL.md is insufficient.
+- R09: Give shared source, personal installation copies, and generated project verification skills explicit ownership. References must not depend on this machine's absolute repository paths.
+- R10: Record requirements, technical scope, target directories, and acceptance in documents to prevent later renaming, scope expansion, or treating deferred items as commitments.
 
-- R21：Shoshin 的技能借鉴参考源仅限 `/Users/triggerjames/Documents/sxl_code_work_space/cursor-plugins/pstack/`。禁止参考、复制、移植或依赖 `pstack-codex` 的设计、技能、代码、脚本和运行时，也不以历史分析或中间产物间接引入。依据：用户明确要求“只允许你将 Cursor Plugins 目录里面的 pstack 这个目录作为参考源”。
+- R21: The only permitted reference source for Shoshin's skill adaptation is `/Users/triggerjames/Documents/sxl_code_work_space/cursor-plugins/pstack/`. Do not consult, copy, port, or depend on `pstack-codex` designs, skills, code, scripts, or runtime, including indirectly through historical analysis or intermediate artifacts. Basis, translated from the user's instruction: "You may use only the pstack directory inside Cursor Plugins as the reference source."
 
 ### Excluded
 
-以下是明确排除项，不作为将来默认阶段保留：
+The following are explicitly excluded, not retained as default future phases:
 
-- `recall`；独立 `swarm` 技能、公共并行编排层。
-- 原版 `no-comments`，尤其是存疑时删除注释或未获准编码约束仍删除原注释的策略。
-- `make-bot-ui`，以及为它单独建立 webhook、Grok Bot 或密钥集成。
-- PR 持续维护与交付工作流：`opening-a-pr`、`babysit`、`shipping`。
-- 长时间任务与恢复工作流：`autonomous-run`、`session-pickup`、`pause-safely`。
-- 大型编排：`orchestrate`、`autopilot-full`、`autopilot-stack`。
-- Benny 的安装、Slack 分诊、复现修复自动化。
-- 独立磁盘及 worktree 清理工作流；不迁移 `worktree-cleanup`。
-- 对外发布、推送、创建 PR、安装到个人技能目录或修改账号配置，不属于当前文档工作的授权。
+- `recall`; a standalone `swarm` skill or shared parallel orchestration layer.
+- The original `no-comments`, especially deleting uncertain comments or removing constraint comments before an authorized replacement exists.
+- `make-bot-ui` and dedicated webhook, Grok Bot, or credential integrations for it.
+- Continuous PR maintenance and delivery: `opening-a-pr`, `babysit`, `shipping`.
+- Long-running work and recovery: `autonomous-run`, `session-pickup`, `pause-safely`.
+- Large-scale orchestration: `orchestrate`, `autopilot-full`, `autopilot-stack`.
+- Benny installation, Slack triage, and automated reproduction and fixes.
+- Standalone disk and worktree cleanup; do not migrate `worktree-cleanup`.
+- Publishing, pushing, creating PRs, personal skill installation, or account configuration changes are outside the authorization for the original documentation task.
 
-排除 PR 工作流不妨碍未来任务在用户另行授权时使用普通 Git 或 GitHub 工具；本包不自动授予该权限。
+Excluding PR workflows does not prevent ordinary Git or GitHub use in future tasks when separately authorized. This package does not grant that permission automatically.
 
 ### Deferred and conditional
 
-- `arena`：用户明确待定，不是 `architect` 或其他必选技能的前置依赖。
-- `unslop`：2026-09-08 实施会话确认本轮只交付与现有表达规则的重复度评估，不新增入口。
-- `bro`：2026-09-08 实施会话确认本轮只交付独立入口价值评估，不新增入口；自然语言重述仍可使用。
-- `technical-writing` 确定独立保留；三种表达能力不合并成一个触发范围过大的技能。
+- `arena`: explicitly deferred by the user; not a prerequisite for `architect` or any required skill.
+- `unslop`: the implementation conversation on 2026-09-08 authorized only an assessment of overlap with existing writing rules, with no new entrypoint.
+- `bro`: the implementation conversation on 2026-09-08 authorized only an assessment of standalone value, with no new entrypoint. Natural-language rewording remains available.
+- `technical-writing` remains a separate skill. Do not merge the three writing capabilities into one overly broad trigger.
 
-### 补充确认
+### Additional confirmation
 
-- R20：`automate-me` 纳入确定实施范围，安排在 P3。根据用户明确给定的跨会话材料整理稳定工作偏好，对照现有规则提出可审阅改进；与当前任务复盘的 `reflect` 分开，不自动扫描无关历史或写入记忆。
+- R20: `automate-me` is in the confirmed implementation scope, scheduled for P3. Extract stable working preferences from cross-conversation material explicitly selected by the user and propose reviewable improvements against existing rules. Keep it separate from `reflect`, which reviews the current task. Do not scan unrelated history or write memory automatically.
 
 ## Business Rules
 
-本节仅保留已确认的产品行为与范围，每条注明讨论依据。执行环境的工作规则与具体适配设计分别由下节和 Spec 承载，不把助手的设计归纳写成用户原话。
+This section contains only confirmed product behavior and scope, with the basis for each rule. Current working rules and concrete adaptation decisions belong in the next subsection and the Spec. Do not present the assistant's design synthesis as the user's words.
 
-- R15：不建立独立 swarm 或公共并行编排层；必要分工要求放入确实需要委派的技能，包括任务范围、上下文、写入隔离、结果核实和覆盖缺口。依据：用户明确同意删除独立并行协作规则的建议。
-- R16：可减少解释显而易见代码的注释，但不采用存疑即删除策略。依据：用户对此保守改写明确表示“同意”。具体审查分类由 Spec 定义。
-- R17：保留 reflect，安排在 P3，承担当前任务复盘与改进建议。依据：用户明确要求保留并放入 P3；提案分类和应用方式由 Spec 定义。
-- R19：吸收有用的 Playbook 方法，同时保持已明确排除的长期恢复、大型编排和自动交付范围。依据：用户排除 P5，并接受 Playbook 方法吸收方案；具体流程归属由 Spec 定义。
+- R15: Do not build a standalone swarm or shared parallel orchestration layer. Put necessary delegation requirements in the skills that need them: task scope, context, write isolation, result verification, and coverage gaps. Basis: the user explicitly accepted removing the standalone parallel-collaboration rules.
+- R16: Comments that explain obvious code may be reduced, but uncertainty is not a reason to delete them. Basis: the user explicitly accepted the conservative rewrite. The Spec defines review categories.
+- R17: Retain reflect in P3 for current-task retrospectives and improvement proposals. Basis: the user's explicit request. The Spec defines proposal classification and application.
+- R19: Incorporate useful Playbook methods while preserving exclusions for persistent recovery, large orchestration, and automatic delivery. Basis: the user excluded P5 and accepted Playbook method adaptation. The Spec assigns workflow ownership.
 
-- R22：默认由主 agent 完成工作。用户对 token 消耗敏感；只有子代理带来明确收益且值得额外 token 成本时才使用，例如对主 agent 已形成的设计或代码进行独立审查，以发现共同前提中的遗漏。任务复杂、可以拆分或工具可用本身都不是充分理由；不为使用子代理而增加分工。依据：用户明确确认 token 敏感与收益要求。用户随后要求先研究 OpenAI/Anthropic 一手实践再确定具体边界；独立审查是收益示例，不是唯一允许场景。具体判断与逐项适配见 Spec，不按技能名称预先固定是否委派。
+- R22: The primary agent works by default. The user is sensitive to token cost. Use subagents only when they provide a clear benefit worth the extra tokens, such as independently reviewing an existing design or implementation to find omissions in shared assumptions. Complexity, decomposability, and tool availability alone are insufficient. Do not add delegation for its own sake. Basis: the user explicitly confirmed cost sensitivity and the benefit requirement, then requested first-party OpenAI/Anthropic research before deciding detailed boundaries. Independent review is an example, not the only permitted use. The Spec defines case-by-case decisions; skill names do not predetermine delegation.
 
-### 适用工作规则与来源
+### Applicable working rules and their sources
 
-Shoshin 在使用时遵守届时生效的宿主指令、用户授权与项目规则。本 PRD 不复制一套长期有效的个人 Git、审批或提交策略，也不因此要求修改用户现有规则。
+Shoshin follows the host instructions, user authorization, and project rules effective when it is used. This PRD does not embed permanent personal Git, approval, or commit policies or require changes to existing user rules.
 
-原 R11–R13 的依据是当前会话中用户提供的全局 AGENTS 指令，分别涉及 Autonomy and Follow-through、Architecture and Design、Engineering Workflow、Git and Actions。这些是当前实施工作的约束，不是技能包自带的产品政策。Spec 定义技能如何尊重这些约束，Plan 记录当前实施所需检查。
+Former R11–R13 came from the global AGENTS instructions supplied in the conversation: Autonomy and Follow-through, Architecture and Design, Engineering Workflow, and Git and Actions. They constrain the current implementation work, not the package's product policy. The Spec explains how skills respect them, and the Plan records required implementation checks.
 
-原 R14 的证据要求来自当前 AGENTS 的 Evidence and Independent Judgment；跨模型家族是否等价是适配设计判断，移入 Spec。原 R15–R17 的具体化内容同样在 Spec 区分设计与用户确认范围。
+Former R14's evidence requirements came from AGENTS' Evidence and Independent Judgment. Whether review across model families is equivalent is an adaptation decision now in the Spec. The Spec likewise distinguishes detailed designs for R15–R17 from user-confirmed scope.
 
-原 R18“先改善已有能力，再新增技能”是助手的过度概括，撤回为普遍产品规则。technical-writing、unslop、bro 的具体决定仍以 Scope 为准，不能据此推导所有新技能都必须先改造已有技能。
+Former R18, "improve existing capabilities before adding skills," was an overgeneralization by the assistant and is withdrawn as a universal product rule. Decisions on technical-writing, unslop, and bro remain as stated in Scope. They do not imply that every new skill must first modify an existing one.
 
-以上编号不重新分配，避免旧引用指向不同含义；规则来源可追溯，不表示旧条目仍是有效产品要求。
+Do not reassign these IDs, which would change the meaning of older references. Traceable rule provenance does not make withdrawn entries active product requirements.
 
 ## Acceptance Boundaries
 
-- A01：全部确定技能和全部 23 个来源 Playbook 都有明确去向；排除和待定项不出现在运行时技能目录或隐式依赖中。
-- A02：简单请求、只读请求、设计请求和复盘请求分别保持范围；入口不过度调用。
-- A03：引用与依赖在安装布局下可解析；未安装依赖明确报告，不能绕过缺失能力后声称完整完成。
-- A04：每个技能有正向、负向/不触发和异常场景的验证，核心能力经过真实项目或真实任务验证。
-- A05：结构验证、行为验证和安装后验证分别记录；不能相互替代。
-- A06：未完成的实施留在开放 Plan；待定产品选择留在 Backlog。无虚构通过记录，无手工维护状态缓存。
+- A01: Every confirmed skill and all 23 source Playbooks have an explicit disposition. Excluded and deferred items appear in neither runtime skill directories nor implicit dependencies.
+- A02: Simple, read-only, design-only, and retrospective requests retain their scope. The entrypoint does not over-invoke skills.
+- A03: References and dependencies resolve in the installation layout. Report missing dependencies; do not bypass them and claim completion.
+- A04: Every skill has positive, negative/non-triggering, and exceptional scenario verification. Core capabilities are exercised on real projects or tasks.
+- A05: Record structural, behavioral, and post-installation verification separately; none substitutes for another.
+- A06: Keep unfinished implementation in the open Plan and deferred product decisions in Backlog. No fabricated passes or manually maintained state caches.
 
-## 用户决策记录
+## User decision record
 
-以下短句来自当前会话，用于解释范围演变，不以早期助手建议覆盖用户后续纠正。
+The following statements are English translations of the conversation, explaining scope evolution. Earlier assistant suggestions do not override later user corrections.
 
-| 用户表达 | 固定结果 |
+| User statement, translated | Recorded result |
 |---|---|
-| “Shoshin可以，我接受这个名字.” | 名称 Shoshin，目录 shoshin |
-| 对 P5：“这里明确不需要” | 排除 PR 持续交付、长期恢复、大型编排和 Benny |
-| 对 recall：“这一个我明确不需要” | 排除 recall |
-| 对 reflect：“这一个我是需要的，把它放到 P3 里面去” | reflect 为 P3 必选 |
-| 对 automate-me：“把 automate-me 这个技能也纳入待办里面” | 从待定改为确定实施项，安排在 P3 |
-| 对 arena：“这个先待定” | 不作为确定依赖 |
-| 对删除独立并行规则建议：“同意。” | 不建立独立 swarm 和公共编排层 |
-| 对 no-comments 保守改写：“同意” | 保留有用注释，禁止存疑即删 |
-| 对 Playbook 吸收补充：“可以” | 补充专项流程与来源去向，继续保持排除范围 |
+| "Shoshin works; I accept that name." | Shoshin name, shoshin directory |
+| On P5: "I definitely do not need this." | Exclude continuous PR delivery, persistent recovery, large orchestration, and Benny |
+| On recall: "I definitely do not need this one." | Exclude recall |
+| On reflect: "I need this one; put it in P3." | reflect is required in P3 |
+| On automate-me: "Add this skill to the backlog too." | Promote from deferred to confirmed implementation in P3 |
+| On arena: "Leave this undecided for now." | Not a confirmed dependency |
+| On removing standalone parallel rules: "Agreed." | No standalone swarm or shared orchestration layer |
+| On conservative no-comments adaptation: "Agreed." | Preserve useful comments; do not delete on uncertainty |
+| On Playbook adaptation: "Yes." | Add specialized workflows and source dispositions while retaining exclusions |
 
-用户要求使用 document-governance，在 Shoshin 下记录需求、Spec、详细 Plan 和名称/目录。本次治理范围仅为 `shoshin/docs/`，不改造整个 agent-skills 仓库。
+The user requested document-governance to record requirements, the Spec, a detailed Plan, and the name and directory under Shoshin. Governance applies only to `shoshin/docs/`, not a redesign of the entire agent-skills repository.
 
-## 关联文档
+## Related documents
 
-- 名称与位置：[SOURCE: docs/adr/0001-shoshin-package-identity.md]
-- 设计：[SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md]
-- 实施：[SOURCE: docs/execution/plans/2026-09-08-shoshin-plan.md]
+- Name and location: [SOURCE: docs/adr/0001-shoshin-package-identity.md]
+- Design: [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md]
+- Implementation: [SOURCE: docs/execution/plans/2026-09-08-shoshin-plan.md]

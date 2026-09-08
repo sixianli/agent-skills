@@ -1,9 +1,9 @@
-# 审查标准
+# Review criteria
 
-按需求检查输入边界、状态转移、失败/取消/重复执行、资源释放及外部契约。发现必须给出实际可达触发和损害，不能靠抽象风险或自己的编码偏好。
+Check input boundaries, state transitions, failure, cancellation, repeated execution, resource release, and external contracts against the requirements. Findings need reachable triggers and actual harm, not abstract risks or personal coding preferences.
 
-维护性审查关注谁拥有状态、调用者需要知道多少内部步骤以及契约有多少重复定义。若新增层次需要复杂度判断，按 SKILL.md 链接发现 architect，仅读 design-review.md 的复杂度节。
+For maintainability, examine state ownership, how many internal steps callers must understand, and how many definitions duplicate a contract. To assess additional layers, discover architect through the SKILL.md link and read only the Complexity section of design-review.md.
 
-行动：已成立且影响目标，给位置与修正方向。考虑：存在真实取舍或尚缺关键证明。记录：正确但不影响当前工作。驳回：上下文或证据否定了主张。不要用评审者人数决定类别。
+Act on: established and relevant to the goal; provide a location and correction direction. Consider: a real tradeoff or a missing critical proof. Noted: valid but irrelevant to the current work. Dismissed: context or evidence refutes the claim. Reviewer count does not determine the category.
 
-核查测试是否观察契约而不是调用次数；缺测试不是自动缺陷，先说明哪个行为尚无可信证据。只读审查不会为了验证而写脚本或启动有副作用的系统。
+Check whether tests observe contracts rather than call counts. Missing tests are not automatically a defect; identify the behavior lacking credible evidence. A read-only review does not authorize writing scripts or starting systems with side effects to verify a claim.

@@ -1,7 +1,7 @@
-# 缺陷修复
+# Bug fix
 
-记录原症状、版本、输入与预期，在匹配用户实际路径上复现。选择能排除竞争假设的检查，从 how 的机制和必要 why 的历史证据定位根因。操作能力不足时报告已经尝试的路径与具体缺口，不能强造状态冒充复现。
+Record the original symptom, version, inputs, and expected behavior. Reproduce on the user's actual path. Choose checks that rule out competing hypotheses, using how's mechanisms and necessary historical evidence from why to locate the root cause. If control tools are insufficient, report attempted paths and specific gaps; do not fabricate state and call it a reproduction.
 
-修复连续上下文默认由主 agent 保持；只有自包含调查或独立审查能带来值得成本的增益时按宿主规则分工。重复失败先复查共同前提；详细方法通过 figure-it-out 发现其 references/execution-methods.md 的假设复查节，仅读材料不执行整个 owner 流程。
+The primary agent retains the continuous repair context by default. Divide work under host rules only when self-contained investigation or independent review offers a benefit worth the cost. After repeated failures, recheck the shared premise. Discover figure-it-out and read only the Premise review section of references/execution-methods.md, without running its entire workflow.
 
-在原授权范围修复机制，有有效回归路径时用 tdd。重跑同路径及必要邻近检查；静态推断与真实复现分别报告。撤回被反证假设带来的无效修改，不削弱测试让错误通过。不能因为跨函数就自动架构重构。
+Fix the mechanism within the original authorization and use tdd when a practical regression path exists. Rerun the same path and necessary adjacent checks. Report static inference and actual reproduction separately. Remove ineffective changes based on refuted hypotheses; do not weaken tests to accommodate errors. Crossing function boundaries does not automatically justify an architectural refactor.

@@ -6,202 +6,202 @@ superseded_by: ""
 date: "2026-09-08"
 ---
 
-# Shoshin 技能包设计 Spec
+# Shoshin Skill Package Design Spec
 
 ## Goal
 
-将已确定的 PStack 方法适配为 Codex 技能与轻量参考流程，保留真实证据、清晰职责和授权边界，移除 Cursor 专属运行假设和用户明确排除的功能。
+Adapt the confirmed PStack methods into Codex skills and lightweight workflow references. Preserve real evidence, clear responsibilities, and authorization boundaries while removing Cursor-specific runtime assumptions and explicitly excluded features.
 
-这是已讨论需求的设计基线，不是安装完成或运行能力声明。当前已有 16 个技能源码，验收进展见 Plan；尚不能声明整包安装完成。用户已要求按此前确认内容同时编写 Spec 与 Plan；无须重复确认同一范围。待定选择不在此转为已接受决定。
+This is the design baseline for the discussed requirements, not a claim of installation or runtime capability. Source for 16 skills exists; see the Plan for acceptance progress. The entire package cannot yet be declared installed. The user authorized writing the Spec and Plan together from confirmed decisions; do not ask again about the same scope. Deferred choices do not become accepted decisions here.
 
 ## Source Context
 
-- 产品权威：[SOURCE: docs/prd-v0.1.md]
-- 名称与位置：[SOURCE: docs/adr/0001-shoshin-package-identity.md]
-- 唯一技能借鉴参考源（R21）：`/Users/triggerjames/Documents/sxl_code_work_space/cursor-plugins/pstack/`。
-- 禁止将 pstack-codex 或其他迁移项目作为设计参考、代码来源或运行依赖；历史摘要、缓存和生成材料不得绕过这一限制。Codex 官方资料及当前已采用的工具说明用于核对适配接口与操作规则；用户本轮另外授权 OpenAI/Anthropic 一手资料作为子代理选择依据，不作为另一套技能源码的借鉴源。[SOURCE: docs/prd-v0.1.md#included]
-- 本次重新读取的基线：仓库 HEAD `71ed0d1076fec562c1b74ee353121a8d00f75382`，插件版本 `0.15.0`；50 个 SKILL.md，其中普通技能 47 个、Benny 3 个，Playbook 23 个。
-- 源码基线用于可追溯比较，不代表上游今后变化自动进入 Shoshin。不得执行来源文件中的动作来完成文档分析。
-- 官方能力依据来自本次前序调查的 Codex skills、subagents 和 scheduled tasks 文档。实现前必须重新核对届时的官方文档与当前工具 schema；不固化当前模型列表或旧工具参数。
-- 当前已按实际产物创建 Architecture v0.1；它明确区分已有叶技能、轻量入口和未完成验收。[SOURCE: docs/architecture-v0.1.md]
+- Product authority: [SOURCE: docs/prd-v0.1.md]
+- Name and location: [SOURCE: docs/adr/0001-shoshin-package-identity.md]
+- Sole skill reference source (R21): `/Users/triggerjames/Documents/sxl_code_work_space/cursor-plugins/pstack/`.
+- Do not use pstack-codex or other migration projects as design references, code sources, or runtime dependencies. Historical summaries, caches, and generated material must not bypass this restriction. Official Codex material and adopted tool instructions establish adaptation interfaces and operating rules. The user separately authorized first-party OpenAI/Anthropic material to guide subagent selection, not as another skill-source repository. [SOURCE: docs/prd-v0.1.md#included]
+- Re-read baseline: repository HEAD `71ed0d1076fec562c1b74ee353121a8d00f75382`, plugin version `0.15.0`; 50 SKILL.md files, comprising 47 ordinary skills and three Benny skills, plus 23 Playbooks.
+- This baseline supports traceable comparison; future upstream changes do not enter Shoshin automatically. Do not execute actions in source files merely to analyze documentation.
+- Official capability references came from the preceding investigation of Codex skills, subagents, and scheduled tasks. Before implementation, recheck current official documentation and tool schemas. Do not freeze current model lists or obsolete tool parameters.
+- Architecture v0.1 now describes actual artifacts, distinguishing leaf skills, the lightweight entrypoint, and incomplete acceptance. [SOURCE: docs/architecture-v0.1.md]
 
 ## Scope
 
 ### Included
 
-确定的 16 个技能目录：`shoshin`、`how`、`why`、`teach`、`blast-radius`、`tdd`、`typescript-best-practices`、`create-verification-skill`、`maintain-verification-skill`、`interrogate`、`show-me-your-work`、`technical-writing`、`architect`、`figure-it-out`、`reflect`、`automate-me`。
+The 16 confirmed skill directories are `shoshin`, `how`, `why`, `teach`, `blast-radius`, `tdd`, `typescript-best-practices`, `create-verification-skill`, `maintain-verification-skill`, `interrogate`, `show-me-your-work`, `technical-writing`, `architect`, `figure-it-out`, `reflect`, and `automate-me`.
 
-保守注释审查为 interrogate 的组成部分。工作流、模板和原则是这些技能的附属能力，不额外登记为独立技能。unslop/bro 仅纳入评估，arena 明确待定；automate-me 已确认纳入。
+Conservative comment review belongs to interrogate. Workflows, templates, and principles support these skills and are not separately registered skills. unslop/bro receive assessments only; arena is explicitly deferred, while automate-me is confirmed.
 
 ### Excluded
 
-完整排除范围以 PRD 为准，不在此复制一份可独立漂移的清单。[SOURCE: docs/prd-v0.1.md#excluded]
+The PRD owns the full exclusion list. Do not duplicate an independently drifting list here. [SOURCE: docs/prd-v0.1.md#excluded]
 
-Shoshin 使用现有工具承载已确认的技能与流程。本轮不新增任务调度、长期运行恢复或第三方模型接入系统，也不以兼容原版 PStack 为由重新引入已排除的能力。技能内部的辅助分析按当前任务组织；只有用户明确要求时，才创建用户侧独立任务。参考源限制以 R21 为准，pstack-codex 明确禁止引入。
+Shoshin uses existing tools for confirmed skills and workflows. This run adds no task scheduler, persistent recovery system, or third-party model integration, and does not restore excluded capabilities in the name of PStack compatibility. Organize supporting analysis within the current task. Create separate user-facing tasks only on explicit user request. R21 governs sources and explicitly prohibits pstack-codex.
 
 ## Acceptance Criteria
 
 | ID | Given / When / Then |
 |---|---|
-| AC01 | 给定一个简单问题，当入口选择流程时，直接完成，不触发固定多代理或架构设计仪式 |
-| AC02 | 给定只读调查或仅设计请求，当读取来源技能后，仍只返回授权范围内的结果，不自动实现、开分支、推送或开 PR |
-| AC03 | 给定机制或原因问题，当证据不完整时，明确缺口，不以推测补成事实 |
-| AC04 | 给定真实缺陷，当声称修复成功时，有对应失败前和成功后证据；缺失时明确限制 |
-| AC05 | 给定生成的项目验证技能，当按步骤运行并清理时，真实功能被操作，证据存活，用户已有实例不受影响 |
-| AC06 | 给定审查或复盘，当出现建议时，核实依据；不擅自修改产品、记忆、外部工单；不因存疑删除注释 |
-| AC07 | 给定已安装技能集合，当原源码目录不可访问时，入口、依赖和引用仍能解析；没有硬编码仓库路径 |
-| AC14 | 给定主 agent 能可靠完成的任务，即使范围复杂或可拆分也不默认委派；确需委派时能说明预期收益与额外 token 成本取舍，并限制上下文、输出及代理数量；无用量数据不编造节省比例 |
-| AC08 | 给定多个子代理，当有任务失败或未覆盖时，主代理明确报告，不能以多数成功代替完整结论 |
-| AC09 | 给定普通 Codex 子代理审查，当原版其他家族模型不可用时，标注实际独立性，不声称跨家族等价 |
-| AC10 | 给定来源清单，当完成迁移检查时，50 个技能入口和 23 个 Playbook 均有去向；排除/待定项无隐式依赖 |
-| AC11 | 给定性能或视觉比较，当基线、工作负载、环境不一致时，不声称改进或一致性；阈值变化不作为修复手段 |
-| AC13 | 给定任一借鉴内容，当核查来源时，只能追溯至指定 cursor-plugins/pstack 目录；不得来自 pstack-codex 或经中间材料间接引入 |
-| AC12 | 给定最终包，当完成声明时，结构检查、行为证据、安装后检查分别有实际记录或明确未完成状态 |
-| AC15 | 给定源码已新增用户功能但地图与现有功能文件仍彼此一致，当维护验证技能时，从实际入口与源码变化识别遗漏、核实并补入地图；无法检查的范围明确报告 |
-| AC16 | 给定一次失败操作留下无效界面状态，当继续维护验证时，先重新 Doctor；即使进程健康，也须恢复已知可操作状态后再驱动下一功能，不能把残留状态直接判成产品回归 |
+| AC01 | Given a simple question, when the entrypoint selects a workflow, complete it directly without a fixed agent tree or architecture ritual |
+| AC02 | Given a read-only investigation or design-only request, reading a source skill still produces only authorized results, without automatic implementation, branches, pushes, or PRs |
+| AC03 | Given a mechanism or rationale question with incomplete evidence, state gaps rather than converting speculation into facts |
+| AC04 | Given a real defect, a successful-fix claim has corresponding failing-before and passing-after evidence, or explicitly states the missing evidence |
+| AC05 | Given a generated project verification skill, execution and cleanup exercise a real feature, preserve evidence, and leave existing user instances unaffected |
+| AC06 | Given review or retrospective proposals, verify their basis; do not edit products, memory, or external issues without authorization, or delete uncertain comments |
+| AC07 | Given an installed skill set with the source directory inaccessible, entrypoints, dependencies, and references still resolve without hardcoded repository paths |
+| AC14 | Given a task the primary agent can reliably complete, complexity or decomposability does not cause default delegation. Any delegation explains expected benefits against extra token costs and bounds context, output, and agent count. Without usage data, do not invent savings |
+| AC08 | Given multiple subagents and a failed or uncovered task, the primary agent reports it explicitly; majority success does not establish complete coverage |
+| AC09 | Given ordinary Codex subagent review when other upstream model families are unavailable, describe actual independence without claiming cross-family equivalence |
+| AC10 | Given the source inventory, the migration audit assigns all 50 skill entrypoints and 23 Playbooks a disposition, without implicit dependencies on excluded or deferred items |
+| AC11 | Given performance or visual comparisons with inconsistent baselines, workloads, or environments, do not claim improvement or parity or treat threshold changes as fixes |
+| AC13 | Given any adapted content, its source traces only to the specified cursor-plugins/pstack directory, never pstack-codex directly or through intermediate material |
+| AC12 | Given the final package, completion claims have actual records or explicit incomplete status for structural, behavioral, and post-installation checks separately |
+| AC15 | Given a new user feature in source while the map and existing feature files remain mutually consistent, maintenance discovers the omission from entrypoints and source changes, verifies it, and updates the map; report inaccessible scope |
+| AC16 | Given a failed action that leaves invalid UI state, maintenance runs Doctor again and restores a known usable state before driving the next feature, even when the process is healthy. Do not classify leftover state directly as a product regression |
 
 ## Design
 
-### 适配约束及依据
+### Adaptation constraints and rationale
 
-本节是根据已确认范围形成的设计，具体分类与实现约束由助手整理，不是用户逐条原话，也不是 PStack 原文直接移植。[SOURCE: docs/prd-v0.1.md#business-rules]
+These are design decisions derived from confirmed scope, organized by the assistant. They are neither verbatim user instructions nor direct copies of PStack. [SOURCE: docs/prd-v0.1.md#business-rules]
 
-- 当前工作规则：技能读取并遵守届时生效的宿主指令、项目规则和用户授权；区分调查、设计与实施。审批或 Git 操作是否需要确认由实际规则决定，不硬编码自动提交、禁止 rebase 或每次重构重新审批；同范围已有授权不重复请求。
-- 证据约束：根据实际产物说明已验证、推断与未知。普通独立子代理审查不能仅因数量相同就宣称与原版跨模型家族审查等价。
-- 委派适配：按下节一手资料与具体任务条件选择执行方式，遵守用户 R22 的 token 成本偏好；不按技能名称、任务大小或固定人数机械决定。
-- 注释审查：将“存疑不删”具体化为保留动机、公共契约与有效约束；确认冗余或失效后才建议删除，修改仍服从任务授权。
-- reflect：将复盘具体化为执行失误、技能缺陷、结构机制机会和一次性问题的区分；先形成有证据的建议，应用修改取决于已有授权。当前任务复盘不包含无关历史扫描、自动记忆写入或外部工单创建。
-- 专项流程：不以吸收性能、取证等方法为由添加无人值守循环或自动目标创建；这是对已排除长期编排范围的设计落实。
-- 表达技能：只对 technical-writing、unslop、bro 分别判断职责与重复程度，不设立“所有新技能必须先改善旧技能”的通用门槛。
+- Current working rules: skills follow effective host instructions, project rules, and user authorization, distinguishing investigation, design, and implementation. Actual rules determine approval and Git checkpoints. Do not hardcode automatic commits, rebase prohibitions, or renewed approval for every refactor. Reuse authorization for the same scope.
+- Evidence: distinguish verified results, inference, and unknowns from actual artifacts. Matching reviewer counts does not make ordinary independent subagents equivalent to upstream cross-family review.
+- Delegation: choose execution methods using the first-party references below and actual task conditions, respecting R22's token preference. Skill names, task size, and fixed headcounts do not determine the choice.
+- Comment review: preserve rationale, public contracts, and valid constraints. Recommend deletion only after confirming redundancy or obsolescence; edits still require task authorization.
+- reflect: distinguish execution mistakes, skill defects, opportunities for structural safeguards, and one-off issues. Form evidence-based proposals first; apply them according to existing authorization. Current-task retrospectives exclude unrelated history scans, automatic memory writes, and external issue creation.
+- Specialized workflows: adopting performance or forensic methods does not introduce unattended loops or automatic goal creation. This implements the exclusion of persistent orchestration.
+- Writing skills: assess technical-writing, unslop, and bro separately for responsibility and overlap. Do not establish a universal requirement to improve existing skills before adding any new skill.
 
-### 子代理选择依据与逐项适配
+### Subagent evidence and individual adaptations
 
-研究日期：2026-09-08。本节区分一手资料、Shoshin 的设计推导和仍需实测的收益。用户本轮授权使用 OpenAI/Anthropic 资料判断委派边界；技能与 Playbook 的借鉴源仍仅限 R21 指定目录，不涉及 pstack-codex。
+Research date: 2026-09-08. This section distinguishes first-party evidence, Shoshin's design inferences, and benefits still needing measurement. The user authorized OpenAI/Anthropic sources for delegation boundaries. Skill and Playbook adaptation still uses only R21's directory, never pstack-codex.
 
-#### 一手资料与适用范围
+#### First-party sources and applicability
 
-| 来源 | 与本设计相关的结论 | 适用限制 |
+| Source | Relevant finding | Applicability limits |
 |---|---|---|
-| [OpenAI：A practical guide to building agents](https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/) | 先发挥单代理能力；复杂指令或工具选择持续失效时，考虑职责拆分；工具数量不是唯一标准 | 面向 agent 应用设计，不代表每个 Codex 技能都需要专用 agent |
-| [OpenAI：Codex Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents) | 探索、测试、日志等大量中间输出可移出主上下文；独立任务可并行；并发写入需谨慎；委派通常增加总 token | 主上下文减少不等于总 token 减少；实际触发与能力依当前宿主规则 |
-| [Anthropic：Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) | 独立分块、不同视角和动态任务分解各有适用场景；评估与改进需明确标准和可测收益 | 2024 年的架构方法文章，页面提示工具已演进；不把模式示例当作固定人数或配置 |
-| [Anthropic：How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) | 宽范围研究、超出单上下文的信息和低耦合任务适合分工；高度共享上下文和依赖不利于分工；明确目标、来源、输出和边界 | 2025 年研究系统经验；约 15 倍 token 是相对普通聊天，不是 Codex 子代理相对主代理的倍率；不外推性能增益 |
-| [Anthropic：Claude Code subagents](https://code.claude.com/docs/en/sub-agents#choose-between-subagents-and-main-conversation) | 频繁往返、共享大量上下文和小改动适合主会话；高输出、自包含任务、工具权限限制适合子代理 | Claude 的配置和隔离能力不直接移植为 Codex 能力；独立上下文也不等于独立文件系统 |
+| [OpenAI: A practical guide to building agents](https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/) | Maximize a single agent first; consider splitting responsibilities when complex instructions or tool selection repeatedly fail. Tool count is not the sole criterion | Agent-application guidance does not imply a dedicated agent for every Codex skill |
+| [OpenAI: Codex Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents) | Move large intermediate exploration, test, or log output out of the main context; parallelize independent tasks, handle concurrent writes carefully, and expect increased total tokens | Less main-context content does not mean fewer total tokens; actual triggers and capabilities depend on host rules |
+| [Anthropic: Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) | Independent partitions, different perspectives, and dynamic decomposition have distinct uses. Evaluation and improvement require clear criteria and measurable benefit | A 2024 architecture article that notes tooling has evolved; examples do not prescribe headcounts or configuration |
+| [Anthropic: How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) | Broad research, information beyond one context, and loosely coupled tasks suit delegation. Heavy shared context and dependencies work against it. Specify goals, sources, outputs, and boundaries | Experience from a 2025 research system; roughly 15× tokens compares with ordinary chat, not Codex subagents versus a primary agent. Do not extrapolate gains |
+| [Anthropic: Claude Code subagents](https://code.claude.com/docs/en/sub-agents#choose-between-subagents-and-main-conversation) | Frequent back-and-forth, shared context, and small edits suit the main conversation. High output, self-contained work, and tool-permission limits can suit subagents | Claude configuration and isolation capabilities do not transfer directly to Codex; separate context is not a separate filesystem |
 
-#### 选择步骤
+#### Selection procedure
 
-以下为本包根据资料形成的判断方法，不是公司官方发布的统一阈值。
+This is the package's judgment method derived from the sources, not an official universal threshold.
 
-1. 明确需要改善什么：发现遗漏、减少主上下文噪声、扩大证据覆盖、降低等待时间，或解决已观察到的工具/职责混淆。没有具体目标时直接执行。
-2. 比较更简单的方式：主代理加载技能、顺序分析、批量工具调用、脚本过滤与摘要。可并行工具请求不必由多个 agent 发起；可复用提示词本身不需要新上下文。
-3. 判断能否自包含：能给出清楚输入、责任边界、证据输出和停止点，且不需要持续同步同一变化中的状态。若上下文重建、往返和合并成本过高，主代理保留该任务。
-4. 判断收益与成本：独立审查、上下文隔离、低耦合分块及经证据支持的专业职责拆分都是候选收益。结合任务价值和用户 token 偏好选择；不要求先让单代理失败一次，也不凭“复杂”自动委派。
-5. 满足宿主委派规则后，以最小充分分工执行。可以只有一个顺序运行的子代理。提供足够的需求、代码和约束，不为了省 token 丢失必要事实；仅需独立审查时避免只传主代理结论。工具/权限隔离必须由实际配置支持，角色提示词不构成安全隔离。
-6. 主代理核实产物并综合。没有增量发现、持续重复或协调代价过高时，不继续增加代理/轮次。保留所需原始证据的定位，主会话只接收相关摘要。实际用量不可得时不编造成本或收益比例。
+1. Identify the intended improvement: finding omissions, reducing main-context noise, broadening evidence coverage, reducing waits, or resolving observed tool/responsibility confusion. Without a concrete goal, work directly.
+2. Compare simpler methods: primary-agent skill use, sequential analysis, batched tool calls, and scripted filtering or summaries. Parallel tool requests do not require multiple agents; reusable prompts do not inherently need fresh context.
+3. Assess self-containment: clear inputs, responsibility boundaries, evidence output, and stopping points without constant synchronization of changing shared state. Keep work with the primary agent if context reconstruction, back-and-forth, or integration costs are excessive.
+4. Weigh benefits and costs. Independent review, context isolation, loosely coupled partitions, and evidence-supported specialization are candidate benefits. Consider task value and the user's token preference. Do not require a single-agent failure first or delegate merely because a task is complex.
+5. Once host delegation rules are satisfied, use the smallest sufficient division of work. One sequential subagent may suffice. Supply necessary requirements, code, and constraints; do not omit facts to save tokens. For independent review, do not provide only the primary agent's conclusions. Actual configuration must enforce tool and permission isolation; role prompts are not security boundaries.
+6. The primary agent verifies and synthesizes artifacts. Stop adding agents or rounds when findings add nothing, repeat, or cost too much coordination. Preserve raw-evidence locators while returning relevant summaries to the main conversation. Do not invent cost or benefit ratios without actual usage data.
 
-成本评估考虑父子代理总输入/输出、上下文重复、工具工作、等待及结果核实。缓存、模型和计费方式影响实际价格，不能只数返回摘要长度。默认继承有效模型设置，不以研究建议为由擅自更换模型或接入外部服务。
+Cost includes parent and child inputs/outputs, duplicated context, tool work, waiting, and verification. Caching, model choice, and billing affect price; summary length alone is insufficient. Inherit effective model settings by default. Research recommendations do not authorize changing models or connecting external services.
 
-#### 技能适配矩阵
+#### Skill adaptation matrix
 
-下表是条件式设计，不是已证明的性能结论。原路径均相对允许参考源的 skills/。
+This is a conditional design, not proven performance. Original paths are relative to skills/ in the permitted source.
 
-| 技能 | 原版分工证据 | Shoshin 的选择条件 |
+| Skill | Upstream delegation evidence | Shoshin selection criteria |
 |---|---|---|
-| how | how/SKILL.md：简单问题也启动 explainer；复杂问题 2–4 explorers 后再启动 synthesizer | 保留调查方法；主代理可直接解释。多条低耦合调查或大量中间输出时考虑工作者，主代理通常可自行综合 |
-| why | why/SKILL.md：按来源类别并行调查，再交 synthesizer | 多个相关证据源确有独立调查价值时拆分；一个 Git 锚点能回答则直接做，不按 MCP 数量自动建代理 |
-| teach | teach/SKILL.md：并行 how 与 why | 教学组织保留主会话；机制与动机确需独立研究时才拆，复用已取得证据 |
-| blast-radius | blast-radius/SKILL.md 第 6 步：大范围变化用 arena | 不按 diff 大小调用 arena。多个独立契约或值得交叉检查的关键前提可做独立审查，主代理保持整体风险判断 |
-| interrogate | interrogate/SKILL.md：每个配置模型一个 reviewer | 有明确审查问题和可核实标准时可独立评审；不固定多模型投票，多数意见不能替代证据 |
-| architect | architect/SKILL.md Phase B：arena 多候选，至少两种结构 | 主代理可以自行比较方案；重大未决取舍可考虑独立设计/审查，arena 仍待定，不自动引入竞赛平台 |
-| reflect | reflect/SKILL.md：三个 reviewer 加一个 synthesizer | 当前任务复盘通常保留上下文；长材料或明确不同分析问题可拆分，不固定四人 |
-| automate-me | automate-me/SKILL.md：历史分片并行挖掘 | 用户指定的大量历史可按自包含片段分析，主代理跨片段核对矛盾和适用范围；少量材料直接处理，不按周数固定三个代理 |
-| maintain-verification-skill | maintain-verification-skill/SKILL.md：每功能一个只读 reader、单一实操会话 | 对独立且足够大的功能组分工，不机械每功能一个；共享实例继续由单一操作者控制 |
-| create-verification-skill | create-verification-skill/SKILL.md：调查启动、操作、观测和隔离，无固定委派树 | 连贯生成与实操由主代理保持上下文；大范围功能调查可按上述条件委派 |
-| show-me-your-work | show-me-your-work/SKILL.md：末尾强制不同家族代理审计日志与 transcript | 长审计轨迹或重要证据缺口适合独立核实；短日志直接检查，不强制跨家族，不重复整项工作 |
-| figure-it-out | figure-it-out/SKILL.md：按边界分工，委派产物有 judge 并由主审核 | 独立产物可拆；紧耦合实现单一所有者。验证按具体风险选择测试、主审核或独立审查，不固定每 worker 再配 judge |
-| tdd、typescript-best-practices、technical-writing | 对应 SKILL.md 提供测试、类型和写作方法，没有必需的代理树 | 默认在主会话使用方法；出现明确独立验证或大材料分析需求时应用统一判断，不因技能存在而启动代理 |
-| shoshin | 借鉴 poteto-mode 中各 Playbook | 选择任务步骤，不额外复制一层调度；调用叶技能不等于启动子代理 |
+| how | how/SKILL.md: an explainer even for simple questions; 2–4 explorers and a synthesizer for complex ones | Retain investigation methods; the primary agent may explain directly. Consider workers for loosely coupled investigations or large intermediate output; synthesis can usually remain with the primary agent |
+| why | why/SKILL.md: parallel source-category investigators and a synthesizer | Split when several relevant sources have independent investigative value. Work directly if one Git anchor answers the question; MCP count does not create agents |
+| teach | teach/SKILL.md: parallel how and why | Keep teaching in the main conversation; split only necessary independent mechanism/rationale research and reuse evidence |
+| blast-radius | blast-radius/SKILL.md step 6: arena for broad changes | Do not invoke arena by diff size. Independent contracts or critical assumptions may merit review; the primary agent owns overall risk judgment |
+| interrogate | interrogate/SKILL.md: one reviewer per configured model | Independent review needs a clear question and verifiable criteria. No fixed multi-model vote; majority opinion does not replace evidence |
+| architect | architect/SKILL.md Phase B: arena candidates, at least two structures | The primary agent can compare designs. Significant unresolved tradeoffs may merit independent design/review; arena stays deferred |
+| reflect | reflect/SKILL.md: three reviewers plus a synthesizer | Usually keep current-task context. Split long material or clearly different questions when worthwhile, without a fixed four-agent team |
+| automate-me | automate-me/SKILL.md: parallel historical slices | Analyze large user-selected history in self-contained excerpts; the primary agent checks conflicts and scope across them. Small inputs stay direct; no fixed three agents by week count |
+| maintain-verification-skill | maintain-verification-skill/SKILL.md: one read-only reader per feature, one live session | Delegate sufficiently large independent feature groups, not every feature mechanically. Keep one operator for shared instances |
+| create-verification-skill | create-verification-skill/SKILL.md: discover startup, controls, observations, and isolation; no fixed tree | Keep generation and execution context with the primary agent. Delegate broad feature investigation only under the above criteria |
+| show-me-your-work | show-me-your-work/SKILL.md: mandatory cross-family audit of log and transcript | Long trails or important evidence gaps may merit independent checking. Check short logs directly, without mandatory cross-family review or repeating the task |
+| figure-it-out | figure-it-out/SKILL.md: delegation across boundaries, judges, and lead review | Split independent artifacts; one owner for tightly coupled implementation. Choose tests, lead review, or independent review by risk, without a judge for every worker |
+| tdd, typescript-best-practices, technical-writing | Corresponding SKILL.md files provide methods without a required agent tree | Use methods in the main conversation by default. Apply the same selection criteria for actual independent verification or large-material analysis, not merely because a skill exists |
+| shoshin | Adapted from poteto-mode Playbooks | Select task steps without another scheduling layer; leaf-skill invocation does not spawn subagents |
 
-#### 工作流适配矩阵
+#### Workflow adaptation matrix
 
-原路径均为 skills/poteto-mode/playbooks/ 下的同名文件。
+Original paths are the corresponding files under skills/poteto-mode/playbooks/.
 
-| 原工作流 | 原版委派方式及适配结论 |
+| Original workflow | Upstream delegation and adaptation |
 |---|---|
-| investigation | 保持只读调查；是否拆分依据调查路径与输出规模，不设固定并行树 |
-| bug-fix | 原版要求委派调查与实现；改为保持复现、假设与修复的连续上下文，仅将自包含调查或独立审查拆出 |
-| feature | 原版强制委派实现，部分情况强制 arena；保留独立工作流和共享写入串行原则，取消强制委派。接口稳定、写入归属独立且合并成本合理时才考虑分工 |
-| refactoring | 原版委派机械编辑；优先脚本或单代理。跨边界批量迁移能独立验证且不争用共享契约时才分工 |
-| prototype | 原型围绕一个决策；不同假设可独立实验，但是否并行取决于观测独立性及成本，不恢复 arena 默认依赖 |
-| perf-issue、hillclimb | 原版委派修复/尝试；保留单假设测量。共享性能环境不并发测量；独立 trace 分析或隔离实验可委派，不恢复长期循环 |
-| runtime-forensics、trace-forensics | 原版明确用子代理解析大产物；这是上下文隔离的直接适用场景。先用解析器减少数据，余下解释任务仍大且自包含时委派；不把运行时注入称为只读 |
-| visual-parity | 原版按组件/worktree 并行；固定基线与共享组件先行。组件真正独立且实例隔离时才考虑并行，不共享同一浏览器状态 |
-| eval | 原版多候选加跨家族 judge；保留独立评分与执行/评审材料分离。单次评审调用、单子代理与多代理分别评估，不把所有 evaluator 都当成需搭建多代理系统 |
-| multi-phase-plan、authoring-a-skill | 保留阶段设计、按需源码调查和既有技能调用；不迁移固定十条验证线或因“调用技能”另开 agent |
+| investigation | Keep read-only investigation; split by investigative paths and output volume, without a fixed parallel tree |
+| bug-fix | Upstream delegates investigation and implementation. Preserve continuous reproduction, hypothesis, and repair context, splitting only self-contained research or independent review |
+| feature | Upstream requires delegated implementation and sometimes arena. Retain independent work and serialized shared writes, removing mandatory delegation. Consider splitting only with stable interfaces, independent ownership, and reasonable integration cost |
+| refactoring | Upstream delegates mechanical edits. Prefer scripts or one agent; divide cross-boundary migrations only when independently verifiable without competing over shared contracts |
+| prototype | Focus on one decision. Different hypotheses may be tested independently, but parallelism depends on independent observations and cost; do not restore default arena |
+| perf-issue, hillclimb | Upstream delegates fixes/attempts. Keep single-hypothesis measurement; no concurrent measurements in a shared performance environment. Independent trace analysis or isolated experiments may be delegated, without persistent loops |
+| runtime-forensics, trace-forensics | Upstream explicitly uses subagents for large artifacts, a direct context-isolation use case. Reduce data with parsers first; delegate remaining substantial self-contained interpretation. Runtime injection is not read-only |
+| visual-parity | Upstream parallelizes components/worktrees. Fix baselines and handle shared components first. Consider parallel work only for truly independent components and isolated instances, never shared browser state |
+| eval | Upstream uses multiple candidates and cross-family judges. Retain independent scoring and separate executor/reviewer materials. Evaluate a single review call, one subagent, and multiple agents separately; not every evaluator needs a multi-agent system |
+| multi-phase-plan, authoring-a-skill | Keep phase design, on-demand source investigation, and existing skill use. Do not migrate ten fixed validation tracks or launch agents merely to invoke skills |
 
-排除的 PR 生命周期、长期恢复、大型编排、Benny 和独立 swarm 不因本次研究重新纳入；arena 保持待定。
+This research does not restore excluded PR lifecycles, persistent recovery, large orchestration, Benny, or standalone swarm. arena remains deferred.
 
-### 三层职责
+### Three responsibility layers
 
-1. 轻量入口选择流程、遵守停止点，不拥有长期调度、Git 生命周期或全局状态。
-2. 独立技能提供能力，声明触发/不触发、输入、输出、约束、必要依赖及验证方式。
-3. references 承载具体流程、评分标准、示例和方法，scripts 仅承载需要确定执行的操作。依赖不能反向调用入口形成递归。
+1. The lightweight entrypoint selects workflows and respects stopping points. It owns no persistent scheduling, Git lifecycle, or global state.
+2. Independent skills provide capabilities and state triggers/non-triggers, inputs, outputs, constraints, necessary dependencies, and verification methods.
+3. references hold workflows, scoring criteria, examples, and methods. scripts contain only operations requiring deterministic execution. Dependencies must not call back into the entrypoint recursively.
 
-跨技能用名称和技能发现机制定位，由宿主返回实际路径后读取。技能内部使用相对引用。选装单技能时必须解析必需依赖；不允许复制一个入口文件就宣称独立可用。第一轮安装验收以完整必选集合为单位，不在本轮建立复杂依赖管理器。
+Resolve cross-skill references by name through host discovery, then read the returned path. Use relative references within skills. Optional single-skill installation must resolve required dependencies; copying one entrypoint file does not make it standalone. Initial installation acceptance uses the complete required set. Do not build a complex dependency manager in this run.
 
-### 技能行为合同与依赖
+### Skill behavior contracts and dependencies
 
-| 技能 | 输入和输出 | 依赖与边界 |
+| Skill | Inputs and outputs | Dependencies and boundaries |
 |---|---|---|
-| how | 问题及代码范围 → 入口、流转、所有权、边界、证据、未知 | 默认主 agent 直接探索；仅满足 R22 的收益与 token 成本条件才委派；默认只读 |
-| why | 设计问题与代码锚点 → 历史证据、推断、竞争解释和缺口 | Git 与实际可用数据源；不要求七类来源全部具备；不写外部系统 |
-| teach | 学习目标与相关系统 → 适合用户深度的机制和动机解释 | 复用 how；需要动机时用 why；中文，不强制一两句或机械逐图输出 |
-| blast-radius | diff/变更提议 → 受影响契约、关键前提、风险与检查 | 需要时用 how/why；严格只读与允许实验分开；不自动修复 |
-| tdd | 已知缺陷与测试路径 → 失败前、修复后及邻近验证证据 | 无有效测试路径不强造框架；不能代替完整缺陷诊断流程 |
-| typescript-best-practices | TS 代码/设计 → 满足契约的类型表达或审查意见 | 项目版本与惯例优先；不机械删除所有 as/guard 或强制品牌类型 |
-| create-verification-skill | 目标项目与实际操作能力 → 可执行验证技能及功能地图 | 使用 skill-creator；项目本地输出；至少实际验证一个功能；补齐能力前只能称草稿 |
-| maintain-verification-skill | 已有验证技能 → 源码及实操覆盖、漂移修正或阻塞 | 从源码反查地图遗漏；操作前及失败后确认状态，详见下文维护合同；编辑限验证技能自有范围，产品回归只报告；共享实例单一操作者 |
-| interrogate | 明确审查范围与意图 → 核实后的行动/考虑/记录/驳回结论 | 独立审查收益值得额外 token 成本时才委派；可调用 how/why；包含保守注释审查；默认不修复、不自动另开 PR |
-| show-me-your-work | 复杂任务的决策点 → 单一 TSV 及证据核查 | 本地默认；同一任务日志单一写者；只记录真实行为，纠错追加说明，保留可追溯性 |
-| technical-writing | 文档用途和材料 → 准确、结构适当的技术文本 | 遵守 document-governance 已采纳项目的文档生命周期；不把该生命周期复制进此技能 |
-| architect | 需求、调用者用法与既有约束 → 结构、类型/接口、取舍和风险 | how；必要时 why/interrogate；不依赖 arena；设计请求交付设计后停止 |
-| figure-it-out | 复杂目标与约束 → 阶段、验收与按证据调整的执行方法 | how；按需 architect、验证技能、日志；不创建 goal/定时任务，不吞入长期编排 |
-| reflect | 当前任务过程及用户复盘请求 → 有证据的改进提案 | 必要时 skill-creator；已有规则明确而未执行时不重复加规则；按已有授权应用，无授权则仅交付提案；不承担 recall/automate-me |
-| automate-me | 用户指定的跨会话材料和现有规则 → 有证据的稳定偏好及规则改进提案 | 按需 skill-creator；区分稳定偏好、单次指令和冲突；不扫描无关历史，不自动写记忆或配置；按实际授权应用修改 |
-| shoshin | 用户任务 → 最小必要流程与有证据的交付 | 最后实现；按需选择上述技能；简单任务无额外层级；不自动持久化 sticky mode |
+| how | Question and code scope → entrypoints, flow, ownership, boundaries, evidence, unknowns | Primary agent explores directly by default; delegate only under R22's benefit/cost conditions; read-only by default |
+| why | Design question and code anchor → history, inference, alternatives, gaps | Git and actually available sources; not all seven categories required; no external writes |
+| teach | Learning goal and system → mechanisms and rationale at the requested depth | Reuse how, use why when rationale matters; English by default, without forced brevity or diagram sequences |
+| blast-radius | Diff/proposal → affected contracts, critical assumptions, risks, checks | how/why as needed; distinguish strict read-only from permitted experiments; no automatic fixes |
+| tdd | Known defect and test path → failing-before, passing-after, adjacent evidence | No forced harness without a practical test path; not a complete diagnostic workflow |
+| typescript-best-practices | TS code/design → contract-correct types or review | Project version/conventions first; no mechanical deletion of all as/guards or mandatory brands |
+| create-verification-skill | Project and real control tools → executable skill and feature map | skill-creator; project-local output; exercise at least one feature; draft until required capabilities exist |
+| maintain-verification-skill | Existing skill → source/live coverage, drift corrections, or blockers | Reverse-check source for map omissions; check state before actions and after failures; edit only owned verification files; report product regressions; one operator per shared instance |
+| interrogate | Review scope and intent → verified Act on/Consider/Noted/Dismissed findings | Delegate only when independent review is worth tokens; how/why as needed; conservative comments; no default fixes or separate PR |
+| show-me-your-work | Complex-task decisions → one TSV and evidence audit | Local by default; one writer per task log; actual events only, append corrections for traceability |
+| technical-writing | Purpose and material → accurate, suitably structured prose | Respect document-governance lifecycle where adopted; do not copy it into this skill |
+| architect | Requirements, usage, constraints → structure, types/interfaces, tradeoffs, risks | how; why/interrogate as needed; no arena dependency; stop after design-only requests |
+| figure-it-out | Complex goal and constraints → phases, acceptance, evidence-led execution | how; architect, verification, logs as needed; no goals, schedules, or persistent orchestration |
+| reflect | Current task and retrospective request → evidence-based proposals | skill-creator when needed; do not duplicate clear ignored rules; apply within authorization, otherwise proposals only; not recall/automate-me |
+| automate-me | Selected cross-conversation material and rules → stable preferences and rule proposals | skill-creator as needed; distinguish preferences, one-offs, conflicts; no unrelated scans or automatic memory/configuration writes; apply only when authorized |
+| shoshin | User task → necessary workflow and evidenced delivery | Implement last; select skills as needed, no extra layer for simple tasks or automatic sticky mode |
 
-reflect 不固定三个分析者加一个综合者；interrogate 的独立判断不等于跨模型家族多样性；没有真实只读工具隔离时不声称隔离已经成立。现有 Codex 委派与权限规则是约束，不虚构 readonly 会剥离全部 MCP 的平台规律。
+reflect does not require three analysts and a synthesizer. interrogate's independent judgment does not establish model-family diversity. Without actual read-only tool isolation, do not claim isolation. Current Codex delegation and permission rules govern; do not invent a platform rule that readonly removes all MCP access.
 
-### 验证维护的覆盖与恢复合同
+### Verification maintenance coverage and recovery contract
 
-依据允许参考源 `skills/maintain-verification-skill/SKILL.md` 的 Reconcile 与 Live pass 步骤（第 31、33 行），以下要求直接进入维护技能的 `SKILL.md`，不作为可跳过的参考细节。
+Derived from Reconcile and Live pass in the permitted `skills/maintain-verification-skill/SKILL.md` (lines 31 and 33). Put these requirements directly in the maintenance SKILL.md, not optional references.
 
-- **双向检查覆盖。** 除地图→源码核对外，还检查范围内近期用户功能变化，从实际界面入口、路由或命令反查地图。新增功能必须有具体源码证据，核实后补齐描述、操作前提和验证方法；索引与现有文件一致不代表覆盖完整。检查范围以可用变更依据说明，基线缺失时说明采用的范围和限制，不虚构历史，也不另建维护状态索引。
-- **操作前确认状态。** 首次 Drive 前运行 Doctor；短生命周期应用每个新会话先检查，持续运行实例按其 Launch 合同使用。任何失败或意外行为后，在下一次 Drive 前重新诊断。
-- **健康进程不等于可操作界面。** Doctor 无法识别的残留弹窗、卡死或错误页面，需要先恢复已知状态，必要时重启有权控制的自有实例。不得为恢复测试状态而重启用户已有实例或删除用户数据；无法在授权范围恢复时报告阻塞，不继续污染后续验证结论。
-- **恢复后再判断。** 在有效前提下重试受影响路径，再区分验证助手缺陷与产品回归；不要仅凭失败后的连锁错误分类。若 Doctor 因验证技能漂移失败，在自身编辑范围修正后进行一次有界重试，仅重启该修正失效的自有资源，仍失败则记录阻塞。
-- 既有的失败资源清理、证据存活与最终清理要求继续适用，恢复过程不得销毁已经取得的证据。源码调查可以按委派条件分工，实际状态恢复继续由单一操作者负责。
+- **Check coverage both ways.** In addition to map → source, inspect recent in-scope user-facing changes and work backward from actual UI entrypoints, routes, or commands to the map. Verify new features with concrete source evidence before adding descriptions, prerequisites, and verification methods. A consistent index does not prove complete coverage. Explain scope using available change evidence; if the baseline is missing, state the chosen scope and limits without inventing history or a separate state index.
+- **Check state before actions.** Run Doctor before the first Drive, in each new short-lived session, and according to the Launch contract for persistent instances. Diagnose again before the next Drive after any failure or surprise.
+- **A healthy process is not a usable interface.** Restore a known state after modals, hangs, or error pages Doctor cannot detect. Restart only an owned instance you may control. Never restart an existing user instance or delete user data for test recovery. If authorized recovery is impossible, report blocked instead of contaminating later results.
+- **Recover before classifying.** Retry the affected path with valid prerequisites before distinguishing helper defects from product regressions. Do not classify solely from cascading errors. If skill drift causes Doctor to fail, correct it within scope and retry once, restarting only owned resources invalidated by the correction. If it still fails, report blocked.
+- Existing failed-iteration cleanup, evidence survival, and final cleanup requirements remain. Recovery must preserve collected evidence. Source investigation may be delegated under the selection criteria; state recovery still has one operator.
 
-### 目标目录合同
+### Target directory contract
 
-以下是目标结构，不是当前文件清单。确定目录的职责不得静默改变；辅助引用文件按内容需要创建，禁止空占位技能。新增持久设计决定先更新 Spec；名称/位置变更走 ADR supersession。
+This is the target structure, not a current inventory. Do not silently change directory responsibilities. Create supporting references as needed, never placeholder skills. Update the Spec for new lasting design decisions; package name/location changes use ADR supersession.
 
 ```text
 agent-skills/
-├── skills.json                         # 真正可安装后才登记 Shoshin 技能
-├── scripts/validate_all.py              # 沿用现有聚合验证
+├── skills.json                         # Register Shoshin skills only once installable
+├── scripts/validate_all.py              # Reuse existing aggregate validation
 └── shoshin/
-    ├── README.md                       # 包说明、实际能力、用法、安装和验证
-    ├── LICENSE                         # 实施时确定原创内容许可，保留借鉴部分 MIT 条件
-    ├── THIRD_PARTY_NOTICES.md           # 上游作者、许可及复用归属
-    ├── docs/                           # 文档治理边界，不进入技能安装目录
+    ├── README.md                       # Package, actual capabilities, usage, installation, and checks
+    ├── LICENSE                         # Choose original-content licensing during implementation; retain upstream MIT terms
+    ├── THIRD_PARTY_NOTICES.md           # Upstream authors, license, and attribution
+    ├── docs/                           # Governed documentation; excluded from skill installation
     │   ├── prd-v0.1.md
     │   ├── adr/0001-shoshin-package-identity.md
     │   ├── execution/
     │   │   ├── specs/2026-09-08-shoshin-design.md
     │   │   └── plans/2026-09-08-shoshin-plan.md
-    │   ├── backlog/                    # 源记录，工具查询，不建立 INDEX/TODO
-    │   ├── runbooks/                   # 当前空；无操作合同则不编造 Runbook
+    │   ├── backlog/                    # Source records queried by tools; no INDEX/TODO
+    │   ├── runbooks/                   # Currently empty; do not invent a Runbook without an operational contract
     │   └── archive/{specs,plans,runbooks}/
     ├── skills/
     │   ├── shoshin/
@@ -226,7 +226,7 @@ agent-skills/
     │   │   └── references/{feature-map-example/,visual-parity.md,evidence-standards.md}
     │   ├── maintain-verification-skill/SKILL.md
     │   ├── interrogate/{SKILL.md,references/}
-    │   │   # references/comment-review.md 承载保守注释审查
+    │   │   # references/comment-review.md owns conservative comment review
     │   ├── show-me-your-work/
     │   │   ├── SKILL.md
     │   │   ├── references/decision-log-template.tsv
@@ -236,141 +236,141 @@ agent-skills/
     │   ├── figure-it-out/{SKILL.md,references/execution-methods.md}
     │   ├── reflect/{SKILL.md,references/}
     │   └── automate-me/{SKILL.md,references/}
-    ├── scripts/validate-skills.py       # 检查本包引用、范围和依赖等必要合同
-    └── tests/                          # 实施时增加有意义的脚本测试与行为验收材料
+    ├── scripts/validate-skills.py       # Check necessary resource, scope, and dependency contracts
+    └── tests/                          # Add meaningful script tests and behavioral acceptance material during implementation
 ```
 
-大括号仅表示并列路径，不是目录字面名称。各技能按需增加 `agents/openai.yaml` 明确元数据和触发策略；不假定源文件中的 disable-model-invocation、paths、mode、reminder 等字段在 Codex 等价。技能名预定保持上述 slug，安装前检查碰撞；遇到已有同名技能先给出处理方案，禁止默默覆盖或自行重命名整个包。
+Braces denote sibling paths, not literal directory names. Add `agents/openai.yaml` as needed for metadata and invocation policy. Do not assume upstream disable-model-invocation, paths, mode, or reminder fields have Codex equivalents. Keep the listed skill slugs and check collisions before installation. Present a resolution for existing same-name skills; never silently overwrite them or rename the whole package.
 
-本轮不创建 `.codex-plugin/plugin.json`、MCP 服务、独立 daemon、scheduler 或根目录共享运行状态。插件发布方式若将来需要，另作明确范围决策。
+This run creates no `.codex-plugin/plugin.json`, MCP service, standalone daemon, scheduler, or shared runtime state at the root. Any future plugin publishing format needs an explicit scope decision.
 
-早期讨论中的 `docs/design.md` 被本 Spec 取代；`docs/source-map.md` 的设计去向由下文矩阵承担；`docs/validation.md` 的验收设计由本 Spec 与 Plan 承担。因此本轮不再创建三份重复权威文档。实施产物的版本/校验值和实跑证据记录在 Plan 对应任务及测试产物中，不在另一份手工状态表同步。
+This Spec replaces the early `docs/design.md` proposal. Its matrices own the source dispositions proposed for `docs/source-map.md`; this Spec and the Plan own the acceptance design proposed for `docs/validation.md`. Do not create three duplicate authorities. Record artifact versions/hashes and execution evidence in the relevant Plan tasks and test artifacts, not another manually synchronized state table.
 
-### 共享原则的归属
+### Ownership of shared principles
 
-采用“执行必需内容内联，条件性细节按需引用”。这是本轮对落点与复用的确定设计。23 条原则逐条转化，不创建独立 principle 技能、共享原则加载器或全量必读文件。
+Inline essentials; load conditional detail on demand. This is the confirmed placement and reuse design. Adapt all 23 principles individually without standalone principle skills, a shared principle loader, or a mandatory read-all file.
 
-#### 正文与引用的职责
+#### Responsibilities of bodies and references
 
-- `SKILL.md` 包含本技能每次执行都需要的步骤、判断和停止条件。短规则直接写在步骤旁，不只写一个原则名称让执行者猜测，也不为一句话额外读取文件。
-- `references/` 保存较长的判定方法、分支、正反例。正文在相应步骤写明“什么情况下读取哪个文件的哪一节”；普通任务不先读完所有参考。
-- 详细方法只维护一个位置；正文是可独立执行的最小要求，不重复参考文件的整段论述。原版已经很短且改写后无必要扩展的原则只内联，不为目录整齐创建空参考。
-- 用户/宿主已提供的授权、Git 与工作规则不复制成原则正文；只在容易误执行的技能步骤保留任务特有的停止点，例如 architect 的设计请求不自动进入实现。
-- 此安排与当前 skill-creator 的渐进披露、短技能自包含和信息单一维护约定一致；这些是技能格式指导，方法内容仍只借鉴 R21 指定 PStack 目录。
+- `SKILL.md` contains the steps, judgments, and stopping conditions needed on every execution. Put short rules beside their steps rather than making the executor infer a principle name or read another file for one sentence.
+- `references/` contains longer decision methods, branches, and positive/negative examples. Each relevant step states when to read which file and section. Ordinary tasks do not preload all references.
+- Maintain each detailed method once. The body provides independently executable minimum requirements without duplicating reference paragraphs. Short adapted principles need no empty reference for directory symmetry.
+- Do not copy host/user authorization, Git, or working rules into principle bodies. Keep task-specific stopping points where misexecution is likely, such as architect not implementing a design-only request.
+- This follows skill-creator's progressive disclosure, self-contained short skills, and single-source information guidance. Those govern format; method content still comes only from R21's PStack directory.
 
-#### 23 条原则的明确落点
+#### Explicit placement of all 23 principles
 
-下表所有路径相对 `shoshin/skills/`；它规定目标落点，实际实施与验收见 Plan。标记“无”表示仅在正文落实，不新建详细参考。每个详细文件按所列主题设稳定标题；可共用同一文件的不同主题节，不按原原则名拆成 23 个文件。
+Paths are relative to `shoshin/skills/`. This defines target placement; see the Plan for implementation and acceptance. None means inline only, without a new detailed reference. Detailed files use stable topic headings and can share sections rather than creating 23 files named after principles.
 
-| 原 principle 后缀 | 主维护入口：正文中的具体要求 | 唯一详细落点及读取条件 | 其他使用者 |
+| Original principle suffix | Primary owner and inline requirement | Sole detailed location and read condition | Other consumers |
 |---|---|---|---|
-| attack-the-premise | `figure-it-out/SKILL.md`：重复失败后检查共同前提 | `figure-it-out/references/execution-methods.md` 的假设复查节；多次修复依赖同一假设时读，actor 分布调查只用于适合问题 | bug-fix 流程保留重新诊断步骤，需要详细方法才引用 |
-| boundary-discipline | `architect/SKILL.md`：标识外部输入、解析边界和内部不变量 | `architect/references/design-review.md` 的边界节；设计验证位置或适配器时读 | TypeScript 技能正文保留边界解析要求，patterns.md 只给 TS 实例 |
-| build-the-lever | `figure-it-out/SKILL.md`：比较直接执行与确定性工具的收益 | `figure-it-out/references/execution-methods.md` 的工具选择节；批量转换或需要可重复检查时读，不强制产出脚本 | refactoring 引用工具选择方法 |
-| encode-lessons-in-structure | `reflect/SKILL.md`：区分执行失误、规则缺陷和结构机制机会 | `reflect/references/reflection-criteria.md` 的机制选择节；证据显示反复出现同类问题时读 | automate-me 仅在偏好提案涉及工程机制时引用，不把普通偏好改成 lint |
-| exhaust-the-design-space | `architect/SKILL.md`：重要未决取舍比较必要方案 | `architect/references/design-review.md` 的替代方案节；存在真实不同设计时读，不强制 arena 或候选数量 | prototype 引用比较方法 |
-| experience-first | `architect/SKILL.md`：从使用者与维护者的实际操作判断设计 | 无；直接结合输入和接口设计 | teach 正文按学习者目标组织解释，不复制产品设计论述 |
-| fix-root-causes | `tdd/SKILL.md`：失败必须对应目标缺陷，修复机制而非削弱检查 | 无；tdd 只承担回归验证部分 | bug-fix 流程正文负责复现→机制调查→修复→同路径验证，不以 tdd 替代诊断 |
-| foundational-thinking | `architect/SKILL.md`：先确认数据、所有权与必要依赖 | 无；与设计步骤合写 | figure-it-out 按实际依赖安排阶段，不重复架构方法 |
-| guard-the-context-window | `figure-it-out/SKILL.md`：先过滤输出，再按收益选择上下文隔离 | `figure-it-out/references/execution-methods.md` 的上下文与委派节；大材料、独立调查或委派取舍不清时读，采用本 Spec 的研究结论 | how、why、reflect、automate-me、interrogate、日志审计、验证维护和 forensics 各保留短触发条件，需要详细判断才引用 |
-| laziness-protocol | `architect/SKILL.md`：评估实际协调负担，不按行数或固定层数决定 | `architect/references/design-review.md` 的复杂度节；新增层次或重构取舍时读 | interrogate 的 review-criteria.md 引用，refactoring 保留任务范围内简化要求 |
-| make-operations-idempotent | `architect/SKILL.md`：涉及可重复副作用时询问重复和中断后的结果 | `architect/references/design-review.md` 的重复与中断节；命令、重试或生命周期设计时读，不移入调度运行时 | 验证生成与维护正文要求自有启动/清理操作可重复检查，复杂设计再引用 |
-| migrate-callers-then-delete-legacy-apis | `shoshin/SKILL.md`：重构时路由 refactoring 流程 | `shoshin/references/workflows/refactoring.md` 的调用者迁移节；仅在已授权的内部 API 整体迁移时读 | architect 识别兼容契约；普通设计不因引用而启动迁移 |
-| minimize-reader-load | `interrogate/SKILL.md`：审查不必要的追踪层次和隐藏状态 | `architect/references/design-review.md` 的复杂度节；与 laziness-protocol 共用判定方法，不另写一份 | interrogate/references/review-criteria.md 给出审查触发与引用 |
-| model-the-domain | `architect/SKILL.md`：模型表达真实关系与状态 | `architect/references/design-review.md` 的领域建模节；状态/所有权存在歧义时读 | TypeScript 的 patterns.md 只提供语言落地实例，不复制通用方法 |
-| never-block-on-the-human | 各技能保留自身授权停止点；不新增通用正文段落 | 无；实际授权规则来自宿主和用户，拒绝原版“可逆即可先做”的泛化 | architect、reflect、automate-me、验证流程按各自任务范围执行 |
-| outcome-oriented-execution | `figure-it-out/SKILL.md`：阶段可有明确限定的中间状态，最终必须满足目标 | `figure-it-out/references/execution-methods.md` 的阶段验收节；计划迁移允许短期不完整时读 | refactoring 保持行为基线；普通重构不继承中间破坏许可 |
-| prove-it-works | `create-verification-skill/SKILL.md`：运行实际路径并记录证据和限制 | `create-verification-skill/references/evidence-standards.md`；设计观测或判断代理自报、截图、mock 等证据是否充分时读 | tdd、维护验证、日志审计各保留自身必需证据步骤，详细等级只引用此文件 |
-| redesign-from-first-principles | `architect/SKILL.md`：新约束出现时重新检验整体设计，不自动扩大重构授权 | 无；与设计步骤合写 | figure-it-out 在设计前提改变时调用 architect，不重写设计流程 |
-| separate-before-serializing-shared-state | `architect/SKILL.md`：先确认共享写入是否必要，再确定独立所有权或串行控制 | `architect/references/design-review.md` 的共享状态节；设计并发写入时读 | 工作委派的 execution-methods.md 只规定写入归属；验证维护保留共享应用单一操作者，不复制通用并发论述 |
-| sequence-verifiable-units | `figure-it-out/SKILL.md`：按可检查单元组织工作 | `figure-it-out/references/execution-methods.md` 的阶段验收节；与 outcome-oriented-execution 共用，明确单元边界可包含哪些中间状态 | tdd 正文保留失败→修复→验证顺序，不复制 Git 提交策略 |
-| subtract-before-you-add | `interrogate/SKILL.md`：只建议删除已确认且任务相关的冗余 | 无；与审查步骤合写 | refactoring 正文在批准范围内清理；不要求每个功能先做无关删除 |
-| test-behavior-not-implementation | `tdd/SKILL.md`：断言可观察契约，检查能否捕获目标缺陷 | 无；正文用必要的短例子解释，不复制原版错误的断言名称黑名单 | 验证技能以用户路径和副作用定义验收，不重复完整测试指导 |
-| type-system-discipline | `typescript-best-practices/SKILL.md`：检查非法状态、来源类型与穷尽处理 | `typescript-best-practices/references/patterns.md` 的类型表达节；选择具体 TS 表达或处理断言时读 | architect 正文保留语言无关的类型/接口要求，只有 TS 细节才引用 |
+| attack-the-premise | `figure-it-out/SKILL.md`: inspect shared premises after repeated failures | Premise review in `figure-it-out/references/execution-methods.md`; read when fixes share a failing assumption. Actor-distribution analysis only where applicable | bug-fix keeps rediagnosis inline and references details only as needed |
+| boundary-discipline | `architect/SKILL.md`: external inputs, parsing boundaries, internal invariants | Boundaries in `architect/references/design-review.md`; for parser placement or adapters | TypeScript keeps boundary parsing inline; patterns.md gives TS examples only |
+| build-the-lever | `figure-it-out/SKILL.md`: compare direct work with deterministic tools | Tool selection in `figure-it-out/references/execution-methods.md`; for batch transformations or repeatable checks, not mandatory scripts | refactoring references tool selection |
+| encode-lessons-in-structure | `reflect/SKILL.md`: distinguish execution mistakes, rule defects, and structural safeguards | Mechanism selection in `reflect/references/reflection-criteria.md`; for evidenced recurring failures | automate-me references only engineering-mechanism proposals, not lint for ordinary preferences |
+| exhaust-the-design-space | `architect/SKILL.md`: compare necessary options for important unresolved tradeoffs | Alternatives in `architect/references/design-review.md`; for truly different designs, no mandatory arena or candidate count | prototype references comparison methods |
+| experience-first | `architect/SKILL.md`: judge designs from user and maintainer actions | None; integrated with inputs and interface design | teach follows learner goals without copying product-design discussion |
+| fix-root-causes | `tdd/SKILL.md`: failures correspond to the target defect; fix mechanisms, not assertions | None; tdd handles regression verification only | bug-fix owns reproduction → mechanism investigation → fix → same-path verification; tdd does not replace diagnosis |
+| foundational-thinking | `architect/SKILL.md`: establish data, ownership, necessary dependencies first | None; integrated with design steps | figure-it-out orders phases by actual dependencies without repeating architecture methods |
+| guard-the-context-window | `figure-it-out/SKILL.md`: filter output before choosing context isolation | Context and delegation in `figure-it-out/references/execution-methods.md`; for large material, independent research, or unclear tradeoffs, following this Spec's research | how, why, reflect, automate-me, interrogate, log audits, verification maintenance, and forensics retain short triggers and reference detail as needed |
+| laziness-protocol | `architect/SKILL.md`: assess actual coordination costs, not line/layer counts | Complexity in `architect/references/design-review.md`; for added layers or refactoring tradeoffs | interrogate's review-criteria.md references it; refactoring retains in-scope simplification |
+| make-operations-idempotent | `architect/SKILL.md`: explain repeated and interrupted side effects | Repetition and interruption in `architect/references/design-review.md`; for commands, retries, lifecycles, not scheduler runtime | Verification generation/maintenance require repeatably checkable owned startup/cleanup and reference complex designs |
+| migrate-callers-then-delete-legacy-apis | `shoshin/SKILL.md`: route refactoring | Caller migration in `shoshin/references/workflows/refactoring.md`; only for an authorized complete internal API migration | architect identifies compatibility contracts; ordinary design does not start migration by reading a reference |
+| minimize-reader-load | `interrogate/SKILL.md`: review unnecessary navigation layers and hidden state | Complexity in `architect/references/design-review.md`, shared with laziness-protocol | interrogate/references/review-criteria.md supplies trigger and reference |
+| model-the-domain | `architect/SKILL.md`: model actual relationships and states | Domain modeling in `architect/references/design-review.md`; for state/ownership ambiguity | TypeScript patterns.md contains language-specific examples, not duplicated general methods |
+| never-block-on-the-human | Each skill retains its own authorization stopping points, without a new generic paragraph | None; host/user authorization governs. Reject the blanket upstream assumption that reversible means authorized | architect, reflect, automate-me, and verification stay within task scope |
+| outcome-oriented-execution | `figure-it-out/SKILL.md`: bounded intermediate states may exist, but the final goal must be met | Phase acceptance in `figure-it-out/references/execution-methods.md`; for approved temporarily incomplete migrations | refactoring keeps its behavior baseline; ordinary refactors do not inherit permission for broken intermediate states |
+| prove-it-works | `create-verification-skill/SKILL.md`: exercise actual paths and record evidence/limits | `create-verification-skill/references/evidence-standards.md`; for observation design or judging agent reports, screenshots, mocks | tdd, verification maintenance, and log audits keep necessary local steps and reference detailed standards |
+| redesign-from-first-principles | `architect/SKILL.md`: reassess the design when constraints change without expanding authorization | None; integrated with design steps | figure-it-out calls architect when design premises change rather than duplicating design |
+| separate-before-serializing-shared-state | `architect/SKILL.md`: determine whether sharing is necessary, then separate ownership or serialize | Shared state in `architect/references/design-review.md`; for concurrent writes | execution-methods.md defines write ownership only; maintenance retains one shared-app operator without duplicating concurrency theory |
+| sequence-verifiable-units | `figure-it-out/SKILL.md`: organize checkable units | Phase acceptance in `figure-it-out/references/execution-methods.md`, shared with outcome-oriented-execution; define allowed intermediate states | tdd retains fail → fix → verify without copying Git policy |
+| subtract-before-you-add | `interrogate/SKILL.md`: recommend deleting only confirmed, task-relevant redundancy | None; integrated with review steps | refactoring cleans within scope; features do not require unrelated deletions first |
+| test-behavior-not-implementation | `tdd/SKILL.md`: assert observable contracts and verify defect detection | None; short necessary examples inline, without the upstream invalid assertion-name blacklist | Verification skills use user paths and side effects, not a duplicated testing guide |
+| type-system-discipline | `typescript-best-practices/SKILL.md`: invalid states, source-derived types, exhaustiveness | Type expressions in `typescript-best-practices/references/patterns.md`; for TS representations or assertions | architect retains language-independent type/interface requirements and references only TS details |
 
-#### 跨技能复用与维护
+#### Cross-skill reuse and maintenance
 
-1. 其他技能只写自己执行必需的短规则。例如维护验证直接写“共享应用由单一操作者控制”，无需为这句话读取完整 architect。
-2. 需要详细方法时，明确写“通过技能发现定位 architect，仅读取 references/design-review.md 的共享状态节”等说明。不得硬编码本机路径，不调用 owner 的完整技能流程来代替读取材料，不把跨技能读取自动变成子代理任务。
-3. 所有详细文件均由所属技能的 `SKILL.md` 在对应步骤直接链接。读者不必先读另一个 references 才能找到核心方法；参考文件之间可以提供相关链接，但不要求递归遍历。一个任务已读取的同版材料不重复加载。
-4. 各技能的短执行合同与唯一详细方法必须相容。修改详细方法时，搜索技能名、引用路径及本表使用者检查影响；不得用大段文字复制或字符串相等测试保证一致。
-5. 必选整包安装保证这些引用目标存在，结构校验检查路径和声明的章节。单技能使用时，短合同足以完成普通路径；请求触发所需详细方法但 owner 缺失时明确缺失及影响，不静默省略后声称完成，也不临时复制上游原则文件。
-6. 本表是设计与来源追溯材料，不是运行时必读清单。实施时按所在技能阶段写入对应内容；不新建一份手工维护的原则索引或注册表。
+1. Consumers keep their necessary short rules inline. For example, maintenance states that a shared application has one operator without loading all of architect.
+2. For detail, explicitly instruct discovery of the owner and reading only the named file/section, such as architect's Shared state section in references/design-review.md. Do not hardcode local paths, run an owner's full workflow in place of reading material, or turn cross-skill reading into a subagent task.
+3. Every detailed file is linked directly from its owner's SKILL.md at the relevant step. Core methods must not require reading another reference first. Related links are allowed, but recursive traversal is not required. Do not reload the same version during a task.
+4. Short contracts must agree with the sole detailed method. When changing a method, search skill names, reference paths, and consumers in this table. Do not enforce consistency with copied paragraphs or string-equality tests.
+5. Installing the complete required set ensures reference targets exist; structural validation checks paths and declared sections. A single skill's short contract supports ordinary paths. If a request requires detail whose owner is absent, state the gap and impact rather than silently skipping it or copying an upstream principle file.
+6. This table is design/source-traceability material, not a runtime reading list. Implement each item in its owning skill's phase. Do not add a manually maintained principle index or registry.
 
-所有主维护入口及参考文件均在既定 16 个技能内。新增的详细文件只有 `architect/references/design-review.md`、`figure-it-out/references/execution-methods.md` 和 `create-verification-skill/references/evidence-standards.md`；其余合入 Plan 已指定参考文件，不按原则数量增加文件。
+All owners and references remain within the 16 skills. The only additional detailed files are `architect/references/design-review.md`, `figure-it-out/references/execution-methods.md`, and `create-verification-skill/references/evidence-standards.md`. Other content goes into references already specified by the Plan; file count does not follow principle count.
 
-### 全部普通技能与附属入口的去向
+### Disposition of all ordinary skills and supporting entrypoints
 
-前表覆盖 23 个 principle；下表覆盖其余 24 个主技能与 3 个 Benny 入口，总计 50 个。这里的“复用”指方法设计去向，不表示已经复制或通过验证。
+The preceding table covers 23 principles. This table covers the other 24 main skills and three Benny entrypoints, for 50 total. Reuse describes design disposition, not completed copying or verification.
 
-| 原入口 | 去向 |
+| Original entrypoint | Disposition |
 |---|---|
-| how、why、teach、blast-radius | 对应同名技能，替换 Task/模型/会话与工具假设 |
-| tdd、typescript-best-practices | 对应同名技能，保留有效验证与类型规则 |
-| create-verification-skill、maintain-verification-skill | 对应同名技能，目标项目自有输出与实际操作能力 |
-| interrogate、show-me-your-work | 对应同名技能，证据优先，取消默认跨家族与外部写入假设 |
-| technical-writing | 独立保留；中文、仓库规范与文档治理分工 |
-| architect、figure-it-out、reflect | 同名技能；去掉强制 arena、长期编排和固定代理树 |
-| poteto-mode | shoshin 轻量入口与限定参考流程 |
-| setup-pstack | 不保留独立入口；通用配置说明进入 README/元数据，不写 Cursor rules |
-| no-comments | 仅提取保守注释审查；不迁移 Comment Sicko 人格与删除策略 |
-| swarm | 不迁移；必要分工要求放入使用者技能 |
-| recall、make-bot-ui | 排除 |
-| automate-me | 同名独立技能，P3 实施；稳定工作偏好整理，不承担当前任务复盘或长期自动化 |
-| arena | Backlog 待定，无运行时目录，无隐式依赖 |
-| unslop、bro | P2 分别评估，不能预先登记或合并进 technical-writing 入口 |
-| benny/setup-benny、benny/triage-issue-reports、benny/reproduce-and-fix-issues | 全部排除 |
+| how, why, teach, blast-radius | Same-name skills; replace Task, model, session, and tool assumptions |
+| tdd, typescript-best-practices | Same-name skills; preserve meaningful verification and typing rules |
+| create-verification-skill, maintain-verification-skill | Same-name skills; project-owned output and actual controls |
+| interrogate, show-me-your-work | Same-name skills; evidence first, without default cross-family or external-write assumptions |
+| technical-writing | Separate skill; English writing, repository conventions, and document-governance responsibilities |
+| architect, figure-it-out, reflect | Same-name skills; remove mandatory arena, persistent orchestration, and fixed agent trees |
+| poteto-mode | Lightweight shoshin entrypoint and bounded workflow references |
+| setup-pstack | No standalone entrypoint; generic configuration goes in README/metadata, not Cursor rules |
+| no-comments | Extract only conservative comment review; omit Comment Sicko persona and deletion policy |
+| swarm | Do not migrate; put necessary delegation rules in consuming skills |
+| recall, make-bot-ui | Excluded |
+| automate-me | Separate same-name skill in P3 for stable preferences, not current-task retrospectives or persistent automation |
+| arena | Deferred in Backlog; no runtime directory or implicit dependency |
+| unslop, bro | Assess separately in P2; do not preregister or merge into technical-writing |
+| benny/setup-benny, benny/triage-issue-reports, benny/reproduce-and-fix-issues | All excluded |
 
-原 `agents/poteto-agent.md` 与 `agents/comment-sicko.md` 不迁移。不保留 Cursor `subagent_type` 名称包装层。
+Do not migrate `agents/poteto-agent.md` or `agents/comment-sicko.md` or retain wrappers around Cursor `subagent_type` names.
 
-### 全部 Playbook 去向
+### Disposition of all Playbooks
 
-| 原 Playbook | 保留方法与目标 | 删除或限制 |
+| Original Playbook | Retained method and target | Removed or limited behavior |
 |---|---|---|
-| investigation | workflows/investigation.md，how/why | 只读；不因发现问题自动实现 |
-| bug-fix | workflows/bug-fix.md，tdd/验证 | 同路径复现和验证；不强迫用户无法触达的环境产生证据；不默认 PR/loop |
-| feature | workflows/feature.md，how/architect | 明确数据结构与验收；不强制每次委派/arena |
-| refactoring | workflows/refactoring.md，architect | 行为基线与等价性；不自动 rebase、删除外部兼容 |
-| prototype | workflows/prototype.md，architect/figure-it-out | 单一决策、隔离实验；不混入正式代码 |
-| authoring-a-skill | skill-creator 调用约定及本包验收 | 不复制 Cursor create-skill 流程或自动开 PR |
-| multi-phase-plan | figure-it-out 的阶段/依赖/验收方法 | 不复制固定 PR 数、十个 Grok lane、模板措辞校验器；受治理项目正式计划使用 document-governance |
-| perf-issue | workflows/performance.md | 固定工作负载与基线、前后测量；无证据不宣称性能改进 |
-| runtime-forensics | workflows/forensics.md 中 live 路径 | 诊断与修复分开；注入/热修改不是只读操作，按授权执行 |
-| trace-forensics | workflows/forensics.md 中 artifact 路径 | 解析既有证据；无配对捕获时限制因果结论 |
-| visual-parity | create-verification-skill/references/visual-parity.md | 固定环境、状态、基线与比较阈值；不篡改基线让检查通过；要求像素精确时非零差异不能称一致 |
-| hillclimb | performance.md 的单假设实验与回退；figure-it-out | 无长期自动循环、无强制尝试次数、无 goal/heartbeat |
-| eval | 本包行为验收设计与测试材料 | 候选不接触评分标准；评审看产物；不构建跨家族平台、不默认 arena |
-| opening-a-pr、babysit、shipping | 排除 | 不承接 PR 生命周期 |
-| autonomous-run、session-pickup、pause-safely | 排除 | 不承接长期任务恢复 |
-| orchestrate、autopilot-full、autopilot-stack | 排除 | 不承接编排运行时 |
-| worktree-cleanup | 排除 | 不执行含 fetch/清理的来源脚本 |
+| investigation | workflows/investigation.md, how/why | Read-only; findings do not authorize implementation |
+| bug-fix | workflows/bug-fix.md, tdd/verification | Same-path reproduction/verification; no invented evidence for inaccessible environments or default PR/loop |
+| feature | workflows/feature.md, how/architect | Explicit data structures and acceptance; no mandatory delegation/arena |
+| refactoring | workflows/refactoring.md, architect | Behavioral baseline/equivalence; no automatic rebase or external compatibility deletion |
+| prototype | workflows/prototype.md, architect/figure-it-out | One decision and isolated experiment; separate from production |
+| authoring-a-skill | skill-creator invocation and package acceptance | No copied Cursor create-skill workflow or automatic PR |
+| multi-phase-plan | figure-it-out phases/dependencies/acceptance | No fixed PR count, ten Grok lanes, or template-wording validator; formal plans use document-governance where adopted |
+| perf-issue | workflows/performance.md | Fixed workload/baseline and before/after measurements; no unsupported performance claim |
+| runtime-forensics | Live path in workflows/forensics.md | Diagnosis separate from fixes; injection/hot changes are authorized side effects, not read-only |
+| trace-forensics | Artifact path in workflows/forensics.md | Analyze existing evidence; bound causal conclusions without paired captures |
+| visual-parity | create-verification-skill/references/visual-parity.md | Fixed environment, state, baseline, threshold; no baseline tampering to pass. Nonzero difference is not pixel-exact parity |
+| hillclimb | Single-hypothesis experiments/reverts in performance.md; figure-it-out | No persistent automatic loop, fixed attempt count, goal, or heartbeat |
+| eval | Package behavioral acceptance design and test material | Executors do not see scoring criteria; reviewers inspect artifacts. No cross-family platform or default arena |
+| opening-a-pr, babysit, shipping | Excluded | No PR lifecycle |
+| autonomous-run, session-pickup, pause-safely | Excluded | No persistent-task recovery |
+| orchestrate, autopilot-full, autopilot-stack | Excluded | No orchestration runtime |
+| worktree-cleanup | Excluded | Do not execute upstream fetch/cleanup scripts |
 
-### 来源脚本的处理
+### Source scripts
 
-- `show-me-your-work/scripts/log.sh`：可借鉴 TSV 转义与公式前缀防护；实施时核对代码、许可、并发写入与失败行为后决定复用。
-- `poteto-mode/scripts/check-plan.mjs`：不迁移，内嵌特定英文、十个 Grok lane 和 PR 流程。
-- `poteto-mode/scripts/orch/`、`watch-pr/`、`worktree-audit.sh`：排除，与不需要的编排/PR/清理能力相关。
-- `bootstrap.ts`、相应 package.json/bun.lock：不迁移，不在技能启动时隐式安装依赖。
-- 其他参考模板按对应能力适配，保留来源与许可。不能因为脚本名字写“只读”就不审查它的副作用。
+- `show-me-your-work/scripts/log.sh`: TSV escaping and formula-prefix protection may be adapted. Inspect code, license, concurrent writes, and failures before deciding reuse during implementation.
+- `poteto-mode/scripts/check-plan.mjs`: do not migrate; it embeds specific English wording, ten Grok lanes, and PR workflows.
+- `poteto-mode/scripts/orch/`, `watch-pr/`, `worktree-audit.sh`: excluded orchestration, PR, and cleanup capabilities.
+- `bootstrap.ts`, corresponding package.json/bun.lock: do not migrate or implicitly install dependencies when a skill starts.
+- Adapt other reference templates to their capability and preserve attribution/license. A script name claiming read-only behavior does not remove the need to inspect side effects.
 
 ## Error Handling
 
-- 依赖技能不可发现：说明缺失与受影响步骤；只有用户目标仍能完整满足时才用已验证替代方法，并标明差异。
-- 模型/代理容量受限：按需减少并发或直接执行，保留覆盖要求；不得以 N-1 的结果声称全部覆盖。
-- 真实环境、账号或控制能力缺失：产出已有分析，标记未验证；不使用状态注入或 mock 冒充实际复现。
-- 历史或连接器证据缺失：记录未搜索原因和置信度，不扫描无关私人会话。
-- 已有同名技能或用户改动：停止相关安装/覆盖，保留工作，提出具体差异与选择。
-- 验证失败：先检查观测方法、输入与根因；连续失败重新审视假设，不通过降低阈值、删测试或改基线制造通过。
-- 上游更新与本 Spec 冲突：以用户已确认需求为准，显式讨论新增范围，不自动同步全部上游。
+- Undiscoverable dependency: state the missing skill and affected step. Use a verified alternative only if it still fully meets the user's goal, and explain differences.
+- Model/agent capacity limits: reduce concurrency or work directly while preserving coverage requirements. N-1 results do not establish full coverage.
+- Missing real environment, account, or controls: deliver available analysis and mark unverified; state injection and mocks are not real reproductions.
+- Missing history/connector evidence: state why sources were not searched and retain confidence levels; no unrelated private conversations.
+- Same-name skills or user changes: stop the affected installation/overwrite, preserve work, and present concrete differences and choices.
+- Verification failure: check observations, inputs, and root causes first. Revisit assumptions after repeated failures; do not lower thresholds, remove tests, or change baselines to manufacture a pass.
+- Upstream changes conflicting with this Spec: confirmed user requirements govern. Discuss new scope explicitly rather than synchronizing all upstream content automatically.
 
 ## Verification Strategy
 
-结构层验证技能元数据、引用、目录和依赖，不用大段提示词字符串相等测试锁死措辞。对 log 等有行为的脚本测试边界和失败结果。
+Structural checks validate metadata, references, directories, and dependencies without freezing long prompt passages in string-equality tests. Test boundaries and failure outcomes of executable helpers such as the logger.
 
-行为层至少包含：普通用例、明确不该触发的请求、缺失依赖/证据场景、只读/设计停止点。复杂技能检查独立产物与证据，不给执行者泄露评审标准。验证任务本身不会授权更换模型或外部写入。
+Behavioral checks cover ordinary cases, explicit non-triggers, missing dependencies/evidence, and read-only/design stopping points. For complex skills, inspect independent artifacts and evidence without exposing reviewer criteria to executors. Testing itself does not authorize model changes or external writes.
 
-项目层原计划使用真实代码与可运行路径；2026-09-08 实施中用户明确取消 JUST-RAG 试点并要求直接完成源码，尚未执行的真实项目验收保留开放，不阻塞本轮源码交付。生成验证技能需真正运行；维护技能需覆盖声明的功能；性能/视觉声明必须有可比较基线。本轮试点已由用户取消，后续只有另获真实项目范围后才恢复；未具备证据前不得勾选实操通过。
+Project-level verification originally required real code and executable paths. During implementation on 2026-09-08, the user explicitly canceled the JUST-RAG pilot and requested source completion. Outstanding real-project acceptance remains open without blocking that source delivery. Generated skills must actually run; maintenance must cover declared features; performance/visual claims need comparable baselines. Resume the canceled pilot only with new real-project scope authorization, and never mark practical acceptance passed without evidence.
 
-安装层在获准安装后，以新 Codex 任务检查发现、显式/隐式触发、内部引用和跨技能依赖。复制文件成功不是完成证据。初始文档阶段只验证文档结构和一致性；本轮源码实施的实际验证范围见 Plan。
+After authorized installation, use a fresh Codex task to check discovery, explicit/implicit triggers, internal references, and cross-skill dependencies. Successful file copying is insufficient. The initial documentation phase checked only document structure and consistency; see the Plan for actual source-implementation verification.
 
-最终来源核查以本 Spec 两张去向表为设计权威，用实际生成的文件清单与测试证据比对；不创建独立手工状态缓存。
+The two disposition tables in this Spec are the design authority for final source review. Compare actual files and test evidence against them without adding an independent manual state cache.

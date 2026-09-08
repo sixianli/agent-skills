@@ -1,22 +1,22 @@
 ---
 name: maintain-verification-skill
-description: "维护指定项目已有验证技能与功能地图，双向核查源码覆盖并实跑用户路径；修正文档和助手，产品回归只报告，不自动创建 PR。"
+description: "Maintain an existing project verification skill and feature map through bidirectional source checks and real user paths. Correct documentation and helpers; report product regressions without automatically creating a PR."
 ---
 
 # maintain-verification-skill
 
-先定位目标项目 `.agents/skills/verify-*/SKILL.md` 或用户给定路径。多个候选需确定目标；没有现有产物则指向 create-verification-skill，不虚构维护对象。
+Locate the target project's `.agents/skills/verify-*/SKILL.md` or the user-supplied path. Resolve multiple candidates before proceeding. If none exists, point to create-verification-skill rather than inventing a maintenance target.
 
-编辑仅限目标验证技能自己的 SKILL.md、features 和 helpers；不修改产品实现，不把产品回归改写成新的正确行为。
+Edit only the target verification skill's own SKILL.md, features, and helpers. Do not change product implementation or rewrite a product regression as the new correct behavior.
 
-1. 读取地图与功能文件，修复重复、断链和遗漏索引。再双向核查：地图→源码逐项验证描述，源码→地图从真实路由、菜单、命令及近期变更识别未收录功能。先确定 Git 基线和范围；没有可信基线则调查当前入口并说明历史覆盖限制。每个新增条目必须有具体源码依据，索引一致不表示覆盖完整。
-2. 为每项功能整理前提和操作方法，尽量复用可控状态。源码调查默认直接做；独立功能组足够大、收益值得 token 成本且宿主允许时才委派，返回证据和缺口，不能机械每功能一个代理。
-3. 实操由单一操作者控制共享应用。依目标 Launch 合同启动；首次 Drive 前及每个新会话先 Doctor，任何失败或意外行为后在下一次 Drive 前重新诊断。
-4. 进程健康不代表界面可操作。残留弹窗、卡死或错误页必须先恢复已知状态，必要时仅重启有权控制的自有实例。不得重启用户已有实例或删除用户数据；不能安全恢复则停止相关验证，报告阻塞，避免连锁误报。
-5. Doctor 因技能漂移失败时，在自身编辑范围修正后有界重试一次，只重启该修正失效的自有资源；仍失败则阻塞。恢复后在有效前提下重试受影响路径，才区分助手缺陷和产品回归。
-6. 按地图实跑每个功能。未触达记录权限/账号/平台等具体前提及尝试路径，不标通过；覆盖不完整就保持未完成。文档漂移、助手缺陷和产品回归分别报告；修改助手后重跑受影响路径。
-7. 每次失败迭代及最终结束都清理自己创建的资源，启动/清理须能重复检查，证据不得随恢复或清理删除，清理后检查其存活。
+1. Read the map and feature files. Fix duplicates, broken links, and missing index entries. Then check both directions: map → source verifies each description; source → map identifies missing features from actual routes, menus, commands, and recent changes. Establish the Git baseline and scope first. Without a trustworthy baseline, inspect current entrypoints and state the limits of historical coverage. Every new entry needs a concrete source anchor. A consistent index does not prove complete coverage.
+2. Identify prerequisites and controls for each feature, reusing controllable states where possible. Investigate source directly by default. Delegate only when independent feature groups are large enough to justify the token cost and the host permits it. Require evidence and gaps; do not mechanically assign one agent per feature.
+3. One operator controls the shared application. Start it according to its Launch contract. Run Doctor before the first Drive and in every new session. After any failure or unexpected behavior, diagnose again before the next Drive.
+4. A healthy process does not mean a usable interface. Restore a known state after leftover modals, hangs, or error pages. If needed, restart only an owned instance you are authorized to control. Do not restart existing user instances or delete user data. If recovery is unsafe, stop the affected verification and report the blocker to avoid cascading false reports.
+5. If skill drift causes Doctor to fail, correct it within the allowed edit scope and retry once. Restart only owned resources invalidated by that correction. If it still fails, report blocked. After recovery, retry the affected path with valid prerequisites before distinguishing helper defects from product regressions.
+6. Exercise every mapped feature. For unreachable features, record concrete prerequisites such as permissions, accounts, or platform, and the route attempted; do not mark them passed. Incomplete coverage remains incomplete. Report documentation drift, helper defects, and product regressions separately. Rerun affected paths after helper changes.
+7. Clean up resources created by the run after each failed iteration and at the end. Startup and cleanup must be repeatably verifiable. Recovery and cleanup must not delete evidence; verify that it survives cleanup.
 
-判断证据强度时，通过发现机制定位 create-verification-skill，仅读取 [证据标准](../create-verification-skill/references/evidence-standards.md)。复杂重试语义仅读取 architect 的 [重复与中断](../architect/references/design-review.md#重复与中断)；大材料分工仅读取 figure-it-out 的 [上下文与委派](../figure-it-out/references/execution-methods.md#上下文与委派)。跨技能链接标识 owner 和资源：先按名称从当前宿主技能清单取得实际路径，再读取指定文件；不假定技能相邻，不因此执行 owner 的完整流程。缺失时报告受影响步骤，不能静默跳过后声称完整完成。
+To assess evidence strength, discover create-verification-skill and read only [evidence standards](../create-verification-skill/references/evidence-standards.md). For complex retries, read only architect's [repetition and interruption](../architect/references/design-review.md#repetition-and-interruption). For dividing large investigations, read only figure-it-out's [context and delegation](../figure-it-out/references/execution-methods.md#context-and-delegation). Cross-skill links identify the owning skill and resource. Resolve the skill by name in the current host's skill inventory, then read the specified file. Do not assume skills are installed side by side or run the owning skill's entire workflow. If it is unavailable, report the affected step; never silently skip it and claim completion.
 
-交付 clean / changed / blocked 及逐功能源码与实操结果，附修改和证据位置。changed 只表示本地验证技能已修正且受影响路径实跑，不意味着推送或发布。
+Report clean / changed / blocked, source and execution results for each feature, and locations of changes and evidence. changed means only that the local verification skill was corrected and affected paths were exercised; it does not imply a push or release.
