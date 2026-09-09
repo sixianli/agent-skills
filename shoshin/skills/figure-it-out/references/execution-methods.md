@@ -25,3 +25,13 @@ The primary agent spot-checks raw evidence, especially boundary connections. Sto
 Each unit has fixed inputs, artifacts, and a checkable result. Verify it before layering on another change. An explicitly approved migration design may permit temporarily incomplete states, with their impact, dependencies, and recovery path recorded. Ordinary refactoring does not thereby gain permission to break behavior.
 
 Classify phase results as verified, unverified, or inconclusive. Check the user's original criteria individually at the end and leave unmet items open. Record executable checks, manual review, and real operations as distinct evidence. Use the existing lifecycle for governed plans rather than duplicating PR counts, fixed model-validation tracks, or state indexes.
+
+## Structural safeguards
+
+When a correction recurs or the same instruction must be repeated, identify the common failure, its trigger, and the boundary that can prevent it. Implement the strongest suitable mechanism: make the invalid state unrepresentable where practical, otherwise use a lint rule or prohibited API check, a canonical helper, a runtime check, or a deterministic verification script. Reuse the established mechanism and make the correct path easy to follow; do not scatter equivalent checks everywhere.
+
+Capture an example of the observed failure and a valid case. Verify that the safeguard detects or prevents the failure and still permits the valid case. Name its maintenance owner and connect it to the existing build, test, or runtime path so it actually runs. Generating an unused script or merely proposing a lint rule does not complete this step.
+
+Remove only redundant task-owned instructions made obsolete by the verified mechanism; retain explanations of non-obvious intent and external constraints. If judgment cannot be encoded reliably, strengthen the relevant task guidance with a concrete failure example and report this as a documented limit, not an enforced guarantee. One-off incidents do not automatically warrant permanent machinery.
+
+Record the correction, mechanism, evidence, and remaining limitations in the run's decision trail. Apply the task's safeguards directly without a separate approval request or a full reflect workflow. Do not turn this into unrelated cleanup or personal-memory maintenance. If host controls block implementation or execution, report the concrete blocker and the unverified result rather than claiming prevention.

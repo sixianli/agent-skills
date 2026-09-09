@@ -17,7 +17,7 @@ Identify the user's intended result and stopping point: explanation, investigati
 | Diff impact or safety assumptions | Use [blast-radius](../blast-radius/SKILL.md), read-only by default |
 | Code or comment review | Use [interrogate](../interrogate/SKILL.md), without automatic fixes |
 | Structure and interface design | Use [architect](../architect/SKILL.md) for real tradeoffs; stop after completing a design request |
-| Complex implementation | Use [figure-it-out](../figure-it-out/SKILL.md) when multi-phase dependencies need organization, preserving the original completion criteria |
+| Complex or bespoke engineering work | Use [figure-it-out](../figure-it-out/SKILL.md) for multi-phase dependencies, work reviewed after the user steps away, or when no suitable playbook fits; deliver the workflow before implementation and preserve the user's stopping point |
 | Regression verification | Use [tdd](../tdd/SKILL.md) for explicit TDD or a practical test target |
 | TypeScript contracts | Use [typescript-best-practices](../typescript-best-practices/SKILL.md) for type-state or boundary issues in scope |
 | Project verification capability | Use [create-verification-skill](../create-verification-skill/SKILL.md) to generate one and [maintain-verification-skill](../maintain-verification-skill/SKILL.md) to maintain an existing artifact |

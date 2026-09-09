@@ -169,7 +169,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/figure-it-out",
-      "description": "Organize an authorized complex goal into verifiable implementation units with explicit dependencies and revise assumptions using evidence. Use for multi-phase work; do not create persistent tasks, automatic scheduling, or delivery pipelines.",
+      "description": "Design and execute an auditable workflow for a complex goal: large migrations, multi-phase changes, work reviewed after the user steps away, or engineering work with no suitable playbook. Establish verification baselines, run experiments, and prevent recurring failures with structural safeguards.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []

@@ -59,6 +59,10 @@ Shoshin uses existing tools for confirmed skills and workflows. This run adds no
 | AC12 | Given the final package, completion claims have actual records or explicit incomplete status for structural, behavioral, and post-installation checks separately |
 | AC15 | Given a new user feature in source while the map and existing feature files remain mutually consistent, maintenance discovers the omission from entrypoints and source changes, verifies it, and updates the map; report inaccessible scope |
 | AC16 | Given a failed action that leaves invalid UI state, maintenance runs Doctor again and restores a known usable state before driving the next feature, even when the process is healthy. Do not classify leftover state directly as a product regression |
+| AC17 | Given complex implementation, present a reviewable workflow and risk-based checks and capture a pre-change baseline before target edits; existing approval does not trigger another automatic approval pause |
+| AC18 | Given a multi-phase run, record each unit's hypothesis, expected evidence, actual result and keep/revert decision as it lands; final delivery includes the workflow, rigor rationale, log path, original-criterion verdicts and gaps |
+| AC19 | Given recurring corrections during implementation, directly implement a safeguard in an active execution path and verify a failing and a valid case without a separate approval request; do not report an unused script or a proposal as enforced prevention |
+| AC20 | Given a high-risk design choice, examine assumptions, viable alternatives, irreversible consequences and a discriminating check before implementation, without invoking arena or prescribing model settings |
 
 ## Design
 
@@ -165,12 +169,20 @@ Resolve cross-skill references by name through host discovery, then read the ret
 | show-me-your-work | Complex-task decisions → one TSV and evidence audit | Local by default; one writer per task log; actual events only, append corrections for traceability |
 | technical-writing | Purpose and material → accurate, suitably structured prose | Respect document-governance lifecycle where adopted; do not copy it into this skill |
 | architect | Requirements, usage, constraints → structure, types/interfaces, tradeoffs, risks | how; why/interrogate as needed; no arena dependency; stop after design-only requests |
-| figure-it-out | Complex goal and constraints → phases, acceptance, evidence-led execution | how; architect, verification, logs as needed; no goals, schedules, or persistent orchestration |
+| figure-it-out | Complex goal and constraints → reviewable workflow, baseline, per-unit experiments, decision trail, verified safeguards and final acceptance | how as needed; architect for material design risks; project verification; show-me-your-work for long, multi-phase, high-risk or later-reviewed runs; no persistent orchestration |
 | reflect | Current task and retrospective request → evidence-based proposals | skill-creator when needed; do not duplicate clear ignored rules; apply within authorization, otherwise proposals only; not recall/automate-me |
 | automate-me | Selected cross-conversation material and rules → stable preferences and rule proposals | skill-creator as needed; distinguish preferences, one-offs, conflicts; no unrelated scans or automatic memory/configuration writes; apply only when authorized |
 | shoshin | User task → necessary workflow and evidenced delivery | Implement last; select skills as needed, no extra layer for simple tasks or automatic sticky mode |
 
 reflect does not require three analysts and a synthesizer. interrogate's independent judgment does not establish model-family diversity. Without actual read-only tool isolation, do not claim isolation. Current Codex delegation and permission rules govern; do not invent a platform rule that readonly removes all MCP access.
+
+### Figure-it-out execution contract
+
+Restore the original A-E method under R23-R24. Phase A frames observable predicates, scope, rough scale, uncertainty, blockers and risk-based rigor. Phase B delivers a trackable workflow before implementation and captures verification baselines before target changes. Existing checks and approvals are reused. High-risk design decisions trigger deeper analysis of assumptions, alternatives and consequences, with architect for material structural tradeoffs; arena stays disabled. [SOURCE: docs/prd-v0.1.md#additional-confirmation]
+
+Phase C treats each unit as an experiment with expected evidence, observed results and keep/revert decisions. Suspiciously easy passes trigger an observation-path check. Phase D runs throughout execution using show-me-your-work's canonical TSV, with the path chosen during framing for long, multi-phase, high-risk or later-reviewed work. Ordinary operations do not acquire logging overhead.
+
+Phase E directly implements structural safeguards against recurring corrections and verifies both failure detection and valid behavior before final real-product acceptance. Execution methods own this action; reflect remains a user-requested retrospective and is not a prerequisite. Connect each safeguard to its actual execution path and retain evidence and ownership. Existing host controls and user stopping points still govern actions; there is no additional approval gate merely for creating a task safeguard. Final output includes workflow and deviations, rigor and rationale, trail path, original-criterion verdicts, safeguards and checks, and remaining gaps.
 
 ### Verification maintenance coverage and recovery contract
 
@@ -267,7 +279,7 @@ Paths are relative to `shoshin/skills/`. This defines target placement; see the 
 | attack-the-premise | `figure-it-out/SKILL.md`: inspect shared premises after repeated failures | Premise review in `figure-it-out/references/execution-methods.md`; read when fixes share a failing assumption. Actor-distribution analysis only where applicable | bug-fix keeps rediagnosis inline and references details only as needed |
 | boundary-discipline | `architect/SKILL.md`: external inputs, parsing boundaries, internal invariants | Boundaries in `architect/references/design-review.md`; for parser placement or adapters | TypeScript keeps boundary parsing inline; patterns.md gives TS examples only |
 | build-the-lever | `figure-it-out/SKILL.md`: compare direct work with deterministic tools | Tool selection in `figure-it-out/references/execution-methods.md`; for batch transformations or repeatable checks, not mandatory scripts | refactoring references tool selection |
-| encode-lessons-in-structure | `reflect/SKILL.md`: distinguish execution mistakes, rule defects, and structural safeguards | Mechanism selection in `reflect/references/reflection-criteria.md`; for evidenced recurring failures | automate-me references only engineering-mechanism proposals, not lint for ordinary preferences |
+| encode-lessons-in-structure | `figure-it-out/SKILL.md`: directly implement and verify safeguards for recurring corrections during execution | Structural safeguards in `figure-it-out/references/execution-methods.md`; triggered by a recurring correction or repeated instruction | reflect owns retrospective proposal assessment in reflection-criteria.md, not an execution prerequisite; automate-me remains preference review |
 | exhaust-the-design-space | `architect/SKILL.md`: compare necessary options for important unresolved tradeoffs | Alternatives in `architect/references/design-review.md`; for truly different designs, no mandatory arena or candidate count | prototype references comparison methods |
 | experience-first | `architect/SKILL.md`: judge designs from user and maintainer actions | None; integrated with inputs and interface design | teach follows learner goals without copying product-design discussion |
 | fix-root-causes | `tdd/SKILL.md`: failures correspond to the target defect; fix mechanisms, not assertions | None; tdd handles regression verification only | bug-fix owns reproduction → mechanism investigation → fix → same-path verification; tdd does not replace diagnosis |

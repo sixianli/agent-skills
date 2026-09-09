@@ -252,7 +252,7 @@ Files: skills/architect/SKILL.md, references/design-template.md, references/desi
 
 ### P3-02: figure-it-out
 
-Files: skills/figure-it-out/SKILL.md, references/execution-methods.md (Premise review, Tool selection, Context and delegation, Phase acceptance). Prerequisites: basic analysis, verification, architect, and optional logging.
+Files: skills/figure-it-out/SKILL.md, references/execution-methods.md (Premise review, Tool selection, Context and delegation, Phase acceptance, Structural safeguards). Prerequisites: basic analysis, verification, architect for material design risks, and logging for long, multi-phase, high-risk or later-reviewed execution.
 
 - [x] Decompose complex goals into dependent verifiable units, address risky unknowns first, then execute clear work.
 - [x] Retain multi-phase-plan's phase/evidence methods without copying PR templates/checkers; route formal Spec/Plan requests to document-governance.
@@ -439,3 +439,19 @@ Translation checks completed: all 105 tracked package files have no CJK text or 
 ### 2026-09-09 Output-language correction
 
 Independent review of translation commit 1a0d4d7 identified an unintended change from English package text to English runtime output. The user confirmed that the translation request did not change response language and explicitly required teach to adapt PStack's English instruction to Chinese. Restore Simplified Chinese as the default in teach and technical-writing, and reconcile the PRD, Spec, and this Plan. Keep all package text in English. This corrects the translation scope; it does not complete outstanding behavior or installation acceptance.
+
+### 2026-09-09 Figure-it-out workflow restoration
+
+Implement the ten user annotations under R23-R24 and AC17-AC20. Source remains English; no installation or real-project pilot is part of this revision. [SOURCE: docs/prd-v0.1.md#additional-confirmation] [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#figure-it-out-execution-contract]
+
+- [x] Restore the A-E workflow, pre-implementation artifact, rough scope and risk-based rigor, verification baseline, per-unit experiment loop, concurrent decision recording and final output contract.
+- [x] Restore high-risk design reasoning without arena, and directly implemented structural safeguards with failing/valid-case checks and an active execution path, without a separate approval gate.
+- [x] Reconcile the lightweight entrypoint, skill UI metadata, root registration, PRD, Spec and Architecture with the restored behavior.
+- [x] Add six behavioral requests and artifact-based review criteria for the restored method; these are prepared material, not executed behavioral passes.
+- [x] Inspect the source diff against all ten annotations; preserve explicit stopping points, existing approval and the exclusion of persistent orchestration.
+- [x] Pass skill structure/references, the repository aggregate checks (46 document-governance tests, 18 Shoshin helper tests and Ruff), strict documentation validation with zero warnings, and whitespace checks.
+- [ ] Execute the six new requests with raw fixture projects and retain actual ordering, baseline, decision-trail and safeguard evidence before claiming behavioral acceptance.
+
+The first aggregate invocation passed its structure and unit tests but failed three Ruff steps because uv could not write its default cache under the host sandbox. Re-running the unchanged aggregate command with UV_CACHE_DIR and RUFF_CACHE_DIR under /private/tmp passed. This was an execution-environment issue, not a skill or checker defect. No acceptance standard was changed.
+
+Review was performed by the primary agent using current source and supporting contracts; no independent model evaluation, real product pilot or installation check ran. The original unpassed acceptance items remain open. Existing ADRs are unchanged because package identity and ownership did not change; no Runbook or archival action applies.

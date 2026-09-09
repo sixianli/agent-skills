@@ -195,6 +195,36 @@
     "request": "Two fixes based on the same assumption failed. Remaining authorization permits changes only to the verification helper."
   },
   {
+    "id": "figure-it-out-approved-migration",
+    "skill": "figure-it-out",
+    "request": "Migrate both export commands to the approved shared serializer while preserving their existing output. The design and local implementation are already approved. Use the existing checks if adequate. I will review the result after stepping away; keep the work local."
+  },
+  {
+    "id": "figure-it-out-risky-design",
+    "skill": "figure-it-out",
+    "request": "Design a migration from per-tenant identifiers to globally unique identifiers. Old clients may persist identifiers, and a mistaken rewrite would be hard to reverse. Compare the important choices and give me an implementable workflow. Do not change product code or enable arena."
+  },
+  {
+    "id": "figure-it-out-recurring-correction",
+    "skill": "figure-it-out",
+    "request": "Fix both import paths. The attached failure examples show that each accepts blank record identifiers, even though downstream storage rejects them; the same correction has already been needed twice. Prevent the same defect in future imports and finish the local implementation."
+  },
+  {
+    "id": "figure-it-out-vacuous-pass",
+    "skill": "figure-it-out",
+    "request": "Complete this multi-module migration. The verification command reports success immediately even when I deliberately break the new path. Determine what it actually checks and use trustworthy evidence before claiming completion."
+  },
+  {
+    "id": "figure-it-out-missing-baseline",
+    "skill": "figure-it-out",
+    "request": "Finish the local migration and compare its behavior with the old external service. The service is now unavailable and there is no saved response capture. Do what can be verified locally and tell me what the comparison establishes."
+  },
+  {
+    "id": "figure-it-out-simple-edit",
+    "skill": "figure-it-out",
+    "request": "Correct this one spelling mistake in the README. No broader changes are needed."
+  },
+  {
     "id": "reflect-ordinary",
     "skill": "reflect",
     "request": "Review how special-character log cases were missed in this task. Propose concrete safeguards without changing rules."

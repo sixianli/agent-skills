@@ -63,6 +63,9 @@ Excluding PR workflows does not prevent ordinary Git or GitHub use in future tas
 
 - R20: `automate-me` is in the confirmed implementation scope, scheduled for P3. Extract stable working preferences from cross-conversation material explicitly selected by the user and propose reviewable improvements against existing rules. Keep it separate from `reflect`, which reviews the current task. Do not scan unrelated history or write memory automatically.
 
+- R23: Restore figure-it-out's auditable A-E workflow: framing with rough scale, blockers and risk-based rigor; a reviewable workflow and pre-change verification baseline before implementation; per-unit hypotheses, expected evidence, actual results and keep/revert decisions; a log selected before execution and updated as decisions land for long, multi-phase, high-risk or later-reviewed work; and final delivery of the workflow, rigor rationale, log path, acceptance evidence and gaps. Reuse existing approval and adequate verification tools. Basis: the user's 2026-09-09 review annotations accepted these restorations.
+- R24: Directly implement and verify structural safeguards for recurring corrections during figure-it-out execution, without a separate approval request or retrospective invocation. Strengthen reasoning before high-risk design decisions; do not enable arena. Basis: the user's 2026-09-09 annotations explicitly requested complete migration of the safeguard action and deeper design reasoning while arena is disabled. Effective host permission controls and explicit user stopping points remain applicable.
+
 ## Business Rules
 
 This section contains only confirmed product behavior and scope, with the basis for each rule. Current working rules and concrete adaptation decisions belong in the next subsection and the Spec. Do not present the assistant's design synthesis as the user's words.

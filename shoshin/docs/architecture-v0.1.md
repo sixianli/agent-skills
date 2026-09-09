@@ -34,7 +34,9 @@ The decision log has six columns: ts, phase, decision, why, evidence, result. Co
 
 ## Main Flows
 
-Explanations and reviews use independent leaf skills. Complex work follows explicit dependencies and verifies actual artifacts. Verification generation requires real user paths, preserved evidence, and cleanup of owned resources. Maintenance requires bidirectional coverage checks and recovery after failure. Workflow text does not automatically create persistent tasks or remote delivery.
+Explanations and reviews use independent leaf skills. Complex work uses figure-it-out's A-E method: frame the result and risks, deliver a reviewable workflow and pre-change baseline, run and verify per-unit experiments, record decisions during execution, and validate the real result. Long, multi-phase, high-risk or later-reviewed runs use show-me-your-work's canonical TSV. Before final acceptance, recurring corrections become implemented and verified structural safeguards without a separate approval request or reflect invocation. High-risk design choices receive deeper analysis, with architect for material tradeoffs and no arena dependency.
+
+Verification generation requires real user paths, preserved evidence, and cleanup of owned resources. Maintenance requires bidirectional coverage checks and recovery after failure. Workflow text does not automatically create persistent tasks or remote delivery.
 
 An asset CLI was run in JUST-RAG during implementation. The user later canceled the pilot, and unchanged project artifacts created by this task were cleaned up. Full UI, model calls, complete AC15/AC16 paths, and some behavioral scenarios remain unpassed. Evidence and unfinished work stay in the execution Plan; this architecture document does not manually synchronize test counts.
 
