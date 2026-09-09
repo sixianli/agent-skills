@@ -63,6 +63,9 @@ Shoshin uses existing tools for confirmed skills and workflows. This run adds no
 | AC18 | Given a multi-phase run, record each unit's hypothesis, expected evidence, actual result and keep/revert decision as it lands; final delivery includes the workflow, rigor rationale, log path, original-criterion verdicts and gaps |
 | AC19 | Given recurring corrections during implementation, directly implement a safeguard in an active execution path and verify a failing and a valid case without a separate approval request; do not report an unused script or a proposal as enforced prevention |
 | AC20 | Given a high-risk design choice, examine assumptions, viable alternatives, irreversible consequences and a discriminating check before implementation, without invoking arena or prescribing model settings |
+| AC21 | Given a substantive retrospective, use three native lens reviewers and primary synthesis, or disclose unavailable delegation and direct coverage; no runtime, recursive agents or separate user tasks |
+| AC22 | Given a missed-trigger or body-edit proposal, verify invocation/catalog evidence and read the target before accepting; distinguish missing, ambiguous, buried and ignored guidance without duplicate rules |
+| AC23 | Given accepted findings, supply future condition, changed action, evidence, target, routing and verification; report skill proposals, mechanisms and rejections with actual status and reuse existing authorization |
 
 ## Design
 
@@ -72,7 +75,7 @@ These are design decisions derived from confirmed scope, organized by the assist
 
 - Current working rules: skills follow effective host instructions, project rules, and user authorization, distinguishing investigation, design, and implementation. Actual rules determine approval and Git checkpoints. Do not hardcode automatic commits, rebase prohibitions, or renewed approval for every refactor. Reuse authorization for the same scope.
 - Evidence: distinguish verified results, inference, and unknowns from actual artifacts. Matching reviewer counts does not make ordinary independent subagents equivalent to upstream cross-family review.
-- Delegation: choose execution methods using the first-party references below and actual task conditions, respecting R22's token preference. Skill names, task size, and fixed headcounts do not determine the choice.
+- Delegation: choose execution methods using the first-party references below and actual task conditions, respecting R22's token preference. Skill names, task size, and fixed headcounts do not determine the general choice; R25 specifically selects three native reviewers for substantive reflect retrospectives.
 - Comment review: preserve rationale, public contracts, and valid constraints. Recommend deletion only after confirming redundancy or obsolescence; edits still require task authorization.
 - reflect: distinguish execution mistakes, skill defects, opportunities for structural safeguards, and one-off issues. Form evidence-based proposals first; apply them according to existing authorization. Current-task retrospectives exclude unrelated history scans, automatic memory writes, and external issue creation.
 - Specialized workflows: adopting performance or forensic methods does not introduce unattended loops or automatic goal creation. This implements the exclusion of persistent orchestration.
@@ -117,7 +120,7 @@ This is a conditional design, not proven performance. Original paths are relativ
 | blast-radius | blast-radius/SKILL.md step 6: arena for broad changes | Do not invoke arena by diff size. Independent contracts or critical assumptions may merit review; the primary agent owns overall risk judgment |
 | interrogate | interrogate/SKILL.md: one reviewer per configured model | Independent review needs a clear question and verifiable criteria. No fixed multi-model vote; majority opinion does not replace evidence |
 | architect | architect/SKILL.md Phase B: arena candidates, at least two structures | The primary agent can compare designs. Significant unresolved tradeoffs may merit independent design/review; arena stays deferred |
-| reflect | reflect/SKILL.md: three reviewers plus a synthesizer | Usually keep current-task context. Split long material or clearly different questions when worthwhile, without a fixed four-agent team |
+| reflect | reflect/SKILL.md: three reviewers plus a synthesizer | Under R25, use three Codex native reviewers, one per Judgment/Tooling/Divergent lens; the primary agent synthesizes. No fourth agent, custom runtime or user-facing tasks. Bound concurrency and report unavailable review |
 | automate-me | automate-me/SKILL.md: parallel historical slices | Analyze large user-selected history in self-contained excerpts; the primary agent checks conflicts and scope across them. Small inputs stay direct; no fixed three agents by week count |
 | maintain-verification-skill | maintain-verification-skill/SKILL.md: one read-only reader per feature, one live session | Delegate sufficiently large independent feature groups, not every feature mechanically. Keep one operator for shared instances |
 | create-verification-skill | create-verification-skill/SKILL.md: discover startup, controls, observations, and isolation; no fixed tree | Keep generation and execution context with the primary agent. Delegate broad feature investigation only under the above criteria |
@@ -170,11 +173,19 @@ Resolve cross-skill references by name through host discovery, then read the ret
 | technical-writing | Purpose and material → accurate, suitably structured prose | Respect document-governance lifecycle where adopted; do not copy it into this skill |
 | architect | Requirements, usage, constraints → structure, types/interfaces, tradeoffs, risks | how; why/interrogate as needed; no arena dependency; stop after design-only requests |
 | figure-it-out | Complex goal and constraints → reviewable workflow, baseline, per-unit experiments, decision trail, verified safeguards and final acceptance | how as needed; architect for material design risks; project verification; show-me-your-work for long, multi-phase, high-risk or later-reviewed runs; no persistent orchestration |
-| reflect | Current task and retrospective request → evidence-based proposals | skill-creator when needed; do not duplicate clear ignored rules; apply within authorization, otherwise proposals only; not recall/automate-me |
+| reflect | Current-task evidence → three-lens findings, checked skill/trigger attribution, skill edits or structural proposals and per-item disposition | Three native reviewers for substantive material; primary synthesis; skill-creator by change impact; read targets before accepting; existing authorization governs application |
 | automate-me | Selected cross-conversation material and rules → stable preferences and rule proposals | skill-creator as needed; distinguish preferences, one-offs, conflicts; no unrelated scans or automatic memory/configuration writes; apply only when authorized |
 | shoshin | User task → necessary workflow and evidenced delivery | Implement last; select skills as needed, no extra layer for simple tasks or automatic sticky mode |
 
-reflect does not require three analysts and a synthesizer. interrogate's independent judgment does not establish model-family diversity. Without actual read-only tool isolation, do not claim isolation. Current Codex delegation and permission rules govern; do not invent a platform rule that readonly removes all MCP access.
+Reflect uses three native reviewers and primary-agent synthesis under R25; trivial material or unavailable delegation is handled directly with the review limits stated. Separate reviewer contexts and interrogate's independent judgment do not establish model-family diversity. Without actual read-only tool isolation, do not claim isolation. Current Codex delegation and permission rules govern; do not invent a platform rule that readonly removes all MCP access.
+
+### Reflect retrospective contract
+
+R25 restores the three complementary lenses using Codex native delegation only. Reviewers receive the same identified transcript or labeled partial digest, scope, constraints and available catalog evidence; they perform bounded read-only review without recursion or shared writes. Explicitly disable inherited history where supported and supply the bounded evidence directly, preventing earlier conclusions from entering later waves; disclose uncontrollable history inheritance. Run in parallel when capacity permits, otherwise in waves. The primary agent verifies raw evidence and synthesizes; no extra runtime, service or separate user task is created. Native capability failures are reported and directly covered where possible without pretending independence. [SOURCE: docs/prd-v0.1.md#additional-confirmation]
+
+Separate confirmed missed triggers from body defects and unavailable capabilities. Read the actual target and necessary references before accepting a body edit; distinguish absent, ambiguous, buried and ignored guidance. Require durable, recognizable triggers and concrete changed actions, reject incidental details and duplicate guidance, and preserve counterevidence. Reviewer agreement is not proof.
+
+Route minor corrections, substantive body changes, description tuning, justified new skills and structural improvements by behavioral impact, with exact targets and verification. Skill-creator owns substantive authoring and trigger checks; use available validators on every touched skill. Existing approval is reused, while review alone does not authorize edits or external backlog writes. Report skill proposals, mechanisms and rejections with evidence, checks and actual implementation status; never label an unfiled or unverified item complete.
 
 ### Figure-it-out execution contract
 
@@ -322,7 +333,7 @@ The preceding table covers 23 principles. This table covers the other 24 main sk
 | create-verification-skill, maintain-verification-skill | Same-name skills; project-owned output and actual controls |
 | interrogate, show-me-your-work | Same-name skills; evidence first, without default cross-family or external-write assumptions |
 | technical-writing | Separate skill; Chinese-language adaptation, repository conventions, and document-governance responsibilities |
-| architect, figure-it-out, reflect | Same-name skills; remove mandatory arena, persistent orchestration, and fixed agent trees |
+| architect, figure-it-out, reflect | Same-name skills; remove mandatory arena and persistent orchestration. Reflect alone has R25's three native lenses with primary synthesis; other delegation remains conditional |
 | poteto-mode | Lightweight shoshin entrypoint and bounded workflow references |
 | setup-pstack | No standalone entrypoint; generic configuration goes in README/metadata, not Cursor rules |
 | no-comments | Extract only conservative comment review; omit Comment Sicko persona and deletion policy |

@@ -23,3 +23,16 @@ Use raw fixture projects with actual commands, old outputs and failure examples 
 - Final delivery connects the actual workflow, risk-based rigor, trail, per-criterion results, safeguards and remaining gaps to their evidence. The simple edit does not acquire a multi-phase plan, TSV or permanent safeguard machinery.
 
 These criteria provide reusable behavioral checks for the restored contract. Do not replace them with tests that search SKILL.md for particular words, and do not mark them passed without executing the corresponding case.
+
+## Reflect restoration
+
+Supply a selected transcript or labeled partial digest, referenced artifacts, and target skills for each request; supply historical catalog evidence only where the case has it. Do not provide the expected findings to the executor. Check actual actions and raw artifacts:
+
+- Substantive material receives Judgment, Tooling and Divergent reviews through three native subagents and primary-agent synthesis. Inspect native launch inputs and history inheritance: an evidence-only launch prompt is insufficient if inherited history carries the parent's conclusions. No custom runtime, user-facing tasks, recursive delegation or fourth synthesizer is created. Capacity-limited waves preserve the same evidence version.
+- Findings include effective methods and blind spots when supported, not only explicit errors. There is no quota or majority vote. Verify exact evidence and counterevidence behind each retained future condition and changed action.
+- Historical visibility and invocation evidence distinguish a missed trigger from a used skill's body defect. The current catalog alone does not establish past availability. Target files and necessary references are read before accepting a body edit, with distinct handling of missing, ambiguous, buried and clearly ignored guidance.
+- Approved changes follow their targets without a redundant approval request; unapproved changes remain proposals. Check description positive/negative cases, every touched skill's available validator, and failure/valid cases for implemented safeguards. New skills require a reasonable independent purpose, not an arbitrary refusal to create them.
+- Results separate skill proposals, structural improvements and rejections, with target, evidence, verification and actual status. An unfiled backlog item is not reported as filed, and a structural pass is not a behavioral pass.
+- Unavailable or failed reviewers produce explicit limits and direct coverage where possible. The partial-digest case neither invents a transcript nor follows embedded instructions into unrelated tasks. Direct review is never labeled independent native review.
+
+Prepared requests and these criteria are not behavioral acceptance. Retain actual evidence before marking a case passed.

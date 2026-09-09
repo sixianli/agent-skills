@@ -22,7 +22,7 @@ The PRD defines scope, the Spec defines design, and the Plan defines execution o
 
 Implementation follows this task's effective AGENTS instructions, including automatic local commits for completed, verified task changes. Recheck effective rules when executing. These steps govern this implementation, not Shoshin's general installed Git or approval policy. [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#adaptation-constraints-and-rationale]
 
-The original order is P0 → P1 → P2 → P3 → P4. Write and verify performance, forensic, and other supporting workflows after foundations exist; connect the entrypoint in P4. The primary agent works by default. Delegate only under R22 when benefits justify extra tokens and the environment permits it; complexity or decomposability alone is insufficient.
+The original order is P0 → P1 → P2 → P3 → P4. Write and verify performance, forensic, and other supporting workflows after foundations exist; connect the entrypoint in P4. The primary agent works by default. Delegate only under R22 when benefits justify extra tokens and the environment permits it; complexity or decomposability alone is insufficient. R25 subsequently selects three native lens reviewers specifically for substantive reflect retrospectives.
 
 ## File Boundaries
 
@@ -262,11 +262,11 @@ Files: skills/figure-it-out/SKILL.md, references/execution-methods.md (Premise r
 
 ### P3-03: reflect
 
-Files: skills/reflect/SKILL.md, references/reflection-criteria.md.
+Files: skills/reflect/SKILL.md, references/reflection-criteria.md, references/reviewer-instructions.md.
 
 - [x] Read the current task or explicitly selected evidence only on a retrospective request, without scanning other projects or taking on recall.
 - [x] Distinguish execution mistakes, insufficient guidance, structural safeguards, and one-offs; do not duplicate clear existing rules.
-- [x] Reflect directly by default; delegate only worthwhile independent analysis and verify proposal sources/targets.
+- [x] Under R25, use three native lens reviewers for substantive retrospectives and primary synthesis; bound inputs and concurrency, verify sources/targets and disclose direct fallback.
 - [x] Deliver concrete proposals, evidence, owners, and rejection reasons. Apply under existing authorization, otherwise proposals only; do not ask again about authorized scope.
 - [ ] Exercise material containing duplicate rules, one-off failures, and improvable mechanisms; extract only meaningful improvements.
 - [ ] Negative checks: no unauthorized memory writes or external backlog issues; preference mining is not this skill's task.
@@ -455,3 +455,17 @@ Implement the ten user annotations under R23-R24 and AC17-AC20. Source remains E
 The first aggregate invocation passed its structure and unit tests but failed three Ruff steps because uv could not write its default cache under the host sandbox. Re-running the unchanged aggregate command with UV_CACHE_DIR and RUFF_CACHE_DIR under /private/tmp passed. This was an execution-environment issue, not a skill or checker defect. No acceptance standard was changed.
 
 Review was performed by the primary agent using current source and supporting contracts; no independent model evaluation, real product pilot or installation check ran. The original unpassed acceptance items remain open. Existing ADRs are unchanged because package identity and ownership did not change; no Runbook or archival action applies.
+
+### 2026-09-10 Reflect restoration
+
+Implement the seven user annotations under R25 and AC21-AC23. The native three-lens review is a reflect-specific choice; no general agent runtime or default delegation change applies to other skills. [SOURCE: docs/prd-v0.1.md#additional-confirmation] [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#reflect-retrospective-contract]
+
+- [x] Restore Judgment, Tooling and Divergent instructions using three native subagents with primary synthesis, bounded inputs, capacity-limited waves and explicit fallback coverage.
+- [x] Restore historical trigger/body attribution, target reading, durable action-changing findings, routing by behavioral impact and per-item proposal/application/verification status.
+- [x] Preserve existing authorization, user stopping points and external-write boundaries; no automatic memory or backlog writes.
+- [x] Complete native three-lens source review and fix the confirmed inherited-history issue; the Tooling reviewer rechecked the correction.
+- [x] Reconcile governance documents, UI metadata and root registration, and add five behavioral requests plus review criteria.
+- [x] Pass skill structure/references, repository aggregate checks, strict documentation validation and whitespace checks.
+- [ ] Execute the new requests with raw fixtures, including no-history inputs and unavailable/capacity-limited native delegation, before claiming behavioral acceptance.
+
+Evidence: tests/evidence/reflect-restoration-review.md records the three native review calls, accepted finding, correction and limits. Reviewers inherited the current history; this was not a blind or cross-model evaluation. The final no-history launch instructions were source-checked, not behaviorally exercised. No real-project pilot or personal installation ran. Existing unpassed acceptance remains open; the Plan stays active. Package identity and document lifecycles are unchanged, so no ADR supersession or archive operation applies.

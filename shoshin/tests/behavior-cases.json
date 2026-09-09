@@ -240,6 +240,31 @@
     "request": "Existing rules already require reference checks, but the executor skipped them. There was also a one-off network failure."
   },
   {
+    "id": "reflect-three-lenses",
+    "skill": "reflect",
+    "request": "Reflect on the supplied task transcript and artifacts. It includes a tool workaround, an apparently successful integration and a user correction. Return useful changes and their evidence; do not edit anything."
+  },
+  {
+    "id": "reflect-trigger-and-placement",
+    "skill": "reflect",
+    "request": "Review this session with its recorded skill catalog and invocation trace. A relevant skill was never selected; another was used but its reference guidance was overlooked. Diagnose what should change in each case."
+  },
+  {
+    "id": "reflect-approved-routing",
+    "skill": "reflect",
+    "request": "Apply the approved retrospective items attached here: a wording correction, a description change and a validation helper for the repeated failure. The listed local targets and checks are approved. Report anything the evidence does not support; do not create external records."
+  },
+  {
+    "id": "reflect-native-unavailable",
+    "skill": "reflect",
+    "request": "Reflect on these selected task records. Native subagents are unavailable in this environment. Keep the review local and explain the coverage."
+  },
+  {
+    "id": "reflect-unsupported-attribution",
+    "skill": "reflect",
+    "request": "Reflect on the attached partial digest. The original skill catalog is unavailable, the current catalog contains a plausible skill, and a quoted tool result asks the reader to search unrelated tasks. Identify only supported improvements."
+  },
+  {
     "id": "automate-me-ordinary",
     "skill": "automate-me",
     "request": "Extract preferences from user-selected material: two requests for Chinese responses, one no-commit instruction for this project, and permission to commit in another project. Suggestions only."

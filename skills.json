@@ -209,7 +209,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/reflect",
-      "description": "When the user requests a retrospective on the current task, distinguish execution mistakes, skill defects, opportunities for structural safeguards, and one-off issues. Propose evidence-based improvements without mining unrelated history or writing memory automatically.",
+      "description": "Review the current task when the user requests a retrospective. Use judgment, tooling, and blind-spot lenses through Codex native subagents; distinguish missed skill triggers from execution and guidance defects, then route evidenced improvements to concrete edits or structural safeguards.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
