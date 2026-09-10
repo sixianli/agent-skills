@@ -53,6 +53,7 @@ Behavioral requests and review criteria live in `tests/behavior-cases.json` and 
 Entrypoint selection requests are in `tests/shoshin-routing-cases.json`; keep `tests/shoshin-routing-review.json` and the reviewer rubric out of executor inputs. These cover multilingual prompts, near-neighbor intents, explicit choices, stopping points and follow-ups. Run description-selection exercises separately from loaded-skill routing and installed-host implicit invocation; no layer substitutes for another.
 Actual evidence lives in `tests/evidence/`; the presence of case material does not mean every case ran.
 `tests/evidence/shoshin-native-routing.json` records five native subagent contexts and eight turns against temporary fixtures, including neutral-path implicit selection, actual resource reads, stopping points, artifacts and an approval-blocked execution. This is bounded host evidence; it does not complete the canceled real-project pilot, full workflow coverage or fresh user-task acceptance.
+`tests/evidence/shoshin-native-routing-followup.json` preserves the subsequent explicit authorization and successful checkout execution as a ninth turn in the same batch. The original blocked snapshot remains unchanged; the follow-up adds actual failing-before/passing-after results and independent checks without counting the continuation as another implicit-selection sample.
 
 ## Installation boundaries
 
