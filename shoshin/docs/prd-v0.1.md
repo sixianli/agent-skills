@@ -68,6 +68,8 @@ Excluding PR workflows does not prevent ordinary Git or GitHub use in future tas
 
 - R25: For substantive reflect retrospectives, use three Codex native subagents for Judgment, Tooling and Divergent lenses, with primary-agent synthesis and no separate runtime or user-facing tasks. Restore evidence-based trigger/body diagnosis, target-skill reading, durable action-changing proposals, routing by behavioral impact, and per-item disposition. Existing authorization governs edits and backlog writes. Basis: the user approved the seven review annotations on 2026-09-10 and specifically selected native three-lens delegation. This is a scoped exception to R22; other skills keep its general delegation policy.
 
+- R26: Restore create-verification-skill's read-only target diagnosis, self-contained proof rules in generated output, shared feature-map baselines and reporting conventions, entrypoint-specific action/command/result recipes with a worked example, surface-appropriate controls, and documented, exercised helper invocations. Basis: the user's 2026-09-10 annotations approved these six restorations and preserving deliberate Codex adaptations instead of literal copying. Keep project-local ownership, current invocation policy, actual identified coverage rather than a fixed feature quota, and existing recovery improvements. Example commands are teaching material, never proof of a real run.
+
 ## Business Rules
 
 This section contains only confirmed product behavior and scope, with the basis for each rule. Current working rules and concrete adaptation decisions belong in the next subsection and the Spec. Do not present the assistant's design synthesis as the user's words.

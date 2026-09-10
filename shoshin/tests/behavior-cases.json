@@ -60,6 +60,31 @@
     "request": "Generate a chat verification skill, but no test backend or test identity is available."
   },
   {
+    "id": "create-verification-skill-target-identity",
+    "skill": "create-verification-skill",
+    "request": "Generate and exercise a verification skill for the supplied local app checkout. An older instance is already answering at the documented address; keep that instance and its data intact. Use only disposable resources created for this task."
+  },
+  {
+    "id": "create-verification-skill-portable-proof",
+    "skill": "create-verification-skill",
+    "request": "Generate a project verification skill that another developer can use with only this repository. Exercise the local user path with the supplied test-provider setup and dry-run option; no real provider account is available."
+  },
+  {
+    "id": "create-verification-skill-entrypoint-map",
+    "skill": "create-verification-skill",
+    "request": "Generate and exercise a verification skill for the supplied records app. Cover browser and CLI entrypoints in the map, including draft cancellation, saved records and list filtering. The map should support running its recipes in different orders with disposable data. Report which paths you actually exercised."
+  },
+  {
+    "id": "create-verification-skill-terminal-surfaces",
+    "skill": "create-verification-skill",
+    "request": "Generate and exercise a verification skill for the supplied command-line project. Its primary interface is a non-interactive export command; it also has an interactive editor. Both may use disposable local data, and neither needs a persistent server."
+  },
+  {
+    "id": "create-verification-skill-helper-invocations",
+    "skill": "create-verification-skill",
+    "request": "Generate and exercise a verification skill for the supplied local service using its existing control helpers. A teammate will run the documented commands from a fresh terminal. Keep helper changes inside the generated skill and leave the product unchanged."
+  },
+  {
     "id": "tdd-ordinary",
     "skill": "tdd",
     "request": "Add regression evidence for the log double-quote readback defect, then fix it."

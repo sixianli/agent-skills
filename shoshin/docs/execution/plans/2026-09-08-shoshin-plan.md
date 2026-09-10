@@ -469,3 +469,17 @@ Implement the seven user annotations under R25 and AC21-AC23. The native three-l
 - [ ] Execute the new requests with raw fixtures, including no-history inputs and unavailable/capacity-limited native delegation, before claiming behavioral acceptance.
 
 Evidence: tests/evidence/reflect-restoration-review.md records the three native review calls, accepted finding, correction and limits. Reviewers inherited the current history; this was not a blind or cross-model evaluation. The final no-history launch instructions were source-checked, not behaviorally exercised. No real-project pilot or personal installation ran. Existing unpassed acceptance remains open; the Plan stays active. Package identity and document lifecycles are unchanged, so no ADR supersession or archive operation applies.
+
+### 2026-09-10 Create-verification-skill restoration
+
+Implement the six accepted restorations and the seventh annotation's adaptation approach under R26 and AC24-AC26. Scope is the current source package and reviewable evaluation material, not personal installation or resumption of the canceled real-project pilot. [SOURCE: docs/prd-v0.1.md#additional-confirmation] [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md#verification-generation-contract]
+
+- [x] Restore read-only Doctor expectations for applicable target identity, version, address/resource ownership, authentication and data; keep recovery separate from diagnosis.
+- [x] Require self-contained proof rules in generated output and restore production-boundary mock limits, mutation readback and per-entrypoint evidence.
+- [x] Restore shared map baselines, driving conventions and evidence/skip rules, plus a worked fictional example for multiple entrypoints, cancellation, persistence and completed-empty-state recovery.
+- [x] Restore surface-based controls and exact helper invocation checks while retaining Codex paths, invocation policy, identified scope and existing recovery behavior.
+- [x] Reconcile PRD, Spec and Architecture, and add five behavioral requests with artifact-based review criteria; do not label prepared cases passed.
+- [x] Review the complete source diff against all seven annotations and run package structure/references, repository aggregate checks, strict documentation validation and whitespace checks.
+- [ ] Exercise the new requests with raw fixtures and retain actual diagnosis, portable-output, map-order and helper-invocation evidence before claiming behavioral acceptance.
+
+Validation: quick_validate and package structure/references passed; the repository aggregate passed with 46 document-governance tests, 18 Shoshin helper tests and Ruff checks. Strict documentation validation passed with zero warnings; behavior-case JSON has 64 unique IDs and whitespace checks passed. Cache paths for uv and Ruff were placed under /private/tmp. The primary-agent source review checked all seven annotations and the shared evidence-standard callers; mock restrictions are scoped to real-user-path claims so narrower unit-test evidence remains valid. It also clarified unexecuted versus unreachable reporting and added an explicit example command to check fixture preservation. No independent agent review or real application evaluation ran; prepared requests are not behavioral passes. Existing unpassed product and installation acceptance stays open. Package identity, runtime ownership and document lifecycles are unchanged; no ADR supersession or archival operation applies.

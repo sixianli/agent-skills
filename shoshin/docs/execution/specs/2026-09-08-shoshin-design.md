@@ -66,6 +66,9 @@ Shoshin uses existing tools for confirmed skills and workflows. This run adds no
 | AC21 | Given a substantive retrospective, use three native lens reviewers and primary synthesis, or disclose unavailable delegation and direct coverage; no runtime, recursive agents or separate user tasks |
 | AC22 | Given a missed-trigger or body-edit proposal, verify invocation/catalog evidence and read the target before accepting; distinguish missing, ambiguous, buried and ignored guidance without duplicate rules |
 | AC23 | Given accepted findings, supply future condition, changed action, evidence, target, routing and verification; report skill proposals, mechanisms and rejections with actual status and reuse existing authorization |
+| AC24 | Given a generated verification skill, Doctor checks applicable target identity, build, address/resource ownership, auth and data state read-only; mismatches are reported and recovery is a separate step before further driving |
+| AC25 | Given only the generated skill and its bundled resources, the reader can obtain the proof rules; the feature map defines shared baselines, per-entrypoint action/command/result recipes, mutation readback, artifact attribution and honest skip status |
+| AC26 | Given interactive and non-interactive surfaces or shipped helpers, use appropriate controls and lifecycle rules without mandatory tmux, prefer stable handles and state waits, and verify each helper using its documented invocation and required execution mode |
 
 ## Design
 
@@ -194,6 +197,18 @@ Restore the original A-E method under R23-R24. Phase A frames observable predica
 Phase C treats each unit as an experiment with expected evidence, observed results and keep/revert decisions. Suspiciously easy passes trigger an observation-path check. Phase D runs throughout execution using show-me-your-work's canonical TSV, with the path chosen during framing for long, multi-phase, high-risk or later-reviewed work. Ordinary operations do not acquire logging overhead.
 
 Phase E directly implements structural safeguards against recurring corrections and verifies both failure detection and valid behavior before final real-product acceptance. Execution methods own this action; reflect remains a user-requested retrospective and is not a prerequisite. Connect each safeguard to its actual execution path and retain evidence and ownership. Existing host controls and user stopping points still govern actions; there is no additional approval gate merely for creating a task safeguard. Final output includes workflow and deviations, rigor and rationale, trail path, original-criterion verdicts, safeguards and checks, and remaining gaps.
+
+### Verification generation contract
+
+R26 restores operational detail in the generated project skill, not another control runtime. Investigate the primary and secondary user surfaces and prefer existing documented startup and control tools. Separate preparation from short-lived invocations; interactive terminal tools need explicit session, prompt, exit and cleanup behavior, while non-interactive commands need no artificial persistent session. Stable handles and observable completion conditions take precedence over coordinates, tab order and fixed sleeps. [SOURCE: docs/prd-v0.1.md#additional-confirmation]
+
+Doctor is read-only and checks applicable expected target identity, build, address and resource ownership, authentication and fixture state. Record non-applicable or unavailable checks. Diagnosis does not repair or refresh authentication; mismatches require an explicit recovery step before further driving. Existing first-drive, fresh-session and post-failure checks and owned-resource cleanup remain.
+
+Generated output carries its own applicable proof rules in the body or a bundled reference with an explicit read instruction; the next reader must not need the generator checkout or conversation. Real user actions, observable results, stored-state readback, actual dry-run effects and preserved raw evidence remain necessary. Mocks are limited to external dependencies already isolated by the production system and do not establish those dependencies' real behavior.
+
+The feature index defines shared baseline preconditions, driving conventions and evidence/skip reporting. Feature recipes enumerate identified in-scope entrypoints and sub-feature IDs, pair actions with exact commands or tool calls and observations, restore owned fixture state and associate artifacts with the tested entrypoint. Unexecuted, blocked and failed paths cannot inherit a pass from another path. The worked example demonstrates cancellation, persistence, multi-entrypoint proof and completed-empty versus unavailable states; unsupported features and fictional commands do not enter real output.
+
+Helpers are optional. Every shipped helper has documented arguments, working directory and runtime prerequisites and is exercised through that exact invocation. Direct execution requires executable permissions; interpreter invocation requires the corresponding interpreter. Preserve the existing Codex path and invocation policy, identified-scope mapping, draft status for missing capabilities and prohibition on automatic scheduling. These restorations do not resume the canceled real-project pilot or establish behavioral acceptance from structure checks.
 
 ### Verification maintenance coverage and recovery contract
 
