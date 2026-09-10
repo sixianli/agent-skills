@@ -318,5 +318,20 @@
     "id": "shoshin-exception",
     "skill": "shoshin",
     "request": "The fix needs a real backend, but only static code is available and the user wants to review the design first."
+  },
+  {
+    "id": "maintain-verification-skill-helper-invocation",
+    "skill": "maintain-verification-skill",
+    "request": "Maintain the supplied project verification skill and exercise its mapped CLI features. A teammate will use only the documented commands from a fresh terminal. Keep changes inside the verification skill and retain execution evidence."
+  },
+  {
+    "id": "maintain-verification-skill-partial-blocker",
+    "skill": "maintain-verification-skill",
+    "request": "Maintain the supplied verification skill against current source and run all mapped features in this environment. Correct verified documentation or helper drift, preserve product configuration and existing services, and report overall and per-feature outcomes."
+  },
+  {
+    "id": "maintain-verification-skill-prerequisite-drift",
+    "skill": "maintain-verification-skill",
+    "request": "Check the existing verification skill against the supplied app and its current account and service configuration. Exercise the user commands, maintain accurate feature prerequisites, and keep product settings and data unchanged. Do not provision accounts or start external services."
   }
 ]

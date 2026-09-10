@@ -72,6 +72,8 @@ Excluding PR workflows does not prevent ordinary Git or GitHub use in future tas
 
 - R27: Make shoshin eligible for precise implicit selection when an engineering goal needs workflow choice or coordinated methods, while avoiding unnecessary entrypoint use for simple requests or a sufficient directly chosen skill. Restore explicit visual-comparison and skill-authoring routes, lightweight multi-step workflow/check/skip reporting, observable-fact versus preference classification before questions, and state/data/ownership invariants before feature implementation. Basis: the user's 2026-09-10 entrypoint annotations and additional request for intelligent implicit invocation and accurate downstream routing. Evaluate initial selection separately from routing and execution; include multilingual and follow-up cases. Permission to be selected is not proof of reliable triggering.
 
+- R28: Restore maintenance of documented helper invocations, overall blocked precedence when required coverage is unfinished despite partial corrections, and correction of omitted stable prerequisites without treating temporary outages as product requirements. Keep the create-verification-skill body unchanged. Verify the three behaviors with isolated executable projects. Basis: the user accepted all four review annotations on 2026-09-10.
+
 ## Business Rules
 
 This section contains only confirmed product behavior and scope, with the basis for each rule. Current working rules and concrete adaptation decisions belong in the next subsection and the Spec. Do not present the assistant's design synthesis as the user's words.

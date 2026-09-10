@@ -49,6 +49,16 @@ Supply raw fixture repositories with their actual commands and controls. Keep th
 
 The five requests are prepared evaluation material, not completed experiments. Source restoration, helper/unit tests and structure validation do not establish real application behavior or installed-host acceptance.
 
+## Verification maintenance restoration
+
+Use independent temporary project copies with actual CLI operations and preserve product files. Give executors only the request, the candidate maintenance skill and raw project material. Review actual commands, artifacts and final scope:
+
+- For helper invocation, a documented direct command fails while an interpreter workaround can run. The delivered recipe must run exactly as documented, with appropriate execution permissions or a documented interpreter, arguments and working directory. Check the actual failure before attributing it to a parameter spelling; argument parsers may accept abbreviations. Re-exercise affected paths and preserve initial failure evidence.
+- For partial corrections, one feature needs a map correction and another required feature cannot complete. The overall outcome remains blocked; verified local corrections and unverified required paths are reported separately. Do not accept silent scope reduction. A complete reachable control with corrections should report changed; a repeat with complete coverage and no remaining drift should report clean.
+- For prerequisites, source and actual execution show a stable entitlement requirement and a separate transient backend failure. Correct the missing stable prerequisite in the feature recipe and retain attempted commands and unmet conditions. Report the current outage as run evidence; do not turn a particular outage into a permanent product rule or count an expected refusal as the required successful path.
+
+Source-to-map discovery still applies during these cases. Retain newly discovered supported commands and their evidence rather than ignoring an omission to obtain a favorable overall outcome. Temporary fixtures establish these bounded behaviors, not full real-project maintenance acceptance.
+
 ## Shoshin implicit selection and routing
 
 Use decoded requests from shoshin-routing-cases.json. Only reviewers read shoshin-routing-review.json. Its method lists describe relevant destinations or alternatives, not an instruction to load every named skill. Review an equivalent route against the actual intent before rejecting it. Do not maximize entrypoint invocation: direct completion or a sufficient leaf is correct for narrow work.
