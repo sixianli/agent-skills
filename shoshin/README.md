@@ -54,6 +54,7 @@ Entrypoint selection requests are in `tests/shoshin-routing-cases.json`; keep `t
 Actual evidence lives in `tests/evidence/`; the presence of case material does not mean every case ran.
 `tests/evidence/shoshin-native-routing.json` records five native subagent contexts and eight turns against temporary fixtures, including neutral-path implicit selection, actual resource reads, stopping points, artifacts and an approval-blocked execution. This is bounded host evidence; it does not complete the canceled real-project pilot, full workflow coverage or fresh user-task acceptance.
 `tests/evidence/shoshin-native-routing-followup.json` preserves the subsequent explicit authorization and successful checkout execution as a ninth turn in the same batch. The original blocked snapshot remains unchanged; the follow-up adds actual failing-before/passing-after results and independent checks without counting the continuation as another implicit-selection sample.
+`tests/evidence/shoshin-feature-authoring-routing.json` adds three native fixture contexts: implicit Feature implementation, explicit entrypoint plus skill-creator, and an unnamed authoring request completed directly through skill-creator. It records actual artifacts, checks and interpretation limits; the canonical request set now includes the sufficient-leaf authoring contrast as route-31.
 
 ## Installation boundaries
 

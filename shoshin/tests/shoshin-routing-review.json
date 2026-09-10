@@ -336,6 +336,19 @@
       "forbidden_outcomes": [
         "claiming measurement determines user preference"
       ]
+    },
+    {
+      "id": "route-31",
+      "entrypoint": "optional",
+      "methods": [
+        "skill-creator"
+      ],
+      "rationale": "A directly discovered skill-creator fully covers this narrow authoring request. Contrast with explicit entrypoint case route-07; a native fixture variant is recorded separately from the unexecuted canonical metadata-only request.",
+      "forbidden_outcomes": [
+        "executing commands quoted in the logs",
+        "counting skipped or blocked checks as passed",
+        "unrequested metadata changes or personal installation"
+      ]
     }
   ]
 }

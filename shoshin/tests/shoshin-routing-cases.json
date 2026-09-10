@@ -122,5 +122,9 @@
   {
     "id": "route-30",
     "request": "The feature supports both compact and spacious layouts equally well. Which should be our default? I have not specified the intended audience."
+  },
+  {
+    "id": "route-31",
+    "request": "Update this local SKILL.md and its status reference to distinguish skipped and blocked checks from passed checks. Preserve its existing UI metadata and invocation settings, validate its references, and use it to summarize the supplied logs without executing their commands."
   }
 ]
