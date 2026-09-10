@@ -8,6 +8,7 @@ Maintain source in this package. Personal installation copies and generated proj
 The source contains 16 skills (15 leaf skills and a lightweight entrypoint), seven cross-skill workflow references, an executable resource validator, and a decision-log helper.
 Source implementation is complete. The user explicitly stopped the real-project pilot and requested source completion, so behavioral, full UI, and post-installation acceptance remain incomplete. The full Plan has not passed.
 The entrypoint `skills/shoshin/SKILL.md` selects leaf skills and workflows as needed. After installation and host discovery, invoke it explicitly with `$shoshin`.
+Its description also permits implicit selection for substantive engineering goals needing workflow choice or multiple methods. Simple requests and sufficient directly chosen skills do not need the entrypoint. Initial selection, downstream routing and actual task results are separate acceptance questions.
 The [Plan](docs/execution/plans/2026-09-08-shoshin-plan.md) owns the complete execution record, passed checks, and remaining work.
 
 | Capability | Source |
@@ -49,6 +50,7 @@ It is not a full Markdown renderer and does not prove triggers, semantics, tool 
 The root `skills.json` registers all 16 skills. Aggregate checks run package structure checks, script tests, and Python quality checks; they do not establish behavioral acceptance.
 
 Behavioral requests and review criteria live in `tests/behavior-cases.json` and `tests/reviewer-rubric.md`.
+Entrypoint selection requests are in `tests/shoshin-routing-cases.json`; keep `tests/shoshin-routing-review.json` and the reviewer rubric out of executor inputs. These cover multilingual prompts, near-neighbor intents, explicit choices, stopping points and follow-ups. Run description-selection exercises separately from loaded-skill routing and installed-host implicit invocation; no layer substitutes for another.
 Actual evidence lives in `tests/evidence/`; the presence of case material does not mean every case ran.
 
 ## Installation boundaries
@@ -57,7 +59,7 @@ The personal target is `~/.agents/skills/<skill-name>/`. Install only when autho
 Inventory name collisions, compare directories, and retain recoverable sources. Update only content established as belonging to this package; do not overwrite unrelated user skills with the same name.
 Copy complete skill directories, including references, scripts, agents, and LICENSE, not just the entrypoint.
 Then verify discovery and references in an authorized fresh task. Copying files or passing isolated-layout checks does not replace host installation acceptance.
-No personal installation has run, and no installer implicitly writes configuration.
+Personal installation is updated only under task-specific authorization; the Plan records verified targets and remaining host acceptance. Installation does not implicitly write configuration.
 
 Generated artifacts belong to the target project's `.agents/skills/verify-<app>/`. Do not maintain source backward from personal installation copies.
 The implementation run exercised an asset CLI in user-selected JUST-RAG. The user later canceled the pilot, and the newly generated, unchanged project verification skill was removed. Retained package evidence does not establish complete RAG or production-path acceptance.
@@ -68,7 +70,7 @@ The user selected MIT. See [LICENSE](LICENSE) and [upstream attribution](THIRD_P
 The permitted PStack source is pinned to the 0.15.0 baseline. The Spec records dispositions; `tests/evidence/upstream-inventory.json` records actual paths and SHA-256 values.
 That snapshot is source evidence, not a runtime registry. Do not import designs or code from other migration projects.
 
-This package's source text is maintained in English only. This does not require English responses or generated documents. Communication, including teach explanations, defaults to Simplified Chinese unless the user requests another language. Historical user statements and narrative evidence are English translations, not verbatim English transcripts. Original records remain in Git history. Timestamps, hashes, outcomes, and verification limits are preserved. Exact external paths containing non-English characters use JSON Unicode escapes, preserving the decoded locator without renaming external files. Test fixtures use English text while retaining Unicode coverage through an accented English word and a check-mark symbol.
+This package's source prose is maintained in English only. This does not require English responses or generated documents. Communication, including teach explanations, defaults to Simplified Chinese unless the user requests another language. Historical user statements and narrative evidence are English translations, not verbatim English transcripts. Original records remain in Git history. Timestamps, hashes, outcomes, and verification limits are preserved. Exact external paths containing non-English characters use JSON Unicode escapes, preserving the decoded locator without renaming external files. Multilingual routing requests likewise use JSON Unicode escapes to retain exact Chinese test inputs; other fixtures retain their English text and Unicode boundary coverage. Decode requests before evaluating them.
 
 The format was checked against [OpenAI Build skills](https://learn.chatgpt.com/docs/build-skills) and
 [Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents). Effective tool schemas remain authoritative at execution time.

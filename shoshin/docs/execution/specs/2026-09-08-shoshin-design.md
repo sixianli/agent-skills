@@ -69,6 +69,10 @@ Shoshin uses existing tools for confirmed skills and workflows. This run adds no
 | AC24 | Given a generated verification skill, Doctor checks applicable target identity, build, address/resource ownership, auth and data state read-only; mismatches are reported and recovery is a separate step before further driving |
 | AC25 | Given only the generated skill and its bundled resources, the reader can obtain the proof rules; the feature map defines shared baselines, per-entrypoint action/command/result recipes, mutation readback, artifact attribution and honest skip status |
 | AC26 | Given interactive and non-interactive surfaces or shipped helpers, use appropriate controls and lifecycle rules without mandatory tmux, prefer stable handles and state waits, and verify each helper using its documented invocation and required execution mode |
+| AC27 | Given an unnamed substantive engineering goal, select the entrypoint when workflow choice or coordination is needed; simple/non-engineering requests and sufficient explicitly chosen skills bypass it. Record catalog visibility separately from selection errors |
+| AC28 | Given multi-step work or an empirical question, state the workflow, checks and stopping point, preserve important skipped steps with reasons, and investigate observable facts within scope before asking for product or preference decisions |
+| AC29 | Given visual-equivalence work or skill authoring, route respectively to the visual method without generating a verification skill, or to discovered skill-creator; missing owners remain explicit gaps |
+| AC30 | Given changed state, data or ownership in a feature, describe the representation, owner and invariants before implementation; follow-up status, continuation and task changes preserve or revise the active workflow appropriately |
 
 ## Design
 
@@ -181,6 +185,18 @@ Resolve cross-skill references by name through host discovery, then read the ret
 | shoshin | User task → necessary workflow and evidenced delivery | Implement last; select skills as needed, no extra layer for simple tasks or automatic sticky mode |
 
 Reflect uses three native reviewers and primary-agent synthesis under R25; trivial material or unavailable delegation is handled directly with the review limits stated. Separate reviewer contexts and interrogate's independent judgment do not establish model-family diversity. Without actual read-only tool isolation, do not claim isolation. Current Codex delegation and permission rules govern; do not invent a platform rule that readonly removes all MCP access.
+
+### Entrypoint selection and routing contract
+
+R27 distinguishes initial skill selection from the workflow executed after selection. The entrypoint description front-loads substantive repository work requiring workflow choice or coordinated methods, and excludes simple explanations, literal edits and requests fully covered by an explicitly chosen skill. A directly discovered leaf that fully satisfies a narrow request is an acceptable route, not an entrypoint recall failure. Keep implicit invocation enabled without adding keyword dispatch scripts, persistent modes or personal rules. [SOURCE: docs/prd-v0.1.md#additional-confirmation]
+
+The body preserves task intent, explicit selections and stopping points, distinguishes instructions from quoted data, and treats continuation, status and a new task differently. For multi-step work, state the selected workflow, key steps and checks before execution, reuse existing plans and approvals, and report important skips. Empirical questions use existing evidence or the smallest authorized observation; actual product/preferences or missing authorization still require user input.
+
+Visual-equivalence work reads only create-verification-skill's visual reference, not its generator workflow. Skill authoring discovers skill-creator. Feature work describes changed state/data representations, ownership and invariants before logic; material unresolved tradeoffs alone call for architect. Eval remains a source Playbook whose retained experiment-design ideas support package evaluation, not a new standalone entrypoint or arena integration.
+
+Official documentation confirms that initial skill matching uses name/description, with full instructions loaded after selection; a crowded catalog can shorten descriptions or omit entries. The actual available catalog is therefore part of evaluation evidence. `allow_implicit_invocation: true` enables selection but does not enforce it. Source: [OpenAI Build skills](https://learn.chatgpt.com/docs/build-skills), fetched 2026-09-10.
+
+Evaluate three levels separately: description selection, loaded-skill routing and task execution in the host. Keep natural requests separate from reviewer expectations. Include Chinese/English equivalents, near-neighbor intents, explicit selection and exclusion, read-only constraints, missing owners, continuation/status/task changes, and quoted trigger words. Offline catalog choices, explicit skill invocation, and structural checks are not installed-host implicit-trigger acceptance. Do not create user-facing tasks or resume canceled real-project pilots just to test routing.
 
 ### Reflect retrospective contract
 

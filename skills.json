@@ -126,7 +126,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/shoshin",
-      "description": "Select the necessary explanation, investigation, review, design, implementation, or retrospective methods for a specific engineering request. Complete simple tasks directly; do not default to multiple agents, persistent modes, or automatic delivery.",
+      "description": "Route substantive repository work that needs workflow selection or coordinated engineering methods: debugging, features, refactors, migrations, or performance work. Use when the user gives an engineering goal without choosing a method. Skip simple explanations, literal edits, and requests fully covered by an explicitly chosen skill.",
       "implicit_invocation": true,
       "has_tests": true,
       "checks": [

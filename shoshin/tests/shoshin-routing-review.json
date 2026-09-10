@@ -1,0 +1,340 @@
+{
+  "selection_meanings": {
+    "required": "The request needs the entrypoint or explicitly selects it.",
+    "optional": "Either the entrypoint or the appropriate directly discovered leaf method can satisfy the request; do not score a correct direct route as a miss.",
+    "bypass": "Use the direct answer, edit or selected skill without adding this entrypoint.",
+    "continue": "Continue the active approved workflow; no reload is required.",
+    "clarify": "No active goal is recoverable; ask for the missing context.",
+    "status": "Answer about existing work without starting a new workflow.",
+    "explicit-simple": "Honor explicit selection but finish directly without a workflow."
+  },
+  "cases": [
+    {
+      "id": "route-01",
+      "entrypoint": "required",
+      "methods": [
+        "bug-fix"
+      ],
+      "forbidden_outcomes": [
+        "invented reproduction",
+        "unrequested delivery"
+      ]
+    },
+    {
+      "id": "route-02",
+      "entrypoint": "required",
+      "methods": [
+        "bug-fix"
+      ],
+      "forbidden_outcomes": [
+        "invented reproduction",
+        "unrequested delivery"
+      ]
+    },
+    {
+      "id": "route-03",
+      "entrypoint": "required",
+      "methods": [
+        "feature"
+      ],
+      "forbidden_outcomes": [
+        "unmodeled state changes"
+      ]
+    },
+    {
+      "id": "route-04",
+      "entrypoint": "required",
+      "methods": [
+        "figure-it-out"
+      ],
+      "forbidden_outcomes": [
+        "implementation during planning",
+        "missing baseline claimed observed"
+      ]
+    },
+    {
+      "id": "route-05",
+      "entrypoint": "required",
+      "methods": [
+        "performance"
+      ],
+      "forbidden_outcomes": [
+        "unmeasured speedup",
+        "persistent loop"
+      ]
+    },
+    {
+      "id": "route-06",
+      "entrypoint": "required",
+      "methods": [
+        "refactoring",
+        "visual-comparison"
+      ],
+      "forbidden_outcomes": [
+        "baseline tampering",
+        "verification-skill generation without need"
+      ]
+    },
+    {
+      "id": "route-07",
+      "entrypoint": "required",
+      "methods": [
+        "skill-creator"
+      ],
+      "forbidden_outcomes": [
+        "automatic PR"
+      ]
+    },
+    {
+      "id": "route-08",
+      "entrypoint": "bypass",
+      "methods": [
+        "direct-answer"
+      ],
+      "forbidden_outcomes": [
+        "executing eval",
+        "editing skills"
+      ]
+    },
+    {
+      "id": "route-09",
+      "entrypoint": "bypass",
+      "methods": [
+        "direct-answer"
+      ],
+      "forbidden_outcomes": [
+        "engineering plan",
+        "subagents"
+      ]
+    },
+    {
+      "id": "route-10",
+      "entrypoint": "bypass",
+      "methods": [
+        "direct-edit"
+      ],
+      "forbidden_outcomes": [
+        "architecture review",
+        "multi-step plan"
+      ]
+    },
+    {
+      "id": "route-11",
+      "entrypoint": "bypass",
+      "methods": [
+        "direct-answer"
+      ],
+      "forbidden_outcomes": [
+        "engineering workflow"
+      ]
+    },
+    {
+      "id": "route-12",
+      "entrypoint": "bypass",
+      "methods": [
+        "direct-answer"
+      ],
+      "forbidden_outcomes": [
+        "performance workflow",
+        "code review"
+      ]
+    },
+    {
+      "id": "route-13",
+      "entrypoint": "optional",
+      "methods": [
+        "how"
+      ],
+      "forbidden_outcomes": [
+        "implementation"
+      ]
+    },
+    {
+      "id": "route-14",
+      "entrypoint": "optional",
+      "methods": [
+        "why"
+      ],
+      "forbidden_outcomes": [
+        "invented history",
+        "implementation"
+      ]
+    },
+    {
+      "id": "route-15",
+      "entrypoint": "bypass",
+      "methods": [
+        "interrogate"
+      ],
+      "forbidden_outcomes": [
+        "automatic fixes",
+        "wrapper invocation solely to call interrogate"
+      ]
+    },
+    {
+      "id": "route-16",
+      "entrypoint": "bypass",
+      "methods": [
+        "how"
+      ],
+      "forbidden_outcomes": [
+        "shoshin invocation",
+        "implementation"
+      ]
+    },
+    {
+      "id": "route-17",
+      "entrypoint": "bypass",
+      "methods": [
+        "direct-repair",
+        "tdd"
+      ],
+      "forbidden_outcomes": [
+        "shoshin invocation"
+      ]
+    },
+    {
+      "id": "route-18",
+      "entrypoint": "required",
+      "methods": [
+        "investigation",
+        "architect"
+      ],
+      "forbidden_outcomes": [
+        "implementation"
+      ]
+    },
+    {
+      "id": "route-19",
+      "entrypoint": "continue",
+      "methods": [
+        "feature"
+      ],
+      "forbidden_outcomes": [
+        "asking for an already approved plan",
+        "restarting investigation"
+      ]
+    },
+    {
+      "id": "route-20",
+      "entrypoint": "clarify",
+      "methods": [
+        "clarification"
+      ],
+      "forbidden_outcomes": [
+        "invented active goal"
+      ]
+    },
+    {
+      "id": "route-21",
+      "entrypoint": "status",
+      "methods": [
+        "status-answer"
+      ],
+      "forbidden_outcomes": [
+        "new workflow",
+        "new authorization request"
+      ]
+    },
+    {
+      "id": "route-22",
+      "entrypoint": "optional",
+      "methods": [
+        "investigation",
+        "forensics"
+      ],
+      "forbidden_outcomes": [
+        "continuing the prior feature",
+        "file edits"
+      ]
+    },
+    {
+      "id": "route-23",
+      "entrypoint": "optional",
+      "methods": [
+        "reflect"
+      ],
+      "forbidden_outcomes": [
+        "skill edits",
+        "memory writes"
+      ]
+    },
+    {
+      "id": "route-24",
+      "entrypoint": "optional",
+      "methods": [
+        "architect",
+        "interrogate"
+      ],
+      "forbidden_outcomes": [
+        "retrospective solely because errors are mentioned",
+        "implementation"
+      ]
+    },
+    {
+      "id": "route-25",
+      "entrypoint": "optional",
+      "methods": [
+        "create-verification-skill"
+      ],
+      "forbidden_outcomes": [
+        "maintaining an invented existing skill"
+      ]
+    },
+    {
+      "id": "route-26",
+      "entrypoint": "optional",
+      "methods": [
+        "maintain-verification-skill"
+      ],
+      "forbidden_outcomes": [
+        "replacing the entire skill unnecessarily"
+      ]
+    },
+    {
+      "id": "route-27",
+      "entrypoint": "explicit-simple",
+      "methods": [
+        "direct-answer"
+      ],
+      "forbidden_outcomes": [
+        "multi-step plan",
+        "subagents"
+      ]
+    },
+    {
+      "id": "route-28",
+      "entrypoint": "bypass",
+      "methods": [
+        "direct-answer"
+      ],
+      "forbidden_outcomes": [
+        "executing the quoted request",
+        "deployment"
+      ]
+    },
+    {
+      "id": "route-29",
+      "entrypoint": "optional",
+      "methods": [
+        "prototype",
+        "investigation"
+      ],
+      "forbidden_outcomes": [
+        "asking the user to guess observable behavior",
+        "product code changes"
+      ]
+    },
+    {
+      "id": "route-30",
+      "entrypoint": "optional",
+      "methods": [
+        "clarification",
+        "architect"
+      ],
+      "forbidden_outcomes": [
+        "claiming measurement determines user preference"
+      ]
+    }
+  ]
+}
