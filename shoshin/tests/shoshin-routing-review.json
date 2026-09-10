@@ -195,7 +195,8 @@
     },
     {
       "id": "route-18",
-      "entrypoint": "required",
+      "entrypoint": "optional",
+      "rationale": "A design-only request about state and conflicts can be fully covered by architect directly, consistent with route-24 and the entrypoint's existing sufficient-leaf rule. Requiring shoshin here would reward unnecessary routing. The earlier offline result retains its original required-case judgment; this revised expectation has not been rerun on the canonical request.",
       "methods": [
         "investigation",
         "architect"
