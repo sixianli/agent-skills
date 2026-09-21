@@ -130,68 +130,6 @@ class ValidateDocsTests(unittest.TestCase):
         self.assertEqual(sealed.returncode, 0, sealed.stderr)
         return path
 
-    def test_glossary_can_be_referenced_from_a_governed_document(self) -> None:
-        """Accept canonical and context-specific glossaries without a new gate."""
-        for relative in ("docs/glossary.md", "docs/glossary/billing.md"):
-            self.write_document(
-                relative,
-                "# Terms\n\n## Customer\n\nThe organization that pays.",
-                document_type="glossary",
-            )
-        self.write_document(
-            "docs/prd-v0.1.md",
-            "# Scope\n\n[SOURCE: docs/glossary.md#customer]\n"
-            "[SOURCE: docs/glossary/billing.md#customer]",
-            document_type="prd",
-        )
-
-        result, payload = self.run_validator()
-
-        self.assertEqual(result.returncode, 0, payload)
-        self.assertTrue(payload["ok"])
-        self.assertEqual(payload["warnings"], [])
-
-    def test_glossary_paths_reject_conflicting_document_types(self) -> None:
-        """A glossary path must not silently become another governed layer."""
-        for relative in ("docs/glossary.md", "docs/glossary/billing.md"):
-            with self.subTest(relative=relative):
-                path = self.write_document(
-                    relative, "# Terms", document_type="architecture"
-                )
-                result, payload = self.run_validator()
-                self.assertEqual(result.returncode, 1, payload)
-                self.assertIn(
-                    "conflicts with path type 'glossary'",
-                    "\n".join(payload["errors"]),
-                )
-                path.unlink()
-
-    def test_glossary_template_satisfies_strict_governance(self) -> None:
-        """The shipped template is usable through the same strict CLI."""
-        template = (SKILL_ROOT / "assets/templates/glossary-template.md").read_text(
-            encoding="utf-8"
-        )
-        (self.root / "docs/glossary.md").write_text(
-            template.replace("YYYY-MM-DD", "2026-09-21"), encoding="utf-8"
-        )
-
-        result, payload = self.run_validator()
-
-        self.assertEqual(result.returncode, 0, payload)
-        self.assertTrue(payload["ok"])
-
-    def test_glossary_is_optional_and_root_context_is_not_a_source_fallback(self) -> None:
-        """Existing projects need no glossary; root CONTEXT is not a docs source."""
-        result, payload = self.run_validator()
-        self.assertEqual(result.returncode, 0, payload)
-        (self.root / "CONTEXT.md").write_text("# Existing terms", encoding="utf-8")
-        self.write_document(
-            "docs/prd-v0.1.md", "# Scope\n\n[SOURCE: CONTEXT.md]", document_type="prd"
-        )
-        result, payload = self.run_validator()
-        self.assertEqual(result.returncode, 1, payload)
-        self.assertIn("missing SOURCE target CONTEXT.md", "\n".join(payload["errors"]))
-
     def test_strict_mode_promotes_every_soft_rule(self) -> None:
         """Strict mode must fail for every rule documented as promotable."""
 

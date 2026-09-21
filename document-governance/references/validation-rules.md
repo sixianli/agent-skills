@@ -50,10 +50,6 @@ These conditions fail in every mode:
   closed and archived.
 - A `document_type`, when present, conflicts with the document's governed
   directory.
-- `glossary` is a supported document type; `docs/glossary.md` and Markdown
-  files under `docs/glossary/` imply that type. They require the same lifecycle
-  frontmatter and SOURCE boundaries as other governed documents. Neither path
-  is required when no glossary is needed.
 - A structured Idea/Backlog record has a missing, duplicate, malformed, or
   path-inconsistent `record_id`, `document_type`, or `record_state`.
 - A Backlog omits any field in its complete template header, uses a priority
@@ -111,8 +107,6 @@ with any such finding must report `ok: false` and return exit code 1.
 ## What the Validator Cannot Prove
 
 The validator cannot prove semantic consistency between code and prose,
-verify interview trigger selection or question dependencies, resolve ambiguous
-terms, prove glossary definitions have been accepted by the user,
 confirm that a Spec matches its Plan, determine whether a code change required
 a PRD update, or prove that work is truly closed. Inspect repository evidence
 and complete the workflow checklist before declaring semantic or release

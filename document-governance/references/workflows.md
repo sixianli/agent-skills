@@ -5,7 +5,6 @@ rollback, and conflict handling.
 
 ## Contents
 
-- [Discovery Interviews](#discovery-interviews)
 - [New Feature Workflow](#new-feature-workflow)
 - [Drift Reconciliation](#drift-reconciliation)
 - [ADR Supersession](#adr-supersession)
@@ -15,14 +14,6 @@ rollback, and conflict handling.
 - [Ideas and Backlog](#ideas-and-backlog)
 - [Codex Lessons](#codex-lessons)
 - [Conflict Handling](#conflict-handling)
-
-## Discovery Interviews
-
-For pure clarification or stress-testing, use `discovery-workflow.md` without
-requiring a docs tree. When the user also wants documentation, record settled
-terms and decisions during the same interview under the SOP and templates.
-Do not automatically start the New Feature workflow, write a Plan, or implement
-the design. Existing document operations still use their own workflows directly.
 
 ## New Feature Workflow
 

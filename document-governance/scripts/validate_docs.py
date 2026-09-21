@@ -41,7 +41,6 @@ VALID_DOCUMENT_TYPES = {
     "idea",
     "backlog",
     "lessons",
-    "glossary",
 }
 VALID_DECISION_STATUSES = {"proposed", "accepted", "superseded"}
 IDEA_DIR = "docs/ideas"
@@ -253,8 +252,6 @@ def inferred_document_type(path: Path, root: Path) -> str | None:
         return "backlog"
     if relative == "docs/lessons.md":
         return "lessons"
-    if relative == "docs/glossary.md" or is_under(path, root, "docs/glossary"):
-        return "glossary"
     if re.fullmatch(r"docs/prd-v[^/]+\.md", relative):
         return "prd"
     if re.fullmatch(r"docs/architecture-v[^/]+\.md", relative):
