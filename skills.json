@@ -38,7 +38,7 @@
       "package_dir": "document-governance",
       "readme": "document-governance/SKILL.md",
       "skill_dir": "document-governance",
-      "description": "Govern project documentation and fail-closed Runbook execution lifecycles.",
+      "description": "Interview users, record governed outcomes during discussion, and manage document and Runbook lifecycles.",
       "implicit_invocation": true,
       "has_tests": true,
       "checks": [

@@ -10,6 +10,7 @@ ADR supersession, and SOURCE-path rules.
 - [Frontmatter and Lifecycle](#frontmatter-and-lifecycle)
 - [Cross-Document References](#cross-document-references)
 - [ADR Rules](#adr-rules)
+- [Glossary Rules](#glossary-rules)
 - [Authority Order](#authority-order)
 - [Naming and Directories](#naming-and-directories)
 
@@ -29,6 +30,7 @@ ADR supersession, and SOURCE-path rules.
 | Layer           | Default Location                                  | Answers                                    | Must Not Contain                          |
 | --------------- | ------------------------------------------------- | ------------------------------------------ | ----------------------------------------- |
 | PRD             | `docs/prd-v*.md`                                  | What to build and why                      | APIs, classes, schemas, file steps        |
+| Glossary        | `docs/glossary.md` or `docs/glossary/<context>.md` | Canonical terms within a business context | Implementation details, decisions, tasks |
 | Architecture    | `docs/architecture-v*.md`                         | Current system shape                       | Task checklists, rejected alternatives    |
 | ADR             | `docs/adr/NNNN-title.md`                          | Why a durable decision was made            | Current implementation inventory          |
 | Spec            | `docs/execution/specs/YYYY-MM-DD-topic-design.md` | Design for one change                      | File-level implementation steps           |
@@ -67,7 +69,7 @@ date: "YYYY-MM-DD"
 Type-specific fields:
 
 ```yaml
-document_type: spec        # prd | architecture | adr | spec | plan | runbook | idea | backlog | lessons
+document_type: spec        # prd | glossary | architecture | adr | spec | plan | runbook | idea | backlog | lessons
 version: "X.Y"             # PRD/Architecture only
 decision_status: accepted  # ADR only: proposed | accepted | superseded
 execution_risk: critical   # Active Runbook only: standard | high | critical
@@ -141,6 +143,32 @@ Rules:
 - Keep implementation inventory and task checklists in Architecture, Specs, or
   Plans rather than ADRs.
 
+## Glossary Rules
+
+- Reuse an existing authoritative terminology section when adequate. Otherwise
+  create `docs/glossary.md` from `assets/templates/glossary-template.md` when
+  the first term is settled. It uses the standard lifecycle fields and
+  `document_type: glossary`; no glossary file or directory is required in
+  projects that do not need one.
+- Define each project-specific term in one or two sentences. Pick a canonical
+  name and list misleading aliases to avoid. Distinguish related concepts with
+  concrete boundary examples; exclude generic programming vocabulary.
+- Keep one authoritative definition per term and business context. For distinct
+  contexts, use `docs/glossary/<context>.md` and qualify cross-context terms.
+  Describe system relationships in Architecture with SOURCE links to definitions;
+  do not maintain a second context map containing the same architecture facts.
+- A glossary defines language; it does not override PRD business rules or ADR
+  rationale, and contains no implementation inventory, progress, or task list.
+  Surface contradictions rather than silently changing either meaning.
+- Read an existing `CONTEXT.md` or `CONTEXT-MAP.md` as evidence. Do not copy it
+  into a competing glossary or silently relocate it. Reconcile ownership and
+  migrate only within authorized scope. Local authoritative SOURCE targets still
+  stay inside `docs/`; ordinary Markdown links can reference legacy material.
+- Update confirmed definitions during an authorized interview, preserving their
+  context. If a definition change reflects a changed durable decision, apply the
+  existing ADR supersession workflow as well. A glossary edit cannot erase that
+  decision history.
+
 ## Authority Order
 
 Resolve conflicts in this order:
@@ -162,6 +190,7 @@ authoritative document rather than blindly trusting stale prose.
 | Type            | Pattern                                                          |
 | --------------- | ---------------------------------------------------------------- |
 | PRD             | `prd-v{major.minor}.md`                                          |
+| Glossary        | `docs/glossary.md` or `docs/glossary/<context>.md`, created only as needed |
 | Architecture    | `architecture-v{major.minor}.md`                                 |
 | ADR             | `NNNN-short-title.md`                                            |
 | Spec            | `YYYY-MM-DD-topic-design.md`                                     |

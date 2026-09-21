@@ -1,0 +1,36 @@
+{
+  "repository": "mattpocock/skills",
+  "commit": "c55ee46073ed923f86ce59a5eb3b6d895095d1b7",
+  "files": [
+    {
+      "path": "skills/productivity/grill-me/SKILL.md",
+      "sha256": "caaf8b8de1684f96e26b28f3c29189db5c89cce4b73e1c93d86164f66ef88637"
+    },
+    {
+      "path": "skills/productivity/grilling/SKILL.md",
+      "sha256": "10ff989e7498b23b5acb49d5048f11dcd906757d2f79c5cdf8a00001381296f2"
+    },
+    {
+      "path": "skills/engineering/grill-with-docs/SKILL.md",
+      "sha256": "7de372c13488f1ee96cc11cd8907b56b6809cc93eef776eeddd37de6b6cbe3fe"
+    },
+    {
+      "path": "skills/engineering/domain-modeling/SKILL.md",
+      "sha256": "327a2b50620e2fd70abc6893cd6965e76b20f8d0adb0dc2c8d5eb3845efb643e"
+    },
+    {
+      "path": "skills/engineering/domain-modeling/ADR-FORMAT.md",
+      "sha256": "944c92aa790e8fbdc9199640b170979abb8a34ba8d0fe18c2a01a63bce140ca0"
+    },
+    {
+      "path": "skills/engineering/domain-modeling/CONTEXT-FORMAT.md",
+      "sha256": "17ab16ce783e4d2801ee52fd9acdf550cbf44de65ae76797a93943bbedf22a13"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+    }
+  ],
+  "verified_on": "2026-09-21",
+  "branch": "main"
+}

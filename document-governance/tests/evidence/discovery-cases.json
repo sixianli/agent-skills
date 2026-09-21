@@ -1,0 +1,28 @@
+{
+  "requests": {
+    "pure": "我想设计一个给社团用的活动报名工具，请先帮我把需求澄清。我还没决定谁可以报名、报名是否要审批，这两个方面请一起考虑。只讨论，不写文件、不开始实现。",
+    "docs": "使用 $document-governance 在这个项目里边访谈边记录。上一轮我已确认：把 Workspace 的准确含义定义为拥有文档的组织空间，退出成员的文档仍归 Workspace；不改变 ADR 0001 的决定。现在还没确定导出权限和导出格式，请继续澄清；代码里现有权限你自己查。先把已确认的术语定义记下来，不写代码、不建实施计划。",
+    "negative": "我有个需求，先等一下，我整理好再说。",
+    "ordinary": "把现有 PRD 标题里的拼写错误修正，其他内容不变。",
+    "pure_followup": "本次讨论只决定这两个问题，其他功能不在范围内。Q1 只允许社团成员；Q2 符合资格即报名成功，不需要审批。仍然只讨论、不写文件。",
+    "docs_followup": "我们已评审并接受一个新的长期决定：成员离开后，删除其个人上传的文档；不再沿用全部留在 Workspace 的决定。原因是此试验产品的个人数据删除承诺优先于其他成员继续访问的便利；我们明确比较过保留与删除。请只记录这个已接受的新决定和对应的产品文档，按治理规则处理旧 ADR，代码仍不改。",
+    "docs_readonly_followup": "先停止写文档。关于导出格式，我想再比较 Markdown 和 PDF，请只讨论，不修改任何文件。"
+  },
+  "document_fixture_files": {
+    "AGENTS.md": "This project adopts Document Governance. Keep code unchanged during design interviews.\n",
+    "docs/adr/0001-retain-documents.md": "---\nstatus: active\ndocument_type: adr\nsupersedes: \"\"\nsuperseded_by: \"\"\ndate: \"2026-09-21\"\ndecision_status: accepted\n---\n\n# ADR 0001: Retain documents when members leave\n\n## Context\n\nShared documents are collective work. Removing them disrupts remaining members.\n\n## Decision\n\nDocuments remain owned by their workspace when an author leaves.\n\n## Options Considered\n\nRetain ownership in the workspace, or delete the author's documents.\n\n## Consequences\n\nRemaining members retain access. Departing authors lose workspace access.\n\n",
+    "docs/glossary.md": "---\nstatus: active\ndocument_type: glossary\nsupersedes: \"\"\nsuperseded_by: \"\"\ndate: \"2026-09-21\"\n---\n\n# Glossary\n\n## Workspace\n\nA group of people who own documents together.\n",
+    "docs/prd-v0.1.md": "---\nstatus: active\ndocument_type: prd\nsupersedes: \"\"\nsuperseded_by: \"\"\ndate: \"2026-09-21\"\n---\n\n# Team knowledge base\n\nDocuments belong to one workspace. Export policy is undecided.\n",
+    "model.py": "def may_export(role):\n    return role == \"admin\"\n"
+  },
+  "required_directories": [
+    "docs/adr",
+    "docs/execution/specs",
+    "docs/execution/plans",
+    "docs/archive/specs",
+    "docs/archive/plans",
+    "docs/archive/runbooks",
+    "docs/runbooks"
+  ],
+  "notes": "Native subagent forward-testing inputs; not an automated model-routing harness. Pure fixture is empty. Ordinary fixture changes the PRD title from knowledge to knowlege before the correction request."
+}
