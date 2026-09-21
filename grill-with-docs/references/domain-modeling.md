@@ -14,8 +14,9 @@ Actively sharpen the domain model, rather than merely reading a glossary:
 - **Cross-reference code.** If a stated rule conflicts with implementation,
   show the evidence and distinguish intended design from current behavior.
 - **Capture immediately.** Once a term is resolved, hand it to Document
-  Governance now. Keep definitions to one or two sentences, select a canonical
-  name, and list confusing alternatives under `_Avoid_`. Include domain-specific
+  Governance now. Keep definitions to one or two sentences. Define what it IS,
+  not what it does. Select a canonical name, and list confusing alternatives
+  under `_Avoid_`. Include domain-specific
   concepts, not general programming vocabulary. Group natural clusters.
 - **Keep vocabulary focused.** The glossary contains definitions and context
   boundaries, not implementation inventory, scratch notes, or project state.
