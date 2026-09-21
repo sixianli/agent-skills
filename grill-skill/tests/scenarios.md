@@ -32,8 +32,8 @@ governance-shaped YAML after using another workflow.
 ## Dependencies and discovery review
 
 Verify that the runtime references resolve after copying the two installable
-directories, that no Claude-only `Skill` tool is required, and that local
-`grilling` is not used in place of the bundled upstream workflow. Review
+directories, that no Claude-only `Skill` tool is required, and that no additional
+interview skill is required beyond the bundled upstream workflow. Review
 explicit and implicit invocation metadata independently of structural checks.
 Missing Document Governance must block document writes, never activate the
 archived upstream minimal ADR writer. Model discovery remains nondeterministic;

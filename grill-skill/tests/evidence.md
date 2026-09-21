@@ -1,5 +1,10 @@
 # Standalone Skill Verification — 2026-09-21
 
+Installation update: the legacy standalone `grilling` was subsequently removed
+at the user's request. The trials below describe the earlier installation;
+their references to its presence are historical evidence, not an instruction
+to retain or reinstall it. The bundled upstream interview remains intact.
+
 ## Source and preservation
 
 - `git ls-remote` and a fresh clone both resolved upstream `main` to

@@ -26,17 +26,18 @@ the two runtime directories at the repository root. Each carries the MIT license
 
 | Upstream behavior | Codex adaptation |
 |---|---|
-| `grill-me` calls `grilling` through a `Skill` tool | Loads the byte-identical upstream interview bundled in `grill-me/references/grilling.md`; does not depend on the locally customized installed `grilling` |
+| `grill-me` calls `grilling` through a `Skill` tool | Loads the byte-identical upstream interview bundled in `grill-me/references/grilling.md`; no separate interview skill dependency |
 | `grill-with-docs` calls `grilling` and `domain-modeling` | Reuses the installed `grill-me` interview and carries the domain-modeling method as a reference |
 | Domain modeling directly writes root `CONTEXT.md` and minimal ADRs | All project-document writes execute the installed Document Governance workflow; governed glossary placement, full ADR headers, immutable history, reciprocal supersession, and strict validation apply |
 | Both entrypoints are explicit-only | Both runtime skills permit implicit invocation as well as explicit invocation, with distinct descriptions for interview-only and interview-with-documents requests |
 | Claude-specific `disable-model-invocation` frontmatter | Removed from runtime files; Codex invocation policy lives in `agents/openai.yaml` |
 
-The original locally customized `grilling` stays installed and unchanged. It
-remains a separate choice; these new entrypoints use the pinned upstream
-whole-frontier rounds rather than that local one-question workflow. Explicitly
-select `$grill-me` or `$grill-with-docs` to choose the new workflow. If several
-interview skills are present in context, execute one interview sequence.
+Use `$grill-me` for an interview and `$grill-with-docs` for an interview with
+governed documentation. Both use the pinned upstream whole-frontier rounds.
+The legacy, locally customized standalone `grilling` has been removed to avoid
+competing interview entrypoints. Its old one-question workflow is not part of
+these runtime packages. The upstream `grilling` snapshot and bundled reference
+are the new implementation's source, not an installation of the legacy skill.
 
 ## Document ownership
 
@@ -56,7 +57,7 @@ folders `grill-me/` and `grill-with-docs/` to a Codex-discoverable personal skil
 directory. On this machine the existing `grill-me` lives in `~/.agents/skills/`,
 so replace that entry in place after backing it up, and install
 `grill-with-docs` beside it. Do not create duplicate same-name installations.
-Preserve the independent `~/.agents/skills/grilling` directory.
+Do not install the legacy standalone `grilling` alongside these entrypoints.
 
 The upstream installer alone installs the unadapted wrappers; to obtain the
 Document Governance handoff, install the runtime folders from this repository.

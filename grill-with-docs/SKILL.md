@@ -14,7 +14,7 @@ concept boundaries, concrete counterexamples, and ADR selection.
 Resolve `grill-me` and `document-governance` from the active skill inventory and
 read their actual `SKILL.md` files. Do not assume a tool named `Skill`, a shared
 installation parent, or a `CODEX_SKILL_DIR` environment variable. Follow
-`grill-me`'s bundled upstream interview; do not also start local `grilling`.
+`grill-me`'s bundled upstream interview as the single interview workflow.
 
 **Document Governance owns every project-document mutation in this workflow.**
 Before creating, updating, moving, superseding, or deleting any project

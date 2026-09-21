@@ -10,9 +10,9 @@ interview workflow: map the design tree, ask the whole ready frontier in
 numbered rounds with recommendations, discover facts independently, and wait
 for the user's answers before dependent questions.
 
-The bundled reference is the pinned upstream `grilling` implementation. Do not
-redirect this entrypoint to the separately installed, locally customized
-`grilling` skill. Run one interview, not two competing question sequences.
+The bundled reference is the pinned upstream interview implementation. Use it
+directly; no separately installed interview skill is required. Run one interview
+sequence.
 
 Keep this interview read-only unless the user authorizes additional work.
 Confirm shared understanding before acting on the resulting plan. If invoked
