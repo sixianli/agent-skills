@@ -1,0 +1,21 @@
+---
+status: active
+document_type: adr
+decision_status: accepted
+supersedes: ""
+superseded_by: ""
+date: "2026-09-01"
+---
+# Store orders in SQLite
+
+## Context
+The initial ordering service has one process and a local disk.
+
+## Decision
+Use SQLite as the order store.
+
+## Alternatives
+PostgreSQL requires an additional operated service.
+
+## Consequences
+A single writer is sufficient for the initial scope.

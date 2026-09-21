@@ -82,6 +82,51 @@
       ]
     },
     {
+      "name": "grill-me",
+      "package_dir": "grill-skill",
+      "readme": "grill-skill/README.md",
+      "skill_dir": "grill-me",
+      "description": "Sharpen and stress-test an idea, requirement, plan, or design through the upstream grilling interview. Use for grill or grill-me requests and focused design interviews without live documentation. Use grill-with-docs when the user wants the interview recorded in project documents as it progresses.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": []
+    },
+    {
+      "name": "grill-with-docs",
+      "package_dir": "grill-skill",
+      "readme": "grill-skill/README.md",
+      "skill_dir": "grill-with-docs",
+      "description": "Sharpen a plan or design through an interview while capturing resolved terminology and decisions in project documents. Use for grill-with-docs or requests to interview and document as you go. Delegate every project-document write to Document Governance; use grill-me for an interview without documentation.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "standalone-contracts",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "grill-skill/tests",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "grill-skill/tests"
+          ]
+        }
+      ]
+    },
+    {
       "name": "architect",
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",

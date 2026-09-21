@@ -1,0 +1,1 @@
+This project adopts Document Governance for project documentation. Keep existing ADR decision bodies immutable. This is a design interview, not implementation. Source code and deployment changes are out of scope.
