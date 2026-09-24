@@ -318,6 +318,62 @@
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
+    },
+    {
+      "name": "siblog-blog-workflow",
+      "package_dir": "siblog-blog-workflow",
+      "readme": "siblog-blog-workflow/SKILL.md",
+      "skill_dir": "siblog-blog-workflow",
+      "description": "Use when working in the SiBlog Hugo blog repository and the user invokes blog:header, blog:rename, blog:sync, blog:format, blog:upload, or blog:help.",
+      "implicit_invocation": true,
+      "has_tests": false,
+      "checks": []
+    },
+    {
+      "name": "video-download",
+      "package_dir": "video-download",
+      "readme": "video-download/SKILL.md",
+      "skill_dir": "video-download",
+      "description": "Download the highest available resolution video from a supplied website or page URL, including embedded players and direct media links. Use when the user asks to save an online video locally; report access or format limits instead of claiming every URL is downloadable.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "video-download/scripts/download.py",
+            "video-download/tests/test_download.py"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "video-download/tests",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "video-download/scripts",
+            "video-download/tests"
+          ]
+        }
+      ]
     }
   ]
 }
