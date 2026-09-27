@@ -1,16 +1,29 @@
 ---
 name: siblog-blog-workflow
-description: Use when working in the SiBlog Hugo blog repository and the user invokes blog:header, blog:rename, blog:sync, blog:format, blog:upload, or blog:help.
+description: Use when the user invokes blog:header, blog:rename, blog:sync, blog:format, blog:upload, or blog:help in the SiBlog Hugo blog repository, or blog:tilian from any project thread to draft a SiBlog technical post from that thread's conversation.
+argument-hint: "[blog:tilian <topic> | blog:header | blog:rename | blog:sync | blog:format | blog:upload | blog:help]"
 ---
 
 # SiBlog Blog Workflow
 
 ## Scope
 
-Use this skill only in the SiBlog Hugo blog repository. It defines the `blog:` command workflows for posts under
-`content/posts/` and repository-owned publishing checks.
+Use `blog:header`, `blog:rename`, `blog:sync`, `blog:format`, `blog:upload`, and `blog:help` only in the SiBlog Hugo blog
+repository. They define the `blog:` command workflows for posts under `content/posts/` and repository-owned publishing
+checks.
 
-When the user's message is exactly or starts with one of the commands below, treat it as a command invocation and execute
+Use `blog:tilian` from any project repository. It drafts a SiBlog technical post from the current agent thread and never
+writes into the SiBlog repository itself; the user places the reviewed draft with a command run in their own terminal.
+
+The SiBlog repository defaults to `~/DoNotDeleteThis/documents/sxl_code_work_space/SiBlog`. Treat a directory as SiBlog
+only when it contains `docs/post-metadata.md` and `content/posts/`; if the default fails that check, ask the user for the
+path.
+
+The helper scripts live in the `scripts/` directory next to this `SKILL.md`; `<scripts>` below stands for its absolute
+path.
+
+When the user's message is exactly or starts with one of the commands below, or this skill is invoked as
+`/siblog-blog-workflow <command>` with one of them as its argument, treat it as a command invocation and execute
 the matching workflow. Do not interpret `blog:` commands as general conversation.
 
 ## Shared Detection
@@ -45,6 +58,9 @@ If no files match, tell the user `没有检测到新增或有改动的文章` an
 
 - Communicate with the user in Simplified Chinese.
 - A command invocation authorizes its defined local operations within a clear scope: `blog:header` updates front matter, `blog:rename` renames posts, `blog:sync` writes faithful translation drafts (including missing siblings), and `blog:format` combines those operations with formatting. Preserve an explicit preview-only request or review checkpoint. These commands do not authorize unrelated prose rewrites or changes of meaning.
+- `blog:tilian` authorizes reading the current thread's local transcript, writing working files to a temporary directory
+  outside every repository, and web research for the topic. It does not authorize writing into SiBlog or the current
+  project, committing, or publishing.
 - Show relevant previews without pausing for a second generic approval. Ask for unresolved scope, conflicting edits, new taxonomy, replacement of an existing title unless already authorized, or a public URL change not already approved. Reuse approval for the same action and scope.
 - Preserve the explicit human semantic-review gate for translations; permission to generate a draft is not approval of its meaning or permission to mark it reviewed.
 - Follow the global local-commit policy after the requested local task is complete and its required checks pass. For `blog:upload`, complete local verification and commits before any remaining push approval. Push only when the concrete remote, branch, and outgoing change scope are authorized; reuse an existing authorization instead of asking again. A bare `blog:upload` requests publication preparation but is not approval of an as-yet-unreviewed outgoing change scope.
@@ -290,6 +306,99 @@ source before the Hugo build. Treat `$$...$$` and `\\[...\\]` as display-math bl
    heading from formula text, expose raw `$$` or LaTeX, or split a single equation across unrelated elements. If it does,
    stop, show the source block and generated HTML evidence, and propose a source-layout repair before publication.
 
+### blog:tilian
+
+Draft a Simplified Chinese technical post about one topic from the current agent thread: the original need and scene,
+the problems met, the cause analysis and path to the fix, mainstream practice, and the final approach with its boundaries.
+Usage: `blog:tilian <topic>`. If the topic is missing, ask for it before reading the transcript.
+
+1. Locate the thread's transcript. Pass the agent you are running in:
+
+```bash
+python3 "<scripts>/thread_transcript.py" locate --agent <claude|codex>
+```
+
+   The script finds the file by `CLAUDE_CODE_SESSION_ID` or `CODEX_THREAD_ID`. Without an ID it falls back to the most
+   recently modified session whose working directory is the current directory, skipping Codex review subagents, and
+   reports `"method": "recent-cwd"` with other candidates. Show the user the method, start time, working directory,
+   file path, and the first user message, plus any other candidates. Wait for the user to confirm this is the thread;
+   use `--session-id <id>` for a candidate the user picks instead.
+2. Choose a working directory outside every repository, such as the session scratchpad or a fresh directory under
+   `$TMPDIR`, and export the conversation there:
+
+```bash
+python3 "<scripts>/thread_transcript.py" export --agent <claude|codex> --path "<transcript>" --output "<workdir>/conversation.md"
+```
+
+   The export keeps the user's words, the assistant's replies, and the user's answers to agent questions, numbered `#N`
+   in time order. It omits tool calls, tool results, reasoning, subagent conversations, and injected system content by
+   design. Entries marked `上下文压缩` are AI paraphrase: rely on the original messages before them, and cite a summary
+   only when it is the sole record, labelled as a paraphrase. The last few turns can lag in the file; take them from
+   your current context.
+3. Collect material for the topic only. Search the export for the topic's terms, read the matching entries with their
+   neighbours, and record `#N` references in five groups: the user's original need in their own words, symptoms and
+   error messages, approaches tried and why each was kept or dropped, decisions with their reasons, and verification
+   results. Use the assistant's own summaries of tool results; do not reconstruct tool traces. Record facts the export
+   does not contain as material gaps; never fill them with guesses. Collect related commit hashes that the conversation
+   names, or that `git --no-pager log` of the current project clearly ties to the work.
+4. Research mainstream practice for the topic when the thread does not already establish it. Prefer authoritative
+   English-language first-party sources such as official documentation and engineering publications, and link every
+   source used. Keep what the project verified separate from what external sources claim.
+5. Write the draft to `<workdir>/<file-name>.md` with these sections, omitting a section only when the material is
+   absent and saying so in the report:
+   1. 一句话摘要 — the problem and the final fix in one sentence.
+   2. 背景与原始需求 — quote the user's original words where possible.
+   3. 问题现象 — keep original error messages and symptoms so the post is searchable by them.
+   4. 排查过程与根本原因 — include dead ends and why they were abandoned; mark each conclusion as reproduced,
+      read from code, or inferred.
+   5. 主流做法 — sourced from step 4, with links.
+   6. 方案对比与取舍 — a table of options, pros, cons, and why each was chosen or rejected.
+   7. 最终方案与边界 — what it covers, what it does not, its assumptions, and known limits.
+   8. 验证方式 — the checks actually run and their results.
+   9. 同类问题检查清单 — ordered checks for the next similar problem.
+   10. 参考资料.
+
+   Write for a reader without the thread: explain each technical term, English word, abbreviation, or project-internal
+   name in plain Chinese at its first occurrence, and avoid vague summary phrases in place of explanation. Keep the
+   thread's claim strength; do not present an unverified idea as a result. Use this front matter:
+
+```yaml
+---
+title: "<specific Chinese title>"
+date: "<current local time, e.g. 2026-09-27T10:00:00+09:00>"
+draft: true
+sourceAgent: "<claude|codex>"
+sourceSessionId: "<session id>"
+sourceProject: "<current project directory name>"
+sourceCommits: ["<short hash>", "..."]
+---
+```
+
+   Leave `tags`, `categories`, `summary`, `description`, `slug`, and `translationKey` to `blog:header`. Name the file
+   with the `blog:rename` rule: 3-6 lowercase English words joined by hyphens, ending in `.md`. Pick the target
+   directory by reading SiBlog's `docs/post-metadata.md` and the existing directories under `content/posts/`, and
+   confirm the file name does not already exist there.
+6. Check for sensitive content before handing off:
+
+```bash
+python3 "<scripts>/scan_sensitive.py" "<workdir>/<file-name>.md"
+```
+
+   Add your own review for what patterns cannot catch: private project or customer names, internal hostnames and URLs,
+   personal information, credentials in prose, and pasted private code. Present every finding with its line, excerpt,
+   and a suggested deletion or rewrite, including the `source*` fields. Wait for the user to decide each item; do not
+   silently replace anything. Apply the decisions to the draft and rerun the scan.
+7. Report the draft path, a short outline, the material gaps, and one command for the user to run in their own
+   terminal. It copies the draft into SiBlog, refusing to overwrite an existing post, write outside `content/posts/`,
+   or accept a draft without `draft: true`:
+
+```bash
+python3 "<scripts>/place_draft.py" "<workdir>/<file-name>.md" "content/posts/<category directory>/<file-name>.md"
+```
+
+   Pass `--siblog-root "<path>"` when SiBlog is not at the default path. Afterwards the user reviews the post in SiBlog
+   and runs `blog:format` there for front matter, translations, and formatting. Do not commit anything.
+
 ### blog:help
 
 Display this table:
@@ -302,5 +411,6 @@ blog:rename   — 基于文章内容重命名新增或有改动的文章文件
 blog:sync     — 将任一语言的语义改动同步到同一文章的另外两种语言
 blog:format   — 依次执行 front matter、重命名、三语同步和 Markdown 格式化工作流
 blog:upload   — 全库加粗语法修复与复检 → 公式渲染预检与修复确认 → 构建验证 → 提交 → 推送
+blog:tilian   — 在任意项目的 thread 里，把本 thread 中某个主题的讨论整理成 SiBlog 技术博客草稿
 blog:help     — 显示本帮助信息
 ```

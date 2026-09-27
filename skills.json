@@ -337,10 +337,47 @@
       "package_dir": "siblog-blog-workflow",
       "readme": "siblog-blog-workflow/SKILL.md",
       "skill_dir": "siblog-blog-workflow",
-      "description": "Use when working in the SiBlog Hugo blog repository and the user invokes blog:header, blog:rename, blog:sync, blog:format, blog:upload, or blog:help.",
+      "description": "Run SiBlog blog: commands, and draft a SiBlog technical post from the current Claude Code or Codex thread with blog:tilian.",
       "implicit_invocation": true,
-      "has_tests": false,
-      "checks": []
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "siblog-blog-workflow/scripts/thread_transcript.py",
+            "siblog-blog-workflow/scripts/place_draft.py",
+            "siblog-blog-workflow/scripts/scan_sensitive.py"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "siblog-blog-workflow/tests",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "siblog-blog-workflow/scripts",
+            "siblog-blog-workflow/tests"
+          ]
+        }
+      ]
     },
     {
       "name": "video-download",

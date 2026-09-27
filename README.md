@@ -10,7 +10,7 @@ This repository collects reusable Codex skills that I maintain for recurring per
 | `document-governance` | [document-governance/SKILL.md](document-governance/SKILL.md) | `document-governance/` | Govern project documentation, durable Idea/Backlog lifecycles, and fail-closed Runbook execution contracts. | Yes |
 | `grill-me` | [grill-skill/README.md](grill-skill/README.md) | `grill-me/` | Run the latest imported upstream interview without live document capture. | Yes |
 | `grill-with-docs` | [grill-skill/README.md](grill-skill/README.md) | `grill-with-docs/` | Interview and capture terms and decisions through Document Governance. | Yes |
-| `siblog-blog-workflow` | [siblog-blog-workflow/SKILL.md](siblog-blog-workflow/SKILL.md) | `siblog-blog-workflow/` | Prepare, translate, format, and publish SiBlog posts through the repository-owned blog commands. | Yes, for SiBlog blog commands |
+| `siblog-blog-workflow` | [siblog-blog-workflow/SKILL.md](siblog-blog-workflow/SKILL.md) | `siblog-blog-workflow/` | Prepare, translate, format, and publish SiBlog posts through the repository-owned blog commands, and draft a SiBlog technical post from the current Claude Code or Codex thread with `blog:tilian`. | Yes, for SiBlog blog commands |
 | `video-download` | [video-download/SKILL.md](video-download/SKILL.md) | `video-download/` | Download the highest available and verifiable video resolution from a supplied URL. | Yes |
 
 Each package README or skill entrypoint explains the specific skill's purpose, install steps, usage examples, and verification commands. The installable skill folders should stay focused on runtime resources: `SKILL.md`, `agents/openai.yaml`, `scripts/`, `references/`, and `assets/` when needed.
