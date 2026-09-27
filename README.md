@@ -51,13 +51,13 @@ Restart Codex if a newly installed skill does not appear immediately.
 
 ## Validate
 
-Run all repository checks:
+Run all repository checks (the structure check needs PyYAML):
 
 ```bash
-python3 scripts/validate_all.py
+uv run --no-project --with pyyaml python scripts/validate_all.py
 ```
 
-The validation script reads [skills.json](skills.json), runs `quick_validate.py` for each skill, then runs each package's declared tests and Python quality checks.
+The validation script reads [skills.json](skills.json), checks each skill's `SKILL.md` structure with the rules of Codex `quick_validate.py` except that extra frontmatter keys such as Claude Code's `argument-hint` are allowed, then runs each package's declared tests and Python quality checks.
 
 ## Repository Policy
 

@@ -18,7 +18,20 @@
         "ruff",
         "ruff",
         "check",
-        "scripts/validate_all.py"
+        "scripts/validate_all.py",
+        "scripts/tests"
+      ]
+    },
+    {
+      "name": "validate-all-unittest",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/tests",
+        "-v"
       ]
     }
   ],
