@@ -6,14 +6,13 @@
 
 ## 当前批次
 
-- SK-R6：把真实项目克隆到草稿目录（只读原仓库），用仓库里的新版脚本试 status --brief、context 的目标顺序和问题行、lint 的进度词、只改文档后的放宽、find-tests；试完删除克隆；证据：我的审核，备注里不写项目名
-- SK-R7：写 long-task-planning/tests/verification/2026-10-02-feedback/README.md：本轮改了什么、怎么重跑、试用结果；公开版不含项目名、IP 和本机路径，原始数据放 local/；证据：文件存在，加我的审核
-- 顺带验证（不占名额）：SK-F13、SK-F16、SK-F12、SK-F1、SK-F8、SK-F17 的审核绑定的文档后来又改过，在最终文档上逐项复审后重新记录
+- SK-R1：在定稿上跑 `uv run --no-project --with pyyaml python scripts/validate_all.py`（PyYAML 下到 uv 缓存，用户已同意）；证据：命令退出码 0
+- SK-R5：在定稿上跑 `python3 long-task-planning/tests/mutate.py`，全部变异都要被发现；证据：命令退出码 0
+- SK-R2：用本机的私人信息清单检查公开路径，命令原文见 items.json；证据：命令退出码 0
 
 ## 之后
 
-- SK-R1、SK-R5、SK-R2：README 写完后在定稿上跑仓库总校验、全部变异检查、私人信息检查（命令检查不受 test_exclude 放宽，之后再改文件会让它们变旧）
-- SK-R3：把安装目录换成符号链接，原目录移到备份位置
+- SK-R3：把安装目录换成符号链接，原目录移到备份位置；先和仓库里的版本比对，合并另一边的改动
 - SK-R8：FEEDBACK.md 补“已处理”，更新记忆文件
 
 ## 计划改动记录
@@ -31,6 +30,7 @@
 - 2026-10-02 15:16 当前批次改为 SK-R6、SK-R7 并顺带复审 6 条审核，SK-R1、SK-R5、SK-R2 移到之后。原因：命令检查绑定代码指纹且不受 test_exclude 放宽，先跑总检查再写验证记录会让它们变旧；status 仍是当前版本已验证 13、旧版本验证过 8、未完成 5。
 - 2026-10-02 15:24 SK-F3 的完成条件加测试 test_context_drops_questions_before_goals。原因：试用时发现问题行把用户原话挤出了钩子内容，见“意外和发现”。
 - 2026-10-02 15:26 SK-F5 的完成条件加测试 test_find_tests_prefers_template_words_to_parameter_values。原因：试用时发现 find-tests 对模板生成的标题会挑出参数值，一条检查套中不相干的测试，见“意外和发现”。
+- 2026-10-02 15:36 当前批次改为 SK-R1、SK-R5、SK-R2。原因：status 显示当前版本已验证 21、旧版本验证过 2（就是这两项最终检查）、未完成 3；SK-R6、SK-R7 和 6 条复审都在当前版本上验证，README 已定稿。
 
 ## 意外和发现
 
