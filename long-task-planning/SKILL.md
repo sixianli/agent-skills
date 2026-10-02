@@ -151,6 +151,7 @@ Then run `$LT lint` and commit the task directory.
 
 - Each brief names the batch's item IDs and copies their `done_when`. Launch through `codex-orchestration`'s launcher, which runs `$LT check-brief <brief>` first and refuses a brief that names no valid, non-withdrawn item.
 - The agent records its own test evidence with `record --by codex` and lists the evidence IDs in its stop file.
+- When a brief or reply says to stop on a failure, write "let the running test command finish, then stop". Evidence needs the complete report; an agent once read "stop on any failure" as "kill it" and the other test projects produced no report. Ask for an immediate stop only when continuing would do harm, and say so explicitly.
 - When reviewing, run `status` first, verify the evidence yourself, then record the review with `record --review`.
 - The orchestration state file keeps process facts only (session id, terminal tab, next stop file, background wait id). Progress lives only in `status`.
 
