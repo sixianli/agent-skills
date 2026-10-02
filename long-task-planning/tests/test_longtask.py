@@ -1096,6 +1096,16 @@ class LintTests(Base):
         self.assertEqual(code, 1)
         self.assertIn("当前批次", output)
 
+    def test_batch_counts_only_lines_that_start_with_an_item(self):
+        items = [item(f"T-A{n}", [tag_check(f"T-A{n}")]) for n in range(1, 6)]
+        batch = [f"- T-A{n}：做法，和 T-A5 共用夹具" for n in range(1, 4)]
+        batch.append("- 顺带验证（不占名额）：T-A4、T-A5、T-A9 由同一次完整测试提供证据")
+        self.init_task(self.repo, items, plan=plan_text(batch=batch))
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 0, output)
+        self.assertIn("当前批次里的 T-A9 在 items.json 里不存在", output)
+        self.assertNotIn("T-A4 在 items.json", output)
+
     def test_invalid_items_are_reported(self):
         self.init_task(self.repo, [
             item("T-A1", [tag_check("T-A1")]),

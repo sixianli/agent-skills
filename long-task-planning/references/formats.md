@@ -85,6 +85,7 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 
 - R2-D2：先写红测试复现 ACK 丢失，再修；证据：云服务器上 [R2-D2] 全过 + Claude 审核
 - R2-E1：……
+- 顺带验证（不占名额）：R2-D11、R2-D14 由本批的完整测试提供证据
 
 ## 之后
 
@@ -105,7 +106,7 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 - 2026-10-02 D18 不在本批修，见 BL-20261002-002。
 ```
 
-- The five `##` sections are required. `当前批次` lists at most three item IDs (one bullet each).
+- The five `##` sections are required. In `当前批次`, `lint` counts only bullets that start with an item ID, and allows at most three. Items that the batch's test run only verifies, without work of their own, go on a bullet that does not start with an ID; they do not count, but every ID in the section must exist in `items.json`.
 - No checkboxes or status words outside the last three sections. HTML comments are ignored.
 - The last three sections are append only, checked against git history.
 

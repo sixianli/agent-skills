@@ -214,8 +214,9 @@ serious problems. Review standard does not drop:
 
 ## Writing briefs
 
-- One batch per brief, at most three items, named by their item IDs with
-  their `done_when` copied from `items.json`. State the minimum acceptance
+- One batch per brief, at most three items to work on, named by their item
+  IDs with their `done_when` copied from `items.json`. Items that the same
+  test run only verifies are listed separately and do not count. State the minimum acceptance
   evidence precisely: which test layer, which test group, how many runs, on
   which revision. Ambiguous wording such as "run it three times" caused
   unnecessary full-suite runs.

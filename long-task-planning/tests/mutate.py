@@ -172,6 +172,12 @@ mutant("status words allowed",
 mutant("batch limit four",
        [('        if len(batch) > 3:', '        if len(batch) > 4:')],
        ["LintTests.test_current_batch_is_limited_to_three_items"])
+mutant("batch counts items mentioned anywhere in a line",
+       [("            found = pattern.match(line, bullet.end())", "            found = pattern.search(line)")],
+       ["LintTests.test_batch_counts_only_lines_that_start_with_an_item"])
+mutant("batch checks only counted items exist",
+       [("        for value in dict.fromkeys(mentioned):", "        for value in batch:")],
+       ["LintTests.test_batch_counts_only_lines_that_start_with_an_item"])
 mutant("condition change needs no log",
        [('            if changed and not any(item_id in line for line in added_lines):', '            if False:')],
        ["LintTests.test_changed_completion_condition_needs_a_log_line"])

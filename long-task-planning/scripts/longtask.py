@@ -66,7 +66,8 @@ GOAL_TEMPLATE = """# 目标：{task}
 PLAN_TEMPLATE = """# 计划：{task}
 
 <!-- 只写打算，不写进度；做没做完用 longtask.py status 算。
-     当前批次最多 3 项，写清做法和需要的证据；之后的条目每项一行；
+     当前批次最多 3 项，每项一行、以条目编号开头，写清做法和需要的证据；
+     同一次测试顺带验证的条目写在不以编号开头的一行里，不占名额；之后的条目每项一行；
      最后三段只追加，不改旧内容。 -->
 
 ## 当前批次
@@ -1412,16 +1413,18 @@ def lint_task(task):
     if data and isinstance(data.get("prefix"), str):
         pattern = re.compile(rf"(?<![A-Za-z0-9]){re.escape(data['prefix'])}-{ID_BODY}")
         known = {entry.get("id") for entry in data["items"] if isinstance(entry, dict)}
-        batch = []
+        batch, mentioned = [], []
         for _, line, in_comment in sections.get("当前批次", []):
-            if in_comment or not re.match(r"^\s*[-*]\s", line):
+            bullet = None if in_comment else re.match(r"^\s*[-*]\s+", line)
+            if not bullet:
                 continue
-            found = pattern.search(line)
+            mentioned += pattern.findall(line)
+            found = pattern.match(line, bullet.end())
             if found and found.group(0) not in batch:
                 batch.append(found.group(0))
         if len(batch) > 3:
-            errors.append(f"当前批次有 {len(batch)} 项（{'、'.join(batch)}），最多 3 项")
-        for value in batch:
+            errors.append(f"当前批次有 {len(batch)} 项以条目编号开头（{'、'.join(batch)}），最多 3 项；同一次测试顺带验证的条目写在不以编号开头的一行里")
+        for value in dict.fromkeys(mentioned):
             if value not in known:
                 warnings.append(f"当前批次里的 {value} 在 items.json 里不存在")
     errors += append_only_errors(file_versions(task, "goal.md"), "goal.md", norm_lines)
