@@ -114,7 +114,7 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 
 ## evidence.jsonl
 
-One JSON object per line, appended under a file lock. Common fields:
+One JSON object per line, appended under a file lock. `lint` compares each committed version with the next one and with the working tree: every earlier line must still be there, unchanged and in the same order; lines inserted between them are accepted, because another agent may have committed only its own lines. `status` reads records in `time` order, keeping file order for equal times, so where a line sits never changes which record is the latest. `lint` reports a record whose `time` cannot be read; `status` treats it as older than every other record. Common fields:
 
 | Field | Meaning |
 | --- | --- |

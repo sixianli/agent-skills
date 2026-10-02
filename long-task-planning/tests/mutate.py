@@ -164,8 +164,30 @@ mutant("history limited to last commit",
        [('    commits = git_out(task.repo, "log", "-n", "200", "--format=%H", "--", path).split()', '    commits = git_out(task.repo, "log", "-n", "1", "--format=%H", "--", path).split()')],
        ["LintTests.test_committed_goal_rewrite_is_found_in_history"])
 mutant("evidence rewrite allowed",
-       [('    errors += append_only_errors(file_versions(task, "evidence.jsonl"), "evidence.jsonl", norm_lines)', '    pass')],
+       [('    errors += append_only_errors(file_versions(task, "evidence.jsonl"), "evidence.jsonl", norm_lines, may_insert=True)', '    pass')],
        ["LintTests.test_evidence_must_only_grow"])
+mutant("evidence insertions refused",
+       [('"evidence.jsonl", norm_lines, may_insert=True)', '"evidence.jsonl", norm_lines)')],
+       ["LintTests.test_evidence_lines_inserted_between_committed_lines_pass"])
+mutant("evidence order ignored",
+       [('    remaining = iter(new)\n    return all(line in remaining for line in old)', '    return all(line in new for line in old)')],
+       ["LintTests.test_evidence_reordered_or_removed_committed_lines_fail"])
+mutant("goal insertions allowed",
+       [('    errors += append_only_errors(file_versions(task, "goal.md"), "goal.md", norm_lines)', '    errors += append_only_errors(file_versions(task, "goal.md"), "goal.md", norm_lines, may_insert=True)')],
+       ["LintTests.test_goal_line_inserted_between_old_lines_fails"])
+mutant("plan log insertions allowed",
+       [('lambda text, name=name: section_lines(text, name))', 'lambda text, name=name: section_lines(text, name), may_insert=True)')],
+       ["LintTests.test_goal_line_inserted_between_old_lines_fails"])
+mutant("unreadable evidence time accepted",
+       [('        if record_moment(record) is None:\n            errors.append(', '        if False:\n            errors.append(')],
+       ["LintTests.test_evidence_time_must_be_readable"])
+mutant("records kept in file order",
+       [('        self.records = in_time_order(effective_records(self.all_records))', '        self.records = effective_records(self.all_records)')],
+       ["ReviewTests.test_latest_review_is_chosen_by_time_not_line_order",
+        "EnvironmentCheckTests.test_latest_environment_record_is_chosen_by_time_not_line_order"])
+mutant("record time sorted as text",
+       [('        moment = record_moment(record)\n        return (moment is not None, moment or 0.0)', '        return str(record.get("time"))')],
+       ["EnvironmentCheckTests.test_latest_environment_record_is_chosen_by_time_not_line_order"])
 mutant("status words allowed",
        [('            match = None if in_comment else STATUS_WORDS.search(line)', '            match = None')],
        ["LintTests.test_status_words_and_checkboxes_only_allowed_in_logs"])

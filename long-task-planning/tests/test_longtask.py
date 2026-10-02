@@ -70,6 +70,12 @@ def vitest_report(path, results):
     Path(path).write_text(json.dumps(report), encoding="utf-8")
 
 
+def reorder_evidence(repo, order):
+    path = Path(repo) / TASK / "evidence.jsonl"
+    lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    path.write_text("".join(lines[index] + "\n" for index in order), encoding="utf-8")
+
+
 def touch_later(path, seconds=120):
     stamp = path.stat().st_mtime + seconds
     os.utime(path, (stamp, stamp))
@@ -877,6 +883,19 @@ class ReviewTests(Base):
                          "--no-files", "--note", "复查发现还有问题"))
         self.assertEqual(self.status_of(self.repo, "T-R1"), "not_done")
 
+    def test_latest_review_is_chosen_by_time_not_line_order(self):
+        for first, second, expected in (("rejected", "approved", "verified"), ("approved", "rejected", "not_done")):
+            with self.subTest(order=(first, second)):
+                path = self.repo / TASK / "evidence.jsonl"
+                path.write_text("", encoding="utf-8")
+                for verdict, when in ((first, "2026-10-02T10:00:00+08:00"), (second, "2026-10-02T10:05:00+08:00")):
+                    self.env["LONGTASK_NOW"] = when
+                    self.ok(self.cli(self.repo, "record", "--review", "--items", "T-R1", "--verdict", verdict,
+                                     "--by", "claude", "--no-files", "--note", verdict))
+                self.assertEqual(self.status_of(self.repo, "T-R1"), expected)
+                reorder_evidence(self.repo, [1, 0])
+                self.assertEqual(self.status_of(self.repo, "T-R1"), expected)
+
 
 class EnvironmentCheckTests(Base):
     def setUp(self):
@@ -911,6 +930,21 @@ class EnvironmentCheckTests(Base):
         self.assertEqual(self.status_of(self.repo, "T-E1"), "not_done")
         self.record_run(0, "2026-10-09T12:00:00+08:00")
         self.assertEqual(self.status_of(self.repo, "T-E1"), "verified")
+
+    def test_latest_environment_record_is_chosen_by_time_not_line_order(self):
+        self.init_task(self.repo, [item("T-E1", [self.env_check()])])
+        self.record_run(1, "2026-10-02T10:00:00+08:00")
+        self.record_run(0, "2026-10-02T11:00:00+08:00")
+        self.env["LONGTASK_NOW"] = "2026-10-02T12:00:00+08:00"
+        self.assertEqual(self.status_of(self.repo, "T-E1"), "verified")
+        reorder_evidence(self.repo, [1, 0])
+        self.assertEqual(self.status_of(self.repo, "T-E1"), "verified")
+        self.record_run(1, "2026-10-02T03:30:00+00:00")
+        reorder_evidence(self.repo, [2, 0, 1])
+        self.env["LONGTASK_NOW"] = "2026-10-02T12:00:00+08:00"
+        entry = self.item_of(self.status(self.repo)[1], "T-E1")
+        self.assertEqual(entry["status"], "not_done")
+        self.assertIn("失败", " ".join(entry["reasons"]))
 
     def test_environment_command_check_needs_host_and_max_age(self):
         without_host = self.env_check()
@@ -1185,6 +1219,81 @@ class LintTests(Base):
         code, output = self.lint(self.repo)
         self.assertEqual(code, 1)
         self.assertIn("evidence.jsonl", output)
+
+    def record_command(self, by):
+        self.ok(self.cli(self.repo, "record", "--command", "make check", "--exit-code", "0", "--by", by))
+        return (self.repo / TASK / "evidence.jsonl").read_text(encoding="utf-8").splitlines()[-1]
+
+    def commit_lines(self, lines, message):
+        staged = self.root / "staged.jsonl"
+        staged.write_text("".join(line + "\n" for line in lines), encoding="utf-8")
+        blob = self.git(self.repo, "hash-object", "-w", str(staged)).strip()
+        self.git(self.repo, "update-index", "--cacheinfo", f"100644,{blob},{TASK / 'evidence.jsonl'}")
+        self.git(self.repo, "commit", "-q", "-m", message)
+
+    def test_evidence_lines_inserted_between_committed_lines_pass(self):
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
+        first = self.record_command("codex")
+        self.commit_all(self.repo, "first evidence")
+        other = self.record_command("claude")
+        own = self.record_command("codex")
+        self.commit_lines([first, own], "codex commits only its own line")
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 0, output)
+        self.commit_all(self.repo, "claude commits its line")
+        self.assertEqual(self.git(self.repo, "show", f"HEAD:{TASK / 'evidence.jsonl'}").splitlines(), [first, other, own])
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 0, output)
+
+    def test_evidence_reordered_or_removed_committed_lines_fail(self):
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
+        lines = [self.record_command("codex") for _ in range(3)]
+        self.commit_all(self.repo, "evidence")
+        path = self.repo / TASK / "evidence.jsonl"
+        for name, changed in (("swapped", [lines[1], lines[0], lines[2]]), ("removed", [lines[0], lines[2]]),
+                              ("moved to the end", [lines[1], lines[2], lines[0]])):
+            with self.subTest(change=name):
+                path.write_text("".join(line + "\n" for line in changed), encoding="utf-8")
+                code, output = self.lint(self.repo)
+                self.assertEqual(code, 1, output)
+                self.assertIn("evidence.jsonl 不是只追加", output)
+        path.write_text("".join(line + "\n" for line in lines), encoding="utf-8")
+        self.assertEqual(self.lint(self.repo)[0], 0)
+
+    def test_goal_line_inserted_between_old_lines_fails(self):
+        self.init_task(self.repo, goal_entries=[("G1", "2026-10-01", "用户原话", "修完所有发现的缺陷"),
+                                                ("G2", "2026-10-02", "用户原话", "先修 A")],
+                       plan=plan_text(surprises=["- 2026-10-01 发现 A。", "- 2026-10-02 发现 B。"]))
+        goal = self.repo / TASK / "goal.md"
+        original = goal.read_text(encoding="utf-8")
+        goal.write_text(original.replace("> 修完所有发现的缺陷\n", "> 修完所有发现的缺陷\n> 但是不修 B\n"), encoding="utf-8")
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 1, output)
+        self.assertIn("goal.md 不是只追加", output)
+        goal.write_text(original, encoding="utf-8")
+        plan = self.repo / TASK / "plan.md"
+        plan.write_text(plan_text(surprises=["- 2026-10-01 发现 A。", "- 2026-10-01 补一条。", "- 2026-10-02 发现 B。"]),
+                        encoding="utf-8")
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 1, output)
+        self.assertIn("意外和发现", output)
+
+    def test_evidence_time_must_be_readable(self):
+        self.init_task(self.repo, [item("T-R1", [{"type": "review", "by": "claude"}])])
+        self.ok(self.cli(self.repo, "record", "--review", "--items", "T-R1", "--verdict", "approved", "--by", "claude",
+                         "--no-files", "--note", "看过"))
+        path = self.repo / TASK / "evidence.jsonl"
+        record = json.loads(path.read_text(encoding="utf-8").splitlines()[-1])
+        record.update(id="E-hand-written", time="昨天下午")
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 1, output)
+        self.assertIn("evidence.jsonl 第 2 行的时间", output)
+        self.assertIn("昨天下午", output)
+        code, data = self.status(self.repo)
+        self.assertTrue(any("第 2 行的时间" in warning for warning in data["warnings"]), data["warnings"])
+        self.assertEqual(self.item_of(data, "T-R1")["status"], "verified")
 
     def test_status_words_and_checkboxes_only_allowed_in_logs(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])

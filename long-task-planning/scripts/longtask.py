@@ -300,8 +300,22 @@ def load_records(task):
         if not isinstance(record, dict) or not record.get("id") or not record.get("kind"):
             errors.append(f"evidence.jsonl 第 {number} 行缺少 id 或 kind")
             continue
+        if record_moment(record) is None:
+            errors.append(f"evidence.jsonl 第 {number} 行的时间 {record.get('time')!r} 读不出来")
         records.append(record)
     return records, errors
+
+
+def record_moment(record):
+    moment = report_moment(record.get("time"))
+    return None if moment is None else moment.timestamp()
+
+
+def in_time_order(records):
+    def key(record):
+        moment = record_moment(record)
+        return (moment is not None, moment or 0.0)
+    return sorted(records, key=key)
 
 
 def effective_records(records):
@@ -800,7 +814,7 @@ class Evaluation:
         self.goal_entries, self.goal_errors = parse_goal(goal_text)
         self.goal_ids = {entry["id"] for entry in self.goal_entries}
         self.all_records, self.record_errors = load_records(task)
-        self.records = effective_records(self.all_records)
+        self.records = in_time_order(effective_records(self.all_records))
         self.excludes = excludes_of(self.data)
         self.test_excludes = excludes_of(self.data, "test_exclude")
         self.entries = worktree_entries(self.repo, self.excludes)
@@ -1265,7 +1279,12 @@ def file_versions(task, name):
     return versions
 
 
-def append_only_errors(versions, label, extract):
+def kept_in_order(old, new):
+    remaining = iter(new)
+    return all(line in remaining for line in old)
+
+
+def append_only_errors(versions, label, extract, may_insert=False):
     errors, previous = [], None
     for name, text in versions:
         if text is None:
@@ -1273,8 +1292,9 @@ def append_only_errors(versions, label, extract):
             previous = None
             continue
         lines = strip_blank_head(extract(text))
-        if previous is not None and lines[: len(previous[1])] != previous[1]:
-            errors.append(f"{label} 不是只追加：{previous[0]} → {name} 改动或删除了已有内容")
+        kept = previous is None or (kept_in_order(previous[1], lines) if may_insert else lines[: len(previous[1])] == previous[1])
+        if not kept:
+            errors.append(f"{label} 不是只追加：{previous[0]} → {name} 改动、删除或调换了已有内容")
         previous = (name, lines)
     return errors
 
@@ -1442,7 +1462,7 @@ def lint_task(task):
             if value not in known:
                 warnings.append(f"当前批次里的 {value} 在 items.json 里不存在")
     errors += append_only_errors(file_versions(task, "goal.md"), "goal.md", norm_lines)
-    errors += append_only_errors(file_versions(task, "evidence.jsonl"), "evidence.jsonl", norm_lines)
+    errors += append_only_errors(file_versions(task, "evidence.jsonl"), "evidence.jsonl", norm_lines, may_insert=True)
     plan_versions = file_versions(task, "plan.md")
     for name in LOG_SECTIONS:
         errors += append_only_errors(plan_versions, f"plan.md 的“{name}”", lambda text, name=name: section_lines(text, name))
