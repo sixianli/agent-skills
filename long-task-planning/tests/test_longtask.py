@@ -1324,6 +1324,19 @@ class ContextHookTests(Base):
         self.assertIn("G1 2026-10-01（用户原话）：修完所有发现的缺陷\n", output)
         self.assertIn("G3 2026-10-02（转述：会话记录）：问：要不要现在发布？ 答：先不发\n", output)
 
+    def test_context_drops_questions_before_goals(self):
+        repo = self.make_repo()
+        self.init_task(repo, [item("T-A1", [tag_check("T-A1")])])
+        with open(repo / TASK / "goal.md", "a", encoding="utf-8") as handle:
+            handle.writelines(f"\n## G{number} 2026-10-02 用户选择\n\n问题：{'很长的问题说明' * 25}\n\n> 选项{number}：{'回答说明' * 20}\n"
+                              for number in range(2, 7))
+        output = self.hook(repo, "startup")
+        self.assertLessEqual(len(output), CONTEXT_BUDGET)
+        for number in range(2, 7):
+            self.assertIn(f"G{number} 2026-10-02（用户选择）：选项{number}：", output)
+        self.assertNotIn("……中间", output)
+        self.assertNotIn("问：", output)
+
     def test_context_orders_goals_by_date_after_the_first(self):
         repo = self.make_repo()
         dates = {"G1": "2026-10-01", "G2": "2026-10-05", "G3": "2026-09-30", "G4": "2026-10-02",

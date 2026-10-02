@@ -1498,14 +1498,14 @@ def build_context(task, budget):
     log = context_lines(plan, "计划改动记录")
     problems = [entry for status in ("unknown", "waiting", "not_done") for entry in report["items"] if entry["status"] == status]
 
-    def render(goal_keep, goal_width, problem_limit, line_width):
+    def render(goal_keep, goal_width, problem_limit, line_width, questions):
         lines = [header, "目标（goal.md 原文）："]
         shown = goals if len(goals) <= goal_keep else goals[:1] + goals[-(goal_keep - 1):]
         for index, entry in enumerate(shown):
             if len(goals) > goal_keep and index == 1:
                 lines.append(f"  ……中间 {len(goals) - goal_keep} 条见 goal.md")
             answer = truncate(entry["text"], goal_width)
-            if entry["question"]:
+            if questions and entry["question"]:
                 answer = f"问：{truncate(entry['question'], goal_width)} 答：{answer}"
             lines.append(f"  {entry['id']} {entry['date']}（{entry['source']}）：{answer}")
         lines.append(f"状态：{summary_line(report['counts'])}")
@@ -1523,9 +1523,10 @@ def build_context(task, budget):
         return "\n".join(lines)
 
     for settings in ((6, 160, 6, 120), (4, 110, 4, 100), (3, 70, 3, 80), (2, 50, 2, 60)):
-        text = render(*settings)
-        if len(text) <= budget:
-            return text
+        for questions in (True, False):
+            text = render(*settings, questions)
+            if len(text) <= budget:
+                return text
     return text[: budget - 8] + "……（已截断）"
 
 

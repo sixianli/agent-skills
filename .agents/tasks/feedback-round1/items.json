@@ -213,6 +213,11 @@
           "type": "test",
           "file": "long-task-planning/tests/test_longtask.py",
           "name": "test_context_shows_the_question_with_the_answer"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_context_drops_questions_before_goals"
         }
       ],
       "added": {
