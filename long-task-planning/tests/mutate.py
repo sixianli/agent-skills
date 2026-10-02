@@ -6,14 +6,14 @@ import tempfile
 from pathlib import Path
 
 SKILL = Path(__file__).resolve().parents[1]
-SOURCE = (SKILL / "scripts" / "longtask.py").read_text(encoding="utf-8")
-TESTS = (SKILL / "tests" / "test_longtask.py").read_text(encoding="utf-8")
+FILES = ("scripts/longtask.py", "tests/test_longtask.py", "tests/junit_report.py", "tests/test_junit_report.py")
+TEXT = {rel: (SKILL / rel).read_text(encoding="utf-8") for rel in FILES}
 
 M = []
 
 
-def mutant(name, replacements, tests):
-    M.append((name, replacements, tests))
+def mutant(name, replacements, tests, target="scripts/longtask.py", module="test_longtask"):
+    M.append((name, replacements, tests, target, module))
 
 
 mutant("task dir counted in fingerprint",
@@ -215,16 +215,31 @@ mutant("brief withdrawn accepted",
 mutant("brief unknown accepted",
        [('    unknown = [value for value in mentioned if value not in items]', '    unknown = []')],
        ["CheckBriefTests.test_brief_with_unknown_item_fails"])
+mutant("junit subtest failures ignored",
+       [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
+       ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")
+mutant("junit errors reported as failures",
+       [('        self.mark(test, "error", str(err[1]), err)', '        self.mark(test, "failure", str(err[1]), err)')],
+       ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")
+mutant("junit file attribute missing",
+       [('        if path:\n            case.set("file", path)', '        if False:\n            case.set("file", path)')],
+       ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")
+mutant("junit exit code ignores failures",
+       [('    return 1 if totals["failure"] or totals["error"] else 0', '    return 0')],
+       ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")
+mutant("junit run time missing",
+       [('        "timestamp": started.isoformat(timespec="seconds"),\n', '')],
+       ["JUnitReportTests.test_recorded_report_satisfies_selector_checks"], target="tests/junit_report.py", module="test_junit_report")
 
 
 def run(selected):
     root = Path(tempfile.mkdtemp(prefix="longtask-mut-"))
     survived = []
     try:
-        for index, (name, replacements, tests) in enumerate(M):
+        for index, (name, replacements, tests, target, module) in enumerate(M):
             if selected and name not in selected:
                 continue
-            code = SOURCE
+            code = TEXT[target]
             for old, new in replacements:
                 count = code.count(old)
                 if count != 1:
@@ -236,10 +251,10 @@ def run(selected):
                 work = root / str(index)
                 (work / "scripts").mkdir(parents=True)
                 (work / "tests").mkdir()
-                (work / "scripts" / "longtask.py").write_text(code, encoding="utf-8")
-                (work / "tests" / "test_longtask.py").write_text(TESTS, encoding="utf-8")
+                for rel, original in TEXT.items():
+                    (work / rel).write_text(code if rel == target else original, encoding="utf-8")
                 result = subprocess.run(
-                    [sys.executable, "-m", "unittest", *[f"test_longtask.{test}" for test in tests]],
+                    [sys.executable, "-m", "unittest", *[f"{module}.{test}" for test in tests]],
                     cwd=work / "tests", capture_output=True, text=True, check=False,
                     env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
                 )

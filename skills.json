@@ -441,7 +441,8 @@
             "-m",
             "py_compile",
             "long-task-planning/scripts/longtask.py",
-            "long-task-planning/tests/mutate.py"
+            "long-task-planning/tests/mutate.py",
+            "long-task-planning/tests/junit_report.py"
           ]
         },
         {
