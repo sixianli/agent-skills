@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
+import codecs
 import re
 import subprocess
 import sys
+
+HEADER = re.compile(r'diff --git (?:"a/((?:[^"\\]|\\.)*)"|a/(\S+))')
+PATH_LINE = re.compile(r"^(diff --git|index|---|\+\+\+) ")
+
+
+def unquote(path):
+    return codecs.escape_decode(path.encode("ascii"))[0].decode("utf-8")
+
+
+def body_without_paths(chunk):
+    lines = chunk.split("\n")
+    first_hunk = next((i for i, line in enumerate(lines) if line.startswith("@@")), len(lines))
+    header = [line for line in lines[:first_hunk] if not PATH_LINE.match(line)]
+    return "\n".join(header + lines[first_hunk:]).strip()
 
 
 def split_files(diff_text):
     files = {}
     for chunk in re.split(r"(?=^diff --git )", diff_text, flags=re.MULTILINE):
-        match = re.match(r"diff --git a/(\S+)", chunk)
+        match = HEADER.match(chunk)
         if match:
-            files[match.group(1)] = re.sub(r"^index .*\n", "", chunk, flags=re.MULTILINE).strip()
+            name = unquote(match.group(1)) if match.group(1) is not None else match.group(2)
+            files[name] = body_without_paths(chunk)
     return files
 
 
