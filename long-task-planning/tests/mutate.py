@@ -315,6 +315,10 @@ mutant("junit run time missing",
 
 
 def run(selected):
+    unknown = sorted(selected - {entry[0] for entry in M})
+    if unknown:
+        print(f"没有这些变异：{', '.join(unknown)}")
+        return 1
     root = Path(tempfile.mkdtemp(prefix="longtask-mut-"))
     survived = []
     try:
@@ -348,7 +352,7 @@ def run(selected):
                 shutil.rmtree(work)
     finally:
         shutil.rmtree(root, ignore_errors=True)
-    print(f"\n{len(M)} mutants, survived: {survived}")
+    print(f"\n{len(selected) if selected else len(M)} of {len(M)} mutants run, survived: {survived}")
     return 1 if survived else 0
 
 
