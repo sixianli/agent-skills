@@ -535,7 +535,7 @@
       "package_dir": "readable-output",
       "readme": "readable-output/SKILL.md",
       "skill_dir": "readable-output",
-      "description": "Pick the form of a response the user must understand or check: plain text, a checked ASCII diagram, or an HTML page with its link; writing rules adapted from ASD-STE100.",
+      "description": "Make every response to the user easy to understand and check: plain text, a checked ASCII diagram, or an HTML page with its link; writing rules adapted from ASD-STE100.",
       "implicit_invocation": true,
       "has_tests": true,
       "checks": [

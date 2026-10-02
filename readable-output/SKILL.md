@@ -1,11 +1,13 @@
 ---
 name: readable-output
-description: Choose and produce the form of a response the user must understand or check. Plain text for conclusions and steps, a checked ASCII diagram for structure and flow, or a published HTML page with its link in the response for interactive or layered content; never Mermaid, never video. Use when explaining code, architecture, data or control flow, a diff or commit, a debugging result, a plan, a comparison, or a final task report, and whenever the user asks for a diagram, an ASCII chart, a web page, or a plainer explanation. Its writing rules also apply to documents written for people.
+description: Make every response to the user easy to understand and check. Use for every reply written for a human, including answers, explanations, plans, reviews, debugging results, progress updates, and final task reports. It picks the form (plain text for conclusions and steps, a checked ASCII diagram for structure and flow, a published HTML page with its link in the response for content to explore; never Mermaid, never video) and gives writing rules adapted from ASD-STE100. Its writing rules also apply to documents written for people.
 ---
 
 # Readable output
 
 More and more of the user's work is checking results they did not produce. The form of a response decides how fast they can understand it and find what is wrong. This skill picks the form, then gives the rules for each form.
+
+Apply it to every response to the user, from a one-line answer to a final task report. Once loaded, it stays in effect for the rest of the conversation.
 
 If the user's or the project's own instructions say otherwise, follow them.
 
