@@ -14,6 +14,7 @@ This repository collects reusable Codex skills that I maintain for recurring per
 | `video-download` | [video-download/SKILL.md](video-download/SKILL.md) | `video-download/` | Download the highest available and verifiable video resolution from a supplied URL. | Yes |
 | `long-task-planning` | [long-task-planning/SKILL.md](long-task-planning/SKILL.md) | `long-task-planning/` | Keep a long coding task's goal, plan and done/not-done state from drifting; status is computed from recorded evidence, never written by hand. | Yes |
 | `codex-orchestration` | [codex-orchestration/SKILL.md](codex-orchestration/SKILL.md) | `codex-orchestration/` | Let Claude Code manage the local Codex CLI as a delegated coding agent: briefs, stop files, rulings, commit reviews and sessions. | Yes, when Claude Code delegates work to Codex |
+| `readable-output` | [readable-output/SKILL.md](readable-output/SKILL.md) | `readable-output/` | Pick the form of a response the user must understand or check: plain text with writing rules adapted from ASD-STE100, an ASCII diagram checked by `scripts/check_ascii.py` (display width aware, so Chinese counts as 2 columns), or an HTML Artifact with its link in the response. | Yes |
 
 Each package README or skill entrypoint explains the specific skill's purpose, install steps, usage examples, and verification commands. The installable skill folders should stay focused on runtime resources: `SKILL.md`, `agents/openai.yaml`, `scripts/`, `references/`, and `assets/` when needed.
 
@@ -58,6 +59,12 @@ Restart Codex if a newly installed skill does not appear immediately.
 ```bash
 ln -s "$PWD/long-task-planning" "$HOME/.claude/skills/long-task-planning"
 ln -s "$PWD/codex-orchestration" "$HOME/.claude/skills/codex-orchestration"
+```
+
+`readable-output` publishes pages through Claude Code's Artifact tool and needs no other skill. Install it the same way:
+
+```bash
+ln -s "$PWD/readable-output" "$HOME/.claude/skills/readable-output"
 ```
 
 `long-task-planning` also needs its session-start hook in `~/.claude/settings.json` (Claude Code) and `~/.codex/hooks.json` (Codex, matcher `startup|resume|clear|compact`; then trust it in Codex `/hooks`). Use the absolute path of the installed script:

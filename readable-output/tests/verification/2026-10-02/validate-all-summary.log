@@ -1,0 +1,107 @@
+command: UV_CACHE_DIR=$TMPDIR/uv-cache uv run --no-project --with pyyaml python scripts/validate_all.py
+exit: 0
+== repository: validate-all-py-compile ==
+== repository: validate-all-ruff ==
+All checks passed!
+== repository: validate-all-unittest ==
+Ran 8 tests in 0.016s
+OK
+== opencode-delegation: structure ==
+Skill is valid!
+== document-governance: structure ==
+Skill is valid!
+== document-governance: py-compile ==
+== document-governance: unittest ==
+Ran 46 tests in 7.067s
+OK
+== document-governance: ruff ==
+All checks passed!
+== grill-me: structure ==
+Skill is valid!
+== grill-with-docs: structure ==
+Skill is valid!
+== grill-with-docs: standalone-contracts ==
+Ran 5 tests in 0.067s
+OK
+== grill-with-docs: ruff ==
+All checks passed!
+== architect: structure ==
+Skill is valid!
+== automate-me: structure ==
+Skill is valid!
+== blast-radius: structure ==
+Skill is valid!
+== create-verification-skill: structure ==
+Skill is valid!
+== shoshin: structure ==
+Skill is valid!
+== shoshin: shoshin-resources ==
+== shoshin: shoshin-unittest ==
+Ran 18 tests in 0.240s
+OK
+== shoshin: shoshin-ruff ==
+All checks passed!
+== figure-it-out: structure ==
+Skill is valid!
+== how: structure ==
+Skill is valid!
+== interrogate: structure ==
+Skill is valid!
+== maintain-verification-skill: structure ==
+Skill is valid!
+== reflect: structure ==
+Skill is valid!
+== show-me-your-work: structure ==
+Skill is valid!
+== tdd: structure ==
+Skill is valid!
+== teach: structure ==
+Skill is valid!
+== technical-writing: structure ==
+Skill is valid!
+== typescript-best-practices: structure ==
+Skill is valid!
+== why: structure ==
+Skill is valid!
+== siblog-blog-workflow: structure ==
+Skill is valid!
+== siblog-blog-workflow: py-compile ==
+== siblog-blog-workflow: unittest ==
+Ran 24 tests in 1.411s
+OK
+== siblog-blog-workflow: ruff ==
+All checks passed!
+== video-download: structure ==
+Skill is valid!
+== video-download: py-compile ==
+== video-download: unittest ==
+Ran 8 tests in 0.471s
+OK
+== video-download: ruff ==
+All checks passed!
+== long-task-planning: structure ==
+Skill is valid!
+== long-task-planning: py-compile ==
+== long-task-planning: unittest ==
+Ran 105 tests in 66.878s
+OK
+== long-task-planning: ruff ==
+All checks passed!
+== codex-orchestration: structure ==
+Skill is valid!
+== codex-orchestration: py-compile ==
+== codex-orchestration: shell-syntax ==
+== codex-orchestration: unittest ==
+Ran 5 tests in 2.510s
+OK
+== codex-orchestration: ruff ==
+All checks passed!
+== readable-output: structure ==
+Skill is valid!
+== readable-output: py-compile ==
+== readable-output: unittest ==
+Ran 21 tests in 0.866s
+OK
+== readable-output: ruff ==
+All checks passed!
+所有检查通过。

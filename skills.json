@@ -529,6 +529,54 @@
           ]
         }
       ]
+    },
+    {
+      "name": "readable-output",
+      "package_dir": "readable-output",
+      "readme": "readable-output/SKILL.md",
+      "skill_dir": "readable-output",
+      "description": "Pick the form of a response the user must understand or check: plain text, a checked ASCII diagram, or an HTML page with its link; writing rules adapted from ASD-STE100.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "readable-output/scripts/check_ascii.py",
+            "readable-output/tests/test_check_ascii.py"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "readable-output/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "readable-output/scripts",
+            "readable-output/tests"
+          ]
+        }
+      ]
     }
   ]
 }

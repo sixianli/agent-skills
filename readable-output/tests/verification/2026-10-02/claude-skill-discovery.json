@@ -1,0 +1,22 @@
+{
+  "claude_code_version": "2.1.116",
+  "skills": [
+    "update-config",
+    "debug",
+    "simplify",
+    "batch",
+    "fewer-permission-prompts",
+    "loop",
+    "schedule",
+    "claude-api",
+    "long-task-planning",
+    "document-governance",
+    "codex-orchestration",
+    "grill-with-docs",
+    "video-download",
+    "readable-output",
+    "siblog-blog-workflow",
+    "grill-me",
+    "frontend-design:frontend-design"
+  ]
+}

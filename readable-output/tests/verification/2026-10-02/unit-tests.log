@@ -1,0 +1,27 @@
+Python 3.14.7
+test_aligned_loop_with_edge_labels_passes (test_check_ascii.AlignedDiagramTests.test_aligned_loop_with_edge_labels_passes) ... ok
+test_aligned_tree_passes (test_check_ascii.AlignedDiagramTests.test_aligned_tree_passes) ... ok
+test_letter_v_inside_a_word_is_not_an_arrow (test_check_ascii.AlignedDiagramTests.test_letter_v_inside_a_word_is_not_an_arrow) ... ok
+test_arrow_not_attached_to_a_line_is_reported (test_check_ascii.AlignmentErrorTests.test_arrow_not_attached_to_a_line_is_reported) ... ok
+test_box_side_shifted_one_column_is_reported (test_check_ascii.AlignmentErrorTests.test_box_side_shifted_one_column_is_reported) ... ok
+test_horizontal_arrow_needs_a_line_behind_it (test_check_ascii.AlignmentErrorTests.test_horizontal_arrow_needs_a_line_behind_it) ... ok
+test_junction_on_a_border_without_a_vertical_line_is_reported (test_check_ascii.AlignmentErrorTests.test_junction_on_a_border_without_a_vertical_line_is_reported) ... ok
+test_vertical_line_meeting_a_dash_needs_a_plus (test_check_ascii.AlignmentErrorTests.test_vertical_line_meeting_a_dash_needs_a_plus) ... ok
+test_ambiguous_width_character_is_rejected (test_check_ascii.CharacterTests.test_ambiguous_width_character_is_rejected) ... ok
+test_box_drawing_characters_are_rejected (test_check_ascii.CharacterTests.test_box_drawing_characters_are_rejected) ... ok
+test_chinese_label_is_rejected_and_columns_use_display_width (test_check_ascii.CharacterTests.test_chinese_label_is_rejected_and_columns_use_display_width) ... ok
+test_chinese_padded_by_character_count_is_misaligned (test_check_ascii.CharacterTests.test_chinese_padded_by_character_count_is_misaligned) ... ok
+test_tab_is_rejected (test_check_ascii.CharacterTests.test_tab_is_rejected) ... ok
+test_unicode_arrow_is_rejected (test_check_ascii.CharacterTests.test_unicode_arrow_is_rejected) ... ok
+test_errors_are_sorted_by_line_then_column (test_check_ascii.CommandLineTests.test_errors_are_sorted_by_line_then_column) ... ok
+test_missing_file_exits_with_2 (test_check_ascii.CommandLineTests.test_missing_file_exits_with_2) ... ok
+test_reads_standard_input_with_dash (test_check_ascii.CommandLineTests.test_reads_standard_input_with_dash) ... ok
+test_every_pattern_in_the_reference_file_passes (test_check_ascii.PatternFileTests.test_every_pattern_in_the_reference_file_passes) ... ok
+test_line_of_exactly_80_columns_passes (test_check_ascii.WidthTests.test_line_of_exactly_80_columns_passes) ... ok
+test_line_wider_than_80_columns_is_rejected (test_check_ascii.WidthTests.test_line_wider_than_80_columns_is_rejected) ... ok
+test_width_limit_can_be_changed (test_check_ascii.WidthTests.test_width_limit_can_be_changed) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 1.155s
+
+OK
