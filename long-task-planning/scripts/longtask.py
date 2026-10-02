@@ -1164,6 +1164,14 @@ def format_status(report, previous):
     return "\n".join(lines)
 
 
+def format_brief(report):
+    lines = [f"长任务 {report['task']}，{summary_line(report['counts'])}"]
+    for status in DISPLAY_ORDER:
+        lines += [f"{entry['id']}  {LABELS[status]}  {entry['title']}" for entry in report["items"] if entry["status"] == status]
+    lines += [f"警告：{warning}" for warning in report["warnings"]]
+    return "\n".join(lines)
+
+
 def cmd_status(args):
     repo = repo_from(args)
     task = resolve_task(repo, args.task)
@@ -1174,6 +1182,8 @@ def cmd_status(args):
         save_snapshot(task, report)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif args.brief:
+        print(format_brief(report))
     else:
         print(format_status(report, previous))
     return 2 if report["counts"]["unknown"] else 0
@@ -1639,7 +1649,9 @@ def build_parser():
 
     status = commands.add_parser("status", help="从证据算出每个条目的状态")
     status.add_argument("--task")
-    status.add_argument("--json", action="store_true")
+    status_format = status.add_mutually_exclusive_group()
+    status_format.add_argument("--json", action="store_true")
+    status_format.add_argument("--brief", action="store_true", help="一行汇总，再每项一行：编号、状态、标题，不列原因")
     status.add_argument("--no-save", action="store_true")
 
     lint = commands.add_parser("lint", help="检查任务文件是否守规则")

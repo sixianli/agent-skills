@@ -122,6 +122,8 @@ Commit `evidence.jsonl` with the code it verifies; the task directory is outside
 
 Exit code: 2 if anything is 无法判断, 1 on errors, 0 otherwise. It also lists changes since the last run (a cache under `.git/longtask/`, never a source of truth). Never copy statuses into plans, briefs, state files or reports by hand; quote the `status` output.
 
+When the user asks to see the status, send `$LT status --brief`: one summary line, then one line per item (ID, label, title), no reasons.
+
 ## Replanning
 
 Replan only at these points: session start and after compaction; at the end of each batch or when a Codex stop file arrives; on a surprise (a test exposes a new defect, a premise is disproved, the user gives a new decision); before declaring completion. Do not edit the plan after every small step. Each time, follow the same seven steps:
@@ -171,7 +173,7 @@ Then run `$LT lint` and commit the task directory.
 | Command | Purpose |
 | --- | --- |
 | `init <task> --prefix P --goal TEXT [--source S] [--date D]` | Create the task directory |
-| `status [--json] [--no-save] [--task T]` | Compute every item's status |
+| `status [--json \| --brief] [--no-save] [--task T]` | Compute every item's status; `--brief` prints the summary line, one line per item (ID, label, title) and any warnings, without reasons |
 | `record --vitest F \| --junit F \| --command C --exit-code N \| --review … \| --retract ID --reason R` | Append evidence; `--fingerprint-file`, `--host`, `--by`, `--ran`, `--note`, `--artifact`; reviews also `--commit` |
 | `lint [--task T]` | Check the rules in [Full mode files](#full-mode-files) |
 | `context [--task T]` | Print what the hook injects |

@@ -769,6 +769,20 @@ class StatusTests(Base):
                 self.assertIn("共 2 项", output)
                 self.assertIn("不做 1", output)
 
+    def test_brief_status_prints_one_line_per_item(self):
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")]), item("T-B1", [tag_check("T-B1")]),
+                                   item("T-W1", [tag_check("T-W1")], withdrawn={"on": "2026-10-02", "ref": "G1"})])
+        self.record_vitest(self.repo, self.passing(self.repo))
+        full = self.ok(self.cli(self.repo, "status", "--no-save")).stdout
+        self.assertIn("还没有带 [T-B1] 的测试", full)
+        lines = self.ok(self.cli(self.repo, "status", "--brief", "--no-save")).stdout.splitlines()
+        self.assertEqual(len(lines), 4, lines)
+        self.assertIn("共 3 项：当前版本已验证 1 · 未完成 1 · 不做 1", lines[0])
+        self.assertEqual(lines[1:], ["T-B1  未完成  标题 T-B1", "T-A1  当前版本已验证  标题 T-A1", "T-W1  不做  标题 T-W1"])
+        both = self.cli(self.repo, "status", "--brief", "--json", "--no-save")
+        self.assertNotEqual(both.returncode, 0)
+        self.assertIn("--brief", both.stderr)
+
 
 class ReviewTests(Base):
     def setUp(self):

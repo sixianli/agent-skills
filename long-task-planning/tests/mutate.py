@@ -287,6 +287,16 @@ mutant("zero max age accepted",
 mutant("withdrawn items left out of the total",
        [('    total = sum(counts.values())', '    total = sum(value for key, value in counts.items() if key != "withdrawn")')],
        ["StatusTests.test_total_counts_withdrawn_items"])
+mutant("brief status keeps the reasons",
+       [("        print(format_brief(report))", "        print(format_status(report, previous))")],
+       ["StatusTests.test_brief_status_prints_one_line_per_item"])
+mutant("brief status ignores the display order",
+       [("    for status in DISPLAY_ORDER:\n        lines += [f\"{entry['id']}  {LABELS[status]}  {entry['title']}\" for entry in report[\"items\"] if entry[\"status\"] == status]",
+         "    for entry in report[\"items\"]:\n        lines += [f\"{entry['id']}  {LABELS[entry['status']]}  {entry['title']}\"]")],
+       ["StatusTests.test_brief_status_prints_one_line_per_item"])
+mutant("brief and json allowed together",
+       [("    status_format = status.add_mutually_exclusive_group()\n", "    status_format = status\n")],
+       ["StatusTests.test_brief_status_prints_one_line_per_item"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")
