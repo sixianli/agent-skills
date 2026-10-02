@@ -1670,6 +1670,27 @@ def cmd_find_tests(args):
     return 0
 
 
+def brief_batch(text, pattern):
+    batch, level, fenced = [], None, False
+    for line in text.splitlines():
+        if re.match(r"^\s*(```|~~~)", line):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        heading = re.match(r"^(#{1,6})\s+(.*)$", line)
+        if heading:
+            depth = len(heading.group(1))
+            if level is None or depth <= level:
+                level = depth if "范围" in heading.group(2) else None
+            continue
+        bullet = None if level is None else re.match(r"^\s*[-*]\s+`?", line)
+        found = bullet and pattern.match(line, bullet.end())
+        if found and found.group(0) not in batch:
+            batch.append(found.group(0))
+    return batch
+
+
 def cmd_check_brief(args):
     repo = repo_from(args)
     task = resolve_task(repo, args.task)
@@ -1684,21 +1705,26 @@ def cmd_check_brief(args):
     items = {entry.get("id"): entry for entry in data["items"] if isinstance(entry, dict)}
     pattern = re.compile(rf"(?<![A-Za-z0-9]){re.escape(prefix)}-{ID_BODY}")
     mentioned = sorted(set(pattern.findall(text)))
+    batch = brief_batch(text, pattern)
     unknown = [value for value in mentioned if value not in items]
-    withdrawn = [value for value in mentioned if value in items and items[value].get("withdrawn")]
-    active = [value for value in mentioned if value in items and not items[value].get("withdrawn")]
+    withdrawn = [value for value in batch if value in items and items[value].get("withdrawn")]
+    noted = [value for value in mentioned if value not in batch and value in items and items[value].get("withdrawn")]
     problems = []
     if unknown:
         problems.append(f"简报里的条目 {'、'.join(unknown)} 在 {task.rel}/items.json 里不存在")
+    if not batch:
+        problems.append(f"简报“范围”一节里没有以条目编号开头的列表行（例如“- `{prefix}-A1` 标题”）；只在别处提到的编号不算本批条目")
+    if len(batch) > 3:
+        problems.append(f"本批条目有 {len(batch)} 个（{'、'.join(batch)}），最多 3 个；同一次测试顺带验证的条目写在不以编号开头的一行里")
     if withdrawn:
-        problems.append(f"简报里的条目 {'、'.join(withdrawn)} 已决定不做")
-    if not active:
-        problems.append(f"简报没有写本批对应的条目编号（{prefix}-…）")
+        problems.append(f"本批条目 {'、'.join(withdrawn)} 已决定不做")
     for problem in problems:
         print(f"错误：{problem}")
+    if noted:
+        print(f"警告：简报提到的 {'、'.join(noted)} 已决定不做；它们不在本批条目里，只当说明")
     if problems:
         return 1
-    print(f"简报检查通过：本批条目 {'、'.join(active)}")
+    print(f"简报检查通过：本批条目 {'、'.join(batch)}")
     return 0
 
 

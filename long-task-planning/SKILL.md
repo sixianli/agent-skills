@@ -152,7 +152,7 @@ Then run `$LT lint` and commit the task directory.
 
 `codex-orchestration` covers how to talk to Codex (briefs, stop files, replies, sessions). This skill covers what the goal is, what the plan is, and whether it is done.
 
-- Each brief names the batch's item IDs and copies their `done_when`. Launch through `codex-orchestration`'s launcher, which runs `$LT check-brief <brief>` first and refuses a brief that names no valid, non-withdrawn item.
+- Each brief names the batch's item IDs and copies their `done_when`. Launch through `codex-orchestration`'s launcher, which runs `$LT check-brief <brief>` first. The batch is the bullets in the brief's `范围` section (a heading containing 范围, down to the next heading of the same or higher level) that start with an item ID; a backtick before the ID is fine. The check refuses the brief when that list is empty, holds more than 3 items, or names a withdrawn item, and when an unknown ID appears anywhere. A withdrawn ID mentioned elsewhere, for example to say its old changes must not be revived, only prints a warning.
 - The agent records its own test evidence with `record --by codex` and lists the evidence IDs in its stop file.
 - When a brief or reply says to stop on a failure, write "let the running test command finish, then stop". Evidence needs the complete report; an agent once read "stop on any failure" as "kill it" and the other test projects produced no report. Ask for an immediate stop only when continuing would do harm, and say so explicitly.
 - When reviewing, run `status` first, verify the evidence yourself, then record the review with `record --review`.
@@ -183,7 +183,7 @@ Then run `$LT lint` and commit the task directory.
 | `lint [--task T]` | Check the rules in [Full mode files](#full-mode-files) |
 | `context [--task T]` | Print what the hook injects |
 | `fingerprint [--json \| --list] [--exclude P]` | Current fingerprint, or the per-file lines it hashes |
-| `check-brief <brief> [--task T]` | Refuse a brief without valid item IDs |
+| `check-brief <brief> [--task T]` | Check the batch a brief names (ID-led bullets in its `范围` section) before an agent starts |
 | `find-tests --vitest F \| --junit F [--commit C] [--grep W]` | Print paste-ready `file` + `name` checks for the tests in a report |
 | `hook` | Session-start hook; reads the hook JSON on stdin |
 

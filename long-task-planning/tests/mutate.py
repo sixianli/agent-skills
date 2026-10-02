@@ -237,9 +237,39 @@ mutant("hook ignores cwd",
        [('        cwd = Path(payload.get("cwd") or os.getcwd())', '        cwd = Path(os.getcwd())')],
        ["ContextHookTests.test_hook_uses_cwd_from_input"])
 mutant("brief withdrawn accepted",
-       [('    withdrawn = [value for value in mentioned if value in items and items[value].get("withdrawn")]', '    withdrawn = []'),
-        ('    active = [value for value in mentioned if value in items and not items[value].get("withdrawn")]', '    active = [value for value in mentioned if value in items]')],
+       [('    withdrawn = [value for value in batch if value in items and items[value].get("withdrawn")]', '    withdrawn = []')],
        ["CheckBriefTests.test_brief_with_withdrawn_item_fails"])
+mutant("brief withdrawn refused outside the batch",
+       [('    withdrawn = [value for value in batch if value in items and items[value].get("withdrawn")]', '    withdrawn = [value for value in mentioned if value in items and items[value].get("withdrawn")]')],
+       ["CheckBriefTests.test_withdrawn_item_outside_the_batch_only_warns"])
+mutant("brief withdrawn mention not warned",
+       [('    if noted:\n        print(', '    if False:\n        print(')],
+       ["CheckBriefTests.test_withdrawn_item_outside_the_batch_only_warns"])
+mutant("brief batch taken from the whole brief",
+       [('        bullet = None if level is None else re.match(', '        bullet = re.match(')],
+       ["CheckBriefTests.test_batch_is_the_id_led_bullets_in_the_scope_section",
+        "CheckBriefTests.test_item_mentioned_only_outside_the_scope_section_is_not_a_batch"])
+mutant("brief batch counts any mention",
+       [('        found = bullet and pattern.match(line, bullet.end())', '        found = bullet and pattern.search(line)')],
+       ["CheckBriefTests.test_item_mentioned_only_outside_the_scope_section_is_not_a_batch"])
+mutant("brief code fences read as headings",
+       [('        if fenced:\n            continue\n', '')],
+       ["CheckBriefTests.test_batch_is_the_id_led_bullets_in_the_scope_section"])
+mutant("brief subheading ends the scope",
+       [('            if level is None or depth <= level:', '            if True:')],
+       ["CheckBriefTests.test_batch_is_the_id_led_bullets_in_the_scope_section"])
+mutant("brief backtick before the id not allowed",
+       [('        bullet = None if level is None else re.match(r"^\\s*[-*]\\s+`?", line)', '        bullet = None if level is None else re.match(r"^\\s*[-*]\\s+", line)')],
+       ["CheckBriefTests.test_brief_naming_known_items_passes"])
+mutant("brief without batch accepted",
+       [('    if not batch:\n        problems.append(', '    if False:\n        problems.append(')],
+       ["CheckBriefTests.test_item_mentioned_only_outside_the_scope_section_is_not_a_batch"])
+mutant("brief batch limit four",
+       [('    if len(batch) > 3:\n        problems.append(', '    if len(batch) > 4:\n        problems.append(')],
+       ["CheckBriefTests.test_brief_batch_is_limited_to_three_items"])
+mutant("brief batch counts duplicates",
+       [('        if found and found.group(0) not in batch:\n            batch.append', '        if found:\n            batch.append')],
+       ["CheckBriefTests.test_brief_batch_is_limited_to_three_items"])
 mutant("brief unknown accepted",
        [('    unknown = [value for value in mentioned if value not in items]', '    unknown = []')],
        ["CheckBriefTests.test_brief_with_unknown_item_fails"])

@@ -1539,9 +1539,15 @@ class CheckBriefTests(Base):
         path.write_text(text, encoding="utf-8")
         return self.cli(self.repo, "check-brief", str(path))
 
+    def scoped(self, *batch, background="", accept="- 跑 `make check`。"):
+        return "\n".join(["# 任务说明", "", "## 1. 为什么做", "", background, "", "## 2. 范围", "", "- 本批条目：",
+                          *batch, "- 不做：其他条目", "", "## 3. 验收", "", accept, ""])
+
     def test_brief_naming_known_items_passes(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
-        self.assertEqual(self.brief("本批条目：T-A1。").returncode, 0)
+        result = self.brief(self.scoped("  - `T-A1` 标题。"))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("本批条目 T-A1", result.stdout)
 
     def test_brief_without_items_fails(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
@@ -1549,13 +1555,63 @@ class CheckBriefTests(Base):
 
     def test_brief_with_unknown_item_fails(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
-        result = self.brief("本批：T-A1 和 T-Z9")
+        result = self.brief(self.scoped("  - `T-A1` 标题。", background="和 T-Z9 有关。"))
         self.assertEqual(result.returncode, 1)
         self.assertIn("T-Z9", result.stdout + result.stderr)
 
     def test_brief_with_withdrawn_item_fails(self):
-        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")], withdrawn={"on": "2026-10-02", "ref": "G1"})])
-        self.assertEqual(self.brief("本批：T-A1").returncode, 1)
+        withdrawn = {"on": "2026-10-02", "ref": "G1"}
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")]), item("T-W1", [], withdrawn=withdrawn)])
+        result = self.brief(self.scoped("  - `T-A1` 标题。", "  - T-W1 标题。"))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("本批条目 T-W1 已决定不做", result.stdout)
+
+    def test_batch_is_the_id_led_bullets_in_the_scope_section(self):
+        self.init_task(self.repo, [item(f"T-A{n}", [tag_check(f"T-A{n}")]) for n in range(1, 6)])
+        text = "\n".join([
+            "# 任务说明", "", "## 1. 为什么做", "", "- T-A3 上次已经做完，T-A4 的夹具可以复用。", "",
+            "## 2. 范围", "", "- 本批条目：", "  - `T-A1` 第一项，和 T-A5 共用夹具。", "",
+            "```bash", "# 先跑一遍", "make check", "```", "",
+            "### 第二组", "", "* T-A2 第二项。",
+            "- 顺带验证（不占名额）：`T-A3`、T-A4", "",
+            "## 3. 验收", "", "- `T-A5` 跑它的测试。", ""])
+        result = self.brief(text)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("简报检查通过：本批条目 T-A1、T-A2", result.stdout)
+        self.assertNotIn("T-A3", result.stdout)
+        self.assertNotIn("T-A5", result.stdout)
+
+    def test_withdrawn_item_outside_the_batch_only_warns(self):
+        withdrawn = {"on": "2026-10-02", "ref": "G1"}
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")]), item("T-W1", [], withdrawn=withdrawn)])
+        result = self.brief(self.scoped("  - `T-A1` 标题。", background="上一个会话做到一半的 T-W1 已撤回，不要重做。"))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("本批条目 T-A1", result.stdout)
+        self.assertIn("警告", result.stdout)
+        self.assertIn("T-W1", result.stdout)
+
+    def test_item_mentioned_only_outside_the_scope_section_is_not_a_batch(self):
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
+        cases = {
+            "no batch bullet": self.scoped("  - 本批没有新条目。", background="上次已经做完 T-A1。"),
+            "no scope section": "# 任务说明\n\n## 3. 验收\n\n- `T-A1` 跑测试。\n",
+            "bullet not led by the ID": self.scoped("  - 继续 `T-A1`。"),
+        }
+        for name, text in cases.items():
+            with self.subTest(case=name):
+                result = self.brief(text)
+                self.assertEqual(result.returncode, 1, result.stdout)
+                self.assertIn("“范围”一节", result.stdout)
+                self.assertNotIn("检查通过", result.stdout)
+
+    def test_brief_batch_is_limited_to_three_items(self):
+        self.init_task(self.repo, [item(f"T-A{n}", [tag_check(f"T-A{n}")]) for n in range(1, 5)])
+        result = self.brief(self.scoped(*[f"  - `T-A{n}` 标题。" for n in (1, 2, 3, 1)]))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("本批条目 T-A1、T-A2、T-A3", result.stdout)
+        result = self.brief(self.scoped(*[f"  - `T-A{n}` 标题。" for n in range(1, 5)]))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("最多 3 个", result.stdout)
 
     def test_brief_without_task_fails(self):
         self.assertEqual(self.brief("本批：T-A1").returncode, 1)

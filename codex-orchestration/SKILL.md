@@ -71,7 +71,9 @@ only from `longtask.py status`, computed from recorded evidence. This skill
 covers how to talk to Codex, not what the goal or progress is.
 
 - Every brief names the batch's item IDs and copies their `done_when`. The
-  launcher refuses a brief that names no valid item (see [Sessions](#sessions)).
+  launcher takes the batch from the bullets in the brief's `范围` section that
+  start with an item ID and refuses a brief without a valid batch (see
+  [Sessions](#sessions)).
 - Codex records its test evidence with `longtask.py record --by codex`
   (fingerprint computed on the test host after syncing and before the tests)
   and lists the evidence IDs in its stop file. Codex does not edit
@@ -105,8 +107,10 @@ covers how to talk to Codex, not what the goal or progress is.
   over together for review, normally no more than three independent defects.
 - Launch in a visible terminal tab with `mcp__terminal__run_in_terminal`, one
   ASCII line from the repository root, so the user can watch. The launcher
-  runs `longtask.py check-brief` first and does not start Codex when the brief
-  names no valid, non-withdrawn item of the active long task:
+  runs `longtask.py check-brief` first and does not start Codex when the
+  brief's `范围` section has no bullet starting with an item ID of the active
+  long task, has more than three, or names a withdrawn item; a withdrawn ID
+  mentioned elsewhere only prints a warning:
   `bash ~/.claude/skills/codex-orchestration/scripts/codex-launch.sh <brief path> <first stop path> -- -m <model> -c model_reasoning_effort="<effort>" -c service_tier="fast"`
   (drop the last option when the user's speed preference is standard).
   Resume: `codex resume <session-uuid> -m <model> -c model_reasoning_effort="<effort>" "Read <reply path> fully, then continue per its ruling. The next stop file is <path>."`
@@ -224,9 +228,10 @@ serious problems. Review standard does not drop:
 
 ## Writing briefs
 
-- One batch per brief, at most three items to work on, named by their item
-  IDs with their `done_when` copied from `items.json`. Items that the same
-  test run only verifies are listed separately and do not count. State the minimum acceptance
+- One batch per brief, at most three items to work on, each on its own
+  bullet in the `范围` section that starts with the item ID, with its
+  `done_when` copied from `items.json`. Items that the same test run only
+  verifies go on a bullet that does not start with an ID and do not count. State the minimum acceptance
   evidence precisely: which test layer, which test group, how many runs, on
   which revision. Ambiguous wording such as "run it three times" caused
   unnecessary full-suite runs.

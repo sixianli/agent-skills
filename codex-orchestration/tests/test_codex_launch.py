@@ -71,7 +71,7 @@ class CodexLaunchTests(unittest.TestCase):
         return str(path)
 
     def test_valid_brief_launches_codex_with_the_given_options(self):
-        brief = self.brief("# 本批\n\n- T-A1：先写红测试\n")
+        brief = self.brief("# 任务说明\n\n## 2. 范围\n\n- 本批条目：\n  - `T-A1` 先写红测试\n")
         result = self.launch(brief, "handoff/stop-1.md", "--", "-m", "gpt-x", "-c", 'model_reasoning_effort="xhigh"')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(self.args_file.read_text().splitlines(), [
@@ -80,7 +80,7 @@ class CodexLaunchTests(unittest.TestCase):
         ])
 
     def test_brief_without_valid_items_does_not_launch(self):
-        for text in ("# 本批\n\n没有写条目编号\n", "# 本批\n\n- T-Z9：不存在的条目\n"):
+        for text in ("# 任务说明\n\n## 2. 范围\n\n没有写条目编号\n", "# 任务说明\n\n## 2. 范围\n\n- `T-Z9` 不存在的条目\n"):
             result = self.launch(self.brief(text), "handoff/stop-1.md", "--", "-m", "gpt-x")
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(self.args_file.exists())
