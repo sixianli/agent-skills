@@ -348,6 +348,9 @@ mutant("formatter reminder ignores prettier",
 mutant("formatter reminder always shown",
        [("        if (repo / name).is_file():", "        if name == FORMATTER_CONFIGS[0]:")],
        ["InitTests.test_init_reminds_to_skip_task_files_when_a_formatter_is_configured"])
+mutant("install path resolved through the symlink",
+       [("SCRIPT_PATH = Path(os.path.abspath(__file__))", "SCRIPT_PATH = Path(__file__).resolve()")],
+       ["ContextHookTests.test_symlinked_install_reports_the_install_path"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

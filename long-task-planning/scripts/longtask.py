@@ -19,7 +19,7 @@ try:
 except ImportError:
     fcntl = None
 
-SCRIPT_PATH = Path(__file__).resolve()
+SCRIPT_PATH = Path(os.path.abspath(__file__))
 SKILL_MD = SCRIPT_PATH.parents[1] / "SKILL.md"
 TASKS_DIR = ".agents/tasks"
 TASK_FILES = ("goal.md", "items.json", "plan.md", "evidence.jsonl")

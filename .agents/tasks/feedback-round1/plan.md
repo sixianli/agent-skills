@@ -6,13 +6,10 @@
 
 ## 当前批次
 
-- SK-F4：context 显示目标时 G1 放最前，其余按日期排序，同一天按编号；编号只表示记录顺序，写进 formats.md；先写测试看它失败；证据：1 个测试通过
-- SK-F17：SKILL.md 的建立任务和接入步骤写明把 .agents/tasks/ 加进项目格式检查的忽略列表；init 发现 biome、prettier、dprint 的配置文件时提醒一句；先写测试看它失败；证据：1 个测试通过，加我对文档的审核
-- SK-R4：脚本通过符号链接运行时，钩子和提示里显示安装路径（~/.claude/skills/...），不显示仓库路径；先写测试看它失败；证据：1 个测试通过
+- SK-F5：新命令 find-tests --report <报告> [--commit <提交>] [--grep <词>]，从 Vitest JSON 或 JUnit 报告里列出测试，每个测试一行可直接粘贴进 done_when 的检查 JSON（file 用仓库路径，name 用报告里的完整名，去掉占位符问题）；--commit 只列那个提交改过的测试文件，--grep 按词过滤；先写 2 个测试看它们失败；证据：2 个测试通过
 
 ## 之后
 
-- SK-F5：按批准的计划放在最后做
 - SK-R1、SK-R5、SK-R2：全部改完后在最终版本上跑仓库总校验、全部变异检查、私人信息检查
 - SK-R6：在真实项目的临时克隆上试用，试完删除克隆
 - SK-R7：写本轮验证记录
@@ -29,6 +26,7 @@
 - 2026-10-02 14:45 SK-F14 的完成条件加一个测试 test_evidence_recorded_before_its_commit_is_relaxed_from_that_commit，并把 test_dirty_or_unknown_test_records_are_not_relaxed 改名为 test_uncommitted_or_unknown_test_records_are_not_relaxed。原因：先记录再提交时放宽从不生效，见“意外和发现”。
 - 2026-10-02 14:50 当前批次改为 SK-F1、SK-F8、SK-F10。原因：仓库新版脚本的 status 显示当前版本已验证 10、旧版本验证过 4、未完成 12；SK-F16、SK-F7、SK-F12 的证据都已记录，按计划进入 C 组和剩下的 B 组。
 - 2026-10-02 15:00 当前批次改为 SK-F4、SK-F17、SK-R4。原因：status 显示当前版本已验证 10、旧版本验证过 7（多是绑定 SKILL.md 的审核，最后统一复审）、未完成 9；SK-F1、SK-F8、SK-F10 的测试都在当前版本上通过，按计划做最后一批功能项，SK-F5 留到它们之后。
+- 2026-10-02 15:08 当前批次改为 SK-F5。原因：status 显示当前版本已验证 12、旧版本验证过 8（绑定 SKILL.md 的审核和两项最终检查）、未完成 6；SK-F4、SK-F17、SK-R4 的测试都在当前版本上通过，按批准的计划最后做 SK-F5，之后进入最终检查。
 
 ## 意外和发现
 

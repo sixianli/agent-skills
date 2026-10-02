@@ -1256,6 +1256,20 @@ class ContextHookTests(Base):
         self.assertIn("……中间 1 条见 goal.md", output)
         self.assertNotIn("目标G7内容", output)
 
+    def test_symlinked_install_reports_the_install_path(self):
+        repo = self.make_repo()
+        self.init_task(repo, [item("T-A1", [tag_check("T-A1")])])
+        skills = self.root / "home" / ".claude" / "skills"
+        skills.mkdir(parents=True)
+        (skills / "long-task-planning").symlink_to(SCRIPT.parents[1], target_is_directory=True)
+        installed = skills / "long-task-planning" / "scripts" / "longtask.py"
+        result = subprocess.run([sys.executable, str(installed), "context"], cwd=repo, env=self.env,
+                                capture_output=True, text=True, timeout=120, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("`python3 ~/.claude/skills/long-task-planning/scripts/longtask.py status`", result.stdout)
+        self.assertIn("先读 ~/.claude/skills/long-task-planning/SKILL.md", result.stdout)
+        self.assertNotIn(str(SCRIPT.parents[1]), result.stdout)
+
     def test_context_stays_within_budget(self):
         repo = self.make_repo()
         entries = [(f"G{n}", "2026-10-01", "用户原话", f"第 {n} 条目标" + "很长的说明" * 40) for n in range(1, 31)]
