@@ -208,6 +208,19 @@ class Base(unittest.TestCase):
 
 
 class InitTests(Base):
+    def test_init_reminds_to_skip_task_files_when_a_formatter_is_configured(self):
+        plain = self.make_repo("plain")
+        output = self.ok(self.cli(plain, "init", "demo", "--prefix", "T", "--goal", "目标")).stdout
+        self.assertNotIn("提醒", output)
+        for index, config in enumerate(("biome.json", "biome.jsonc", ".prettierrc", "prettier.config.mjs", "dprint.json", ".dprint.jsonc")):
+            with self.subTest(config=config):
+                repo = self.make_repo(f"repo{index}")
+                write(repo, config, "{}\n")
+                output = self.ok(self.cli(repo, "init", "demo", "--prefix", "T", "--goal", "目标")).stdout
+                self.assertIn(f"提醒：项目有格式化工具配置 {config}", output)
+                self.assertIn("把 .agents/tasks/ 加进它的忽略列表", output)
+                self.assertTrue((repo / TASK / "items.json").is_file())
+
     def test_init_creates_files_and_refuses_overwrite(self):
         repo = self.make_repo()
         self.ok(self.cli(repo, "init", "demo", "--prefix", "T", "--goal", "修完所有发现的缺陷", "--date", "2026-10-01"))

@@ -49,6 +49,12 @@ TAG_IN_NAME = re.compile(rf"\[([A-Za-z][A-Za-z0-9]*-{ID_BODY})\]")
 TEMPLATE_PLACEHOLDER = re.compile(r"%[sdifjo#$]")
 UNKNOWN_FINGERPRINT = "unknown"
 FINGERPRINT_FILE_FIELDS = ("fingerprint", "commit", "dirty")
+FORMATTER_CONFIGS = (
+    "biome.json", "biome.jsonc", "dprint.json", "dprint.jsonc", ".dprint.json", ".dprint.jsonc",
+    ".prettierrc", ".prettierrc.json", ".prettierrc.json5", ".prettierrc.yaml", ".prettierrc.yml", ".prettierrc.toml",
+    ".prettierrc.js", ".prettierrc.cjs", ".prettierrc.mjs", ".prettierrc.ts", ".prettierrc.cts", ".prettierrc.mts",
+    "prettier.config.js", "prettier.config.cjs", "prettier.config.mjs", "prettier.config.ts", "prettier.config.cts", "prettier.config.mts",
+)
 TEST_FILE_PATTERNS = ("*.test.*", "*.spec.*", "test_*.py", "*_test.py", "*_test.go")
 TEST_DIR_NAMES = {"test", "tests", "__tests__", "e2e", "spec"}
 NON_TEST_SUFFIXES = {".md", ".txt"}
@@ -1635,6 +1641,10 @@ def cmd_init(args):
     task.path("plan.md").write_text(PLAN_TEMPLATE.format(task=args.task, created=moment.strftime("%Y-%m-%d %H:%M")), encoding="utf-8")
     task.path("evidence.jsonl").write_text("", encoding="utf-8")
     print(f"已建立 {task.rel}/：goal.md、items.json、plan.md、evidence.jsonl")
+    for name in FORMATTER_CONFIGS:
+        if (repo / name).is_file():
+            print(f"提醒：项目有格式化工具配置 {name}，把 {TASKS_DIR}/ 加进它的忽略列表（biome 的 files 设置、prettier 的 .prettierignore、dprint 的 excludes），"
+                  "否则项目的格式检查会拦下 items.json；不要改用格式化工具处理任务文件：改写 goal.md 或计划日志的旧行会让“只追加”的检查报错。")
     return 0
 
 

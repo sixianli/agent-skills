@@ -339,6 +339,15 @@ mutant("goals shown in record order",
 mutant("first goal sorted with the rest",
        [('    goals = goals[:1] + sorted(goals[1:], key=', '    goals = sorted(goals, key=')],
        ["ContextHookTests.test_context_orders_goals_by_date_after_the_first"])
+mutant("formatter reminder missing",
+       [("        if (repo / name).is_file():", "        if False:")],
+       ["InitTests.test_init_reminds_to_skip_task_files_when_a_formatter_is_configured"])
+mutant("formatter reminder ignores prettier",
+       [('    ".prettierrc", ".prettierrc.json",', '    ".prettierrc.json",')],
+       ["InitTests.test_init_reminds_to_skip_task_files_when_a_formatter_is_configured"])
+mutant("formatter reminder always shown",
+       [("        if (repo / name).is_file():", "        if name == FORMATTER_CONFIGS[0]:")],
+       ["InitTests.test_init_reminds_to_skip_task_files_when_a_formatter_is_configured"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

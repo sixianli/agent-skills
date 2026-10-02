@@ -55,6 +55,8 @@ If unsure whether a fact hits, count it as a hit. For hands-on tasks (code, conf
 
 `$LT init <task> --prefix <P> --goal "<user's words>"` creates `<repo>/.agents/tasks/<task>/`. Commit it together with the code it describes. Only the planner (normally Claude) edits the first three files; any agent may append evidence through `record`.
 
+If the project has a formatter or format check that covers JSON or Markdown (biome, prettier, dprint …), add `.agents/tasks/` to its ignore list in the same commit and run the project's format check once before committing. Do not format the task files instead: a Markdown formatter rewriting old lines of `goal.md` or the plan logs fails the append-only checks, and `items.json` would need reformatting after every edit. `init` prints a reminder when it finds such a configuration file at the repository root.
+
 | File | Holds | Rules (enforced by `lint`) |
 | --- | --- | --- |
 | `goal.md` | The user's statements: `## G<n> <date> <source>` plus `> quote` | Append only, checked against git history. Only words the user said. A paraphrase uses source `转述：<where from>`. An option the user picked in a multiple-choice question uses source `用户选择`: quote the chosen option's label and description verbatim, with the question on a `问题：<question>` line above the quote. Give any short answer that is unclear on its own ("可以") a `问题：` line too; `context` shows question and answer together. Append every new user statement about goals or decisions **before** acting on it |
