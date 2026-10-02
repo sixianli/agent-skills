@@ -22,13 +22,22 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 
 > 把一经发现的bug修掉然后再收尾吧
 
+## G3 2026-10-01 用户选择
+
+问题：D12 要不要算进第二轮？
+
+> 算进去 (Recommended)
+> 和其他缺陷一起修。
+
 ## CLOSED 2026-10-20 用户原话
 
 > 验收通过
 ```
 
-- Headings match `## G<number> <YYYY-MM-DD> <source>` or `## CLOSED <YYYY-MM-DD> <source>`. Source is `用户原话` or `转述：<where from>`.
-- The quote lines start with `> `. IDs are unique; `CLOSED` is last and makes the task inactive.
+- Headings match `## G<number> <YYYY-MM-DD> <source>` or `## CLOSED <YYYY-MM-DD> <source>`. Source is `用户原话` (typed by the user), `用户选择` (an option picked in a multiple-choice question) or `转述：<where from>`.
+- The quote lines start with `> `. For `用户选择`, quote the chosen option's label and description exactly as shown.
+- An optional `问题：<question>` line above the quote holds the question the user answered. Use it for every `用户选择` entry and for any short answer that is unclear on its own. `context` prints such an entry as `问：<question> 答：<answer>`.
+- IDs are unique; `CLOSED` is last and makes the task inactive.
 - Append only: every committed version and the working copy must start with the previous version's lines.
 
 ## items.json

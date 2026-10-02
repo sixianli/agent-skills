@@ -40,6 +40,7 @@ LABELS = {
 PLAN_SECTIONS = ("当前批次", "之后", "计划改动记录", "意外和发现", "决定")
 LOG_SECTIONS = ("计划改动记录", "意外和发现", "决定")
 STATUS_WORDS = re.compile(r"已完成|已修复|已修好|已通过|已验证|已解决|进行中|未开始|完成了|✅|☑|✔|\[[xX ]\]")
+QUESTION_PREFIX = "问题："
 GOAL_HEADER = re.compile(r"^## (G\d+|CLOSED) (\d{4}-\d{2}-\d{2}) (\S.*)$")
 ID_BODY = r"[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*"
 ITEM_ID = re.compile(rf"[A-Za-z][A-Za-z0-9]*-{ID_BODY}")
@@ -53,8 +54,9 @@ SOURCE_EVENTS = {"compact": "压缩", "resume": "恢复"}
 
 GOAL_TEMPLATE = """# 目标：{task}
 
-<!-- 只追加，不改旧内容。每条以“## G<编号> <YYYY-MM-DD> <来源>”开头，来源写“用户原话”或“转述：<出处>”，
-     下面用“> ”引用原话。任务结束时追加“## CLOSED <日期> 用户原话”和用户的验收原话。 -->
+<!-- 只追加，不改旧内容。每条以“## G<编号> <YYYY-MM-DD> <来源>”开头，来源写“用户原话”“用户选择”或“转述：<出处>”，
+     下面用“> ”引用原话；回答离开问题看不懂时，引用前写一行“问题：<原问题>”。
+     任务结束时追加“## CLOSED <日期> 用户原话”和用户的验收原话。 -->
 
 ## G1 {date} {source}
 
@@ -218,10 +220,13 @@ def parse_goal(text):
         elif current is not None:
             current["lines"].append(line)
     for entry in entries:
-        quoted = [line.lstrip()[1:].strip() for line in entry["lines"] if line.lstrip().startswith(">")]
-        body = quoted if quoted else [line.strip() for line in entry.pop("lines")]
-        entry.pop("lines", None)
+        lines = entry.pop("lines")
+        questions = [line.strip().removeprefix(QUESTION_PREFIX).strip() for line in lines if line.strip().startswith(QUESTION_PREFIX)]
+        lines = [line for line in lines if not line.strip().startswith(QUESTION_PREFIX)]
+        quoted = [line.lstrip()[1:].strip() for line in lines if line.lstrip().startswith(">")]
+        body = quoted if quoted else [line.strip() for line in lines]
         entry["text"] = " ".join(part for part in body if part)
+        entry["question"] = " ".join(part for part in questions if part)
     return entries, errors
 
 
@@ -1467,7 +1472,10 @@ def build_context(task, budget):
         for index, entry in enumerate(shown):
             if len(goals) > goal_keep and index == 1:
                 lines.append(f"  ……中间 {len(goals) - goal_keep} 条见 goal.md")
-            lines.append(f"  {entry['id']} {entry['date']}（{entry['source']}）：{truncate(entry['text'], goal_width)}")
+            answer = truncate(entry["text"], goal_width)
+            if entry["question"]:
+                answer = f"问：{truncate(entry['question'], goal_width)} 答：{answer}"
+            lines.append(f"  {entry['id']} {entry['date']}（{entry['source']}）：{answer}")
         lines.append(f"状态：{summary_line(report['counts'])}")
         for entry in problems[:problem_limit]:
             reason = entry["reasons"][0] if entry["reasons"] else ""

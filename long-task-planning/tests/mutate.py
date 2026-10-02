@@ -297,6 +297,12 @@ mutant("brief status ignores the display order",
 mutant("brief and json allowed together",
        [("    status_format = status.add_mutually_exclusive_group()\n", "    status_format = status\n")],
        ["StatusTests.test_brief_status_prints_one_line_per_item"])
+mutant("goal question not shown",
+       [('            if entry["question"]:\n', '            if False:\n')],
+       ["ContextHookTests.test_context_shows_the_question_with_the_answer"])
+mutant("goal question repeated in the answer",
+       [("        lines = [line for line in lines if not line.strip().startswith(QUESTION_PREFIX)]\n", "")],
+       ["ContextHookTests.test_context_shows_the_question_with_the_answer"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

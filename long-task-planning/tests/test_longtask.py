@@ -1146,6 +1146,19 @@ class ContextHookTests(Base):
         self.assertIn("把 T-A1 放进当前批次", output)
         self.assertLessEqual(len(output), CONTEXT_BUDGET)
 
+    def test_context_shows_the_question_with_the_answer(self):
+        repo = self.make_repo()
+        self.init_task(repo, [item("T-A1", [tag_check("T-A1")])])
+        with open(repo / TASK / "goal.md", "a", encoding="utf-8") as handle:
+            handle.write("\n## G2 2026-10-02 用户选择\n\n问题：D12 要不要算进第二轮？\n\n> 算进去 (Recommended)\n> 和其他缺陷一起修。\n"
+                         "\n## G3 2026-10-02 转述：会话记录\n\n问题：要不要现在发布？\n先不发\n")
+        code, output = self.lint(repo)
+        self.assertEqual(code, 0, output)
+        output = self.hook(repo, "startup")
+        self.assertIn("G2 2026-10-02（用户选择）：问：D12 要不要算进第二轮？ 答：算进去 (Recommended) 和其他缺陷一起修。", output)
+        self.assertIn("G1 2026-10-01（用户原话）：修完所有发现的缺陷\n", output)
+        self.assertIn("G3 2026-10-02（转述：会话记录）：问：要不要现在发布？ 答：先不发\n", output)
+
     def test_context_stays_within_budget(self):
         repo = self.make_repo()
         entries = [(f"G{n}", "2026-10-01", "用户原话", f"第 {n} 条目标" + "很长的说明" * 40) for n in range(1, 31)]
