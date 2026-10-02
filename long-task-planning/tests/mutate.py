@@ -23,11 +23,59 @@ mutant("junk files counted",
        [('    return name in JUNK_NAMES or name.startswith("._")', '    return False')],
        ["FingerprintTests.test_finder_files_are_ignored_without_global_excludes"])
 mutant("configured excludes ignored",
-       [('    for value in excludes:\n        prefix = value.rstrip("/")', '    for value in []:\n        prefix = value.rstrip("/")')],
+       [('    return under_any(path, excludes)', '    return False')],
        ["FingerprintTests.test_configured_exclude_is_ignored"])
 mutant("fingerprint command ignores task excludes",
-       [('        excludes += [value for value in excludes_of(load_items(task)) if value not in excludes]', '        pass')],
+       [('        excludes += [value for value in path_list(data, "exclude") if value not in excludes]', '        pass')],
        ["FingerprintTests.test_configured_exclude_is_ignored"])
+mutant("include ignored",
+       [('    return excluded(path, excludes) or (bool(includes) and not under_any(path, includes))', '    return excluded(path, excludes)')],
+       ["IncludeTests.test_include_limits_the_fingerprint_to_listed_paths"])
+mutant("include matches names that only start with the prefix",
+       [('        if prefix and (path == prefix or path.startswith(prefix + "/")):', '        if prefix and path.startswith(prefix):')],
+       ["IncludeTests.test_include_limits_the_fingerprint_to_listed_paths"])
+mutant("exclude ignored inside include",
+       [('    return excluded(path, excludes) or (bool(includes)', '    return excluded(path, []) or (bool(includes)')],
+       ["IncludeTests.test_include_limits_the_fingerprint_to_listed_paths"])
+mutant("fingerprint command ignores task include",
+       [('        includes += [value for value in path_list(data, "include") if value not in includes]', '        pass')],
+       ["IncludeTests.test_fingerprint_command_reads_include_and_accepts_the_flag"])
+mutant("include flag ignored",
+       [('    includes = list(args.include or [])', '    includes = []')],
+       ["IncludeTests.test_fingerprint_command_reads_include_and_accepts_the_flag"])
+mutant("include paths unchecked in lint",
+       [('        errors += include_problems(task.repo, path_list(data, "include"))', '        pass')],
+       ["IncludeTests.test_include_paths_must_exist"])
+mutant("include problems not shown by status",
+       [(' + self.record_errors + include_problems(self.repo, self.scope[0]),', ' + self.record_errors,')],
+       ["IncludeTests.test_include_paths_must_exist"])
+mutant("include type unchecked",
+       [('    if not (isinstance(include, list) and all(isinstance(value, str) for value in include)):', '    if False:')],
+       ["IncludeTests.test_include_paths_must_exist"])
+mutant("every include path reported missing",
+       [('            for value in includes if not any(under_any(path, [value]) for path in files)]', '            for value in includes]')],
+       ["IncludeTests.test_include_paths_must_exist"])
+mutant("status hides the include paths",
+       [('    if report["include"]:\n        lines.insert', '    if False:\n        lines.insert')],
+       ["IncludeTests.test_status_shows_the_include_paths"])
+mutant("scope not recorded",
+       [('    fingerprint["scope"] = scope_record(scope)\n', '')],
+       ["IncludeTests.test_scope_change_is_named_instead_of_code_change"])
+mutant("scope change reported as a code change",
+       [('        if recorded is not None and recorded != current:', '        if False:')],
+       ["IncludeTests.test_scope_change_is_named_instead_of_code_change", "IncludeTests.test_remote_fingerprint_with_other_scope_is_named"])
+mutant("scope compared unsorted",
+       [('    return {"include": sorted(set(includes)), "exclude": sorted(set(excludes))}', '    return {"include": list(includes), "exclude": list(excludes)}')],
+       ["IncludeTests.test_scope_change_is_named_instead_of_code_change"])
+mutant("empty file list left unexplained",
+       [('        elif not changed:\n            reason = (', '        elif False:\n            reason = (')],
+       ["IncludeTests.test_scope_change_is_named_instead_of_code_change"])
+mutant("remote scope not read",
+       [('        recorded = scope_record((data.get("includes") or [], data["excludes"] or [])) if "excludes" in data else None', '        recorded = None')],
+       ["IncludeTests.test_remote_fingerprint_with_other_scope_is_named"])
+mutant("remote scope hint missing",
+       [('            if record.get("host") != local_host():\n                reason +=', '            if False:\n                reason +=')],
+       ["IncludeTests.test_remote_fingerprint_with_other_scope_is_named"])
 mutant("mode always 100644",
        [('    return "100755" if info.st_mode & stat.S_IXUSR else "100644"', '    return "100644"')],
        ["FingerprintTests.test_mode_change_changes_fingerprint"])
@@ -35,19 +83,19 @@ mutant("deleted file kept",
        [('            if not os.path.lexists(repo / path):\n                entries.pop(path, None)', '            if False:\n                entries.pop(path, None)')],
        ["FingerprintTests.test_deleted_tracked_file_changes_fingerprint"])
 mutant("untracked files skipped",
-       [('    pending.update(path for path in untracked_files(repo) if not excluded(path, excludes))', '    pass')],
+       [('    pending.update(path for path in untracked_files(repo) if not outside_scope(path, scope))', '    pass')],
        ["FingerprintTests.test_untracked_file_counts_and_ignored_file_does_not"])
 mutant("porcelain diff for worktree changes",
        [('    pending.update(path for path in split_z(git_out(repo, "diff-files", "--name-only", "-z"))', '    pending.update(path for path in split_z(git_out(repo, "diff", "--name-only", "-z", "--no-renames"))')],
        ["FingerprintTests.test_fingerprint_does_not_write_into_git_directory"])
 mutant("porcelain diff for changed files",
-       [('            old = tree_entries(self.repo, commit, self.excludes)\n            result = sorted(path for path in set(old) | set(self.entries) if old.get(path) != self.entries.get(path))', '            result = sorted(split_z(git_out(self.repo, "diff", "--name-only", "-z", "--no-renames", commit)))')],
+       [('            old = tree_entries(self.repo, commit, self.scope)\n            result = sorted(path for path in set(old) | set(self.entries) if old.get(path) != self.entries.get(path))', '            result = sorted(split_z(git_out(self.repo, "diff", "--name-only", "-z", "--no-renames", commit)))')],
        ["StatusTests.test_reading_commands_do_not_write_into_git_directory"])
 mutant("global ignore rules disabled",
        [('    return split_z(git_out(repo, "ls-files", "-o", "--exclude-standard", "-z"))', '    return split_z(git_out(repo, "-c", "core.excludesFile=/dev/null", "ls-files", "-o", "--exclude-standard", "-z"))')],
        ["FingerprintTests.test_global_ignore_rules_apply_like_git_status"])
 mutant("dirty always false",
-       [('    dirty = not head or digest_lines(tree_entries(repo, head, excludes)) != fingerprint', '    dirty = not head')],
+       [('    dirty = not head or digest_lines(tree_entries(repo, head, scope)) != fingerprint', '    dirty = not head')],
        ["FingerprintTests"])
 mutant("remote host accepted without fingerprint file",
        [('    if args.host and args.host != local:\n        raise Fail(', '    if False:\n        raise Fail(')],

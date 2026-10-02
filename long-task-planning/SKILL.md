@@ -20,6 +20,7 @@ The model forgets; files and scripts do not. This skill keeps three things apart
 - [Full mode files](#full-mode-files)
 - [Completion conditions](#completion-conditions)
   - [Documentation-only changes](#documentation-only-changes)
+  - [Several projects in one repository](#several-projects-in-one-repository)
 - [Recording evidence](#recording-evidence)
 - [Reading state](#reading-state)
 - [Replanning](#replanning)
@@ -91,12 +92,20 @@ List path prefixes that no test reads in `items.json` under `fingerprint.test_ex
 
 `status` then shows `测试跑在 <commit> 上，之后只改了测试不读的文件` with the files. Failures follow the same rule, so editing a document never hides a failure. Commands, reviews and doc checks ignore `test_exclude`; a documentation validator still has to run again. `fingerprint.exclude` is different: it removes paths from the fingerprint for every check.
 
+### Several projects in one repository
+
+When one repository holds several independent projects, for example a collection of skills, a change to another project ages this task's evidence. List the paths this task depends on in `items.json` under `fingerprint.include`, for example `["skill-a/", "README.md"]`: only files under them enter the fingerprint, and `fingerprint.exclude` still removes paths inside them.
+
+A path missing from `include` never ages any evidence. So `lint` refuses an entry that matches no file, `status` warns about it, and `status` shows the list on its second line (`指纹只看：…`). In a single-project repository use `exclude` instead: a forgotten exclude only costs a rerun.
+
+Set `include` when the task starts. Every record stores the paths its fingerprint used (`scope`); after `include` or `exclude` changes, `status` shows older records as 旧版本验证过 with `记录时的指纹范围（…）和现在的设置（…）不同`, and they need a rerun.
+
 ## Recording evidence
 
 - **Tests on this machine**: produce a JSON (Vitest `--reporter=json`) or JUnit XML report, then `$LT record --vitest <report> --by <agent> --ran "<command>"` (or `--junit`). Test file paths in the report may be absolute or from another checkout; they are matched to repository files by suffix.
 - **Tests on another host** (for example the cloud test server). The fingerprint must be computed there, on the synced code, **before** the tests run. [references/remote-evidence.md](references/remote-evidence.md) has the same steps in Chinese, ready to paste into a brief:
   1. Copy `longtask.py` once to a task-owned directory on that host.
-  2. After syncing the code: `LONGTASK_HOST=<host name used in checks> python3 <copy> --repo <checkout> fingerprint --json > <outside>/fp.json`. Write `fp.json` and reports outside the checkout or into a git-ignored directory; a new file inside the checkout becomes part of the fingerprint. If the checkout lacks the task directory, add `--exclude <prefix>` for every `fingerprint.exclude` entry.
+  2. After syncing the code: `LONGTASK_HOST=<host name used in checks> python3 <copy> --repo <checkout> fingerprint --json > <outside>/fp.json`. Write `fp.json` and reports outside the checkout or into a git-ignored directory; a new file inside the checkout becomes part of the fingerprint. If the checkout lacks the task directory, add `--include <prefix>` for every `fingerprint.include` entry and `--exclude <prefix>` for every `fingerprint.exclude` entry; `status` names the difference when a fingerprint file used other paths.
   3. Run the tests with a JSON or JUnit reporter; bring `fp.json` and the report back.
   4. `$LT record --vitest <report> --fingerprint-file fp.json --by <agent> --ran "<command>"`.
 
@@ -182,7 +191,7 @@ Then run `$LT lint` and commit the task directory.
 | `record --vitest F \| --junit F \| --command C --exit-code N \| --review … \| --retract ID --reason R` | Append evidence; `--fingerprint-file`, `--host`, `--by`, `--ran`, `--note`, `--artifact`; reviews also `--commit` |
 | `lint [--task T]` | Check the rules in [Full mode files](#full-mode-files) |
 | `context [--task T]` | Print what the hook injects |
-| `fingerprint [--json \| --list] [--exclude P]` | Current fingerprint, or the per-file lines it hashes |
+| `fingerprint [--json \| --list] [--include P] [--exclude P]` | Current fingerprint, or the per-file lines it hashes |
 | `check-brief <brief> [--task T]` | Check the batch a brief names (ID-led bullets in its `范围` section) before an agent starts |
 | `find-tests --vitest F \| --junit F [--commit C] [--grep W]` | Print paste-ready `file` + `name` checks for the tests in a report |
 | `hook` | Session-start hook; reads the hook JSON on stdin |
@@ -191,7 +200,7 @@ Global option `--repo <path>`. `--task` is needed only when several tasks are ac
 
 ## Limits
 
-- The fingerprint covers what git sees: tracked files plus untracked files not ignored by `.gitignore`, `.git/info/exclude` or the user's global ignore file. Ignored files (dependencies, build output) and the environment (tool versions, OS, environment variables) are outside it; use `host` on checks when the environment matters.
+- The fingerprint covers what git sees: tracked files plus untracked files not ignored by `.gitignore`, `.git/info/exclude` or the user's global ignore file, limited to `fingerprint.include` when it is set and without `fingerprint.exclude`. Ignored files (dependencies, build output) and the environment (tool versions, OS, environment variables) are outside it; use `host` on checks when the environment matters.
 - `status` proves only that the listed checks pass. Whether the item list is complete is a judgment; state it in the final report.
 - JUnit test files are found from the `file` attribute, a path-like `classname`, or a Python module `classname`; other forms may not map, and `record` warns.
 - Reading commands use git plumbing that never writes `.git`; only `status` writes its cache under `.git/longtask/`.

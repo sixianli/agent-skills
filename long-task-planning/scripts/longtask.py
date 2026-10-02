@@ -278,10 +278,24 @@ def load_items(task):
     return data
 
 
-def excludes_of(data, key="exclude"):
+def path_list(data, key):
     section = data.get("fingerprint") or {}
     values = section.get(key) or []
     return [value for value in values if isinstance(value, str)] if isinstance(values, list) else []
+
+
+def scope_of(data):
+    return path_list(data, "include"), path_list(data, "exclude")
+
+
+def scope_record(scope):
+    includes, excludes = scope
+    return {"include": sorted(set(includes)), "exclude": sorted(set(excludes))}
+
+
+def describe_scope(scope):
+    text = "只看 " + "、".join(scope["include"]) if scope["include"] else "看全部文件"
+    return text + ("，不算 " + "、".join(scope["exclude"]) if scope["exclude"] else "")
 
 
 def load_records(task):
@@ -328,14 +342,29 @@ def is_junk(path):
     return name in JUNK_NAMES or name.startswith("._")
 
 
-def excluded(path, excludes):
-    if path.startswith(TASKS_DIR + "/") or is_junk(path):
-        return True
-    for value in excludes:
+def under_any(path, prefixes):
+    for value in prefixes:
         prefix = value.rstrip("/")
         if prefix and (path == prefix or path.startswith(prefix + "/")):
             return True
     return False
+
+
+def excluded(path, excludes):
+    if path.startswith(TASKS_DIR + "/") or is_junk(path):
+        return True
+    return under_any(path, excludes)
+
+
+def outside_scope(path, scope):
+    includes, excludes = scope
+    return excluded(path, excludes) or (bool(includes) and not under_any(path, includes))
+
+
+def include_problems(repo, includes):
+    files = repo_files(repo)
+    return [f"items.json 的 fingerprint.include 里的 {value} 在仓库里没有对应的文件（写错了？）：它下面的改动不会进指纹"
+            for value in includes if not any(under_any(path, [value]) for path in files)]
 
 
 def blob_of_bytes(data):
@@ -379,19 +408,19 @@ def digest_lines(entries):
     return hashlib.sha256("\n".join(fingerprint_lines(entries)).encode("utf-8", "surrogateescape")).hexdigest()
 
 
-def worktree_entries(repo, excludes):
+def worktree_entries(repo, scope):
     entries, pending = {}, set()
     for line in split_z(git_out(repo, "ls-files", "-s", "-z")):
         meta, path = line.split("\t", 1)
         mode, blob, stage = meta.split()
-        if excluded(path, excludes):
+        if outside_scope(path, scope):
             continue
         if stage != "0":
             pending.add(path)
         entries[path] = (mode, blob)
     pending.update(path for path in split_z(git_out(repo, "diff-files", "--name-only", "-z"))
-                   if not excluded(path, excludes))
-    pending.update(path for path in untracked_files(repo) if not excluded(path, excludes))
+                   if not outside_scope(path, scope))
+    pending.update(path for path in untracked_files(repo) if not outside_scope(path, scope))
     hashed = hash_paths(repo, sorted(pending))
     for path in pending:
         blob = hashed.get(path)
@@ -403,22 +432,22 @@ def worktree_entries(repo, excludes):
     return entries
 
 
-def tree_entries(repo, commit, excludes):
+def tree_entries(repo, commit, scope):
     entries = {}
     for line in split_z(git_out(repo, "ls-tree", "-r", "-z", "--full-tree", commit)):
         meta, path = line.split("\t", 1)
         mode, _, blob = meta.split()
-        if not excluded(path, excludes):
+        if not outside_scope(path, scope):
             entries[path] = (mode, blob)
     return entries
 
 
-def compute_fingerprint(repo, excludes, entries=None):
+def compute_fingerprint(repo, scope, entries=None):
     if entries is None:
-        entries = worktree_entries(repo, excludes)
+        entries = worktree_entries(repo, scope)
     fingerprint = digest_lines(entries)
     head = git(repo, "rev-parse", "--verify", "-q", "HEAD", check=False).stdout.strip()
-    dirty = not head or digest_lines(tree_entries(repo, head, excludes)) != fingerprint
+    dirty = not head or digest_lines(tree_entries(repo, head, scope)) != fingerprint
     return {"fingerprint": fingerprint, "commit": head, "dirty": dirty}
 
 
@@ -600,12 +629,14 @@ def base_record(kind, fingerprint, args):
         "host": fingerprint["host"],
         "by": args.by,
     }
+    if fingerprint.get("scope") is not None:
+        record["scope"] = fingerprint["scope"]
     if args.note:
         record["note"] = args.note
     return record
 
 
-def record_fingerprint(task, args, excludes):
+def record_fingerprint(task, args, scope):
     local = local_host()
     if args.fingerprint_file:
         try:
@@ -621,11 +652,14 @@ def record_fingerprint(task, args, excludes):
         host = data.get("host") or args.host or local
         if args.host and args.host != host:
             raise Fail(f"--host {args.host} 和指纹文件里的主机 {host} 不一致")
-        return {"fingerprint": data["fingerprint"], "commit": data["commit"], "dirty": bool(data["dirty"]), "host": host}
+        recorded = scope_record((data.get("includes") or [], data["excludes"] or [])) if "excludes" in data else None
+        return {"fingerprint": data["fingerprint"], "commit": data["commit"], "dirty": bool(data["dirty"]), "host": host,
+                "scope": recorded}
     if args.host and args.host != local:
         raise Fail("测试在别的机器上跑时，必须用 --fingerprint-file 传入在那台机器上运行 `longtask.py fingerprint --json` 得到的文件")
-    fingerprint = compute_fingerprint(task.repo, excludes)
+    fingerprint = compute_fingerprint(task.repo, scope)
     fingerprint["host"] = local
+    fingerprint["scope"] = scope_record(scope)
     return fingerprint
 
 
@@ -738,7 +772,7 @@ def cmd_record(args):
     repo = repo_from(args)
     task = resolve_task(repo, args.task)
     data = load_items(task)
-    excludes = excludes_of(data)
+    scope = scope_of(data)
     if args.commit and not args.review:
         raise Fail("--commit 只能和 --review 一起用：补录审核时按那个提交里的文件内容记录")
     if args.retract:
@@ -747,12 +781,12 @@ def cmd_record(args):
             raise Fail(f"证据 {args.retract} 不存在")
         if not args.reason:
             raise Fail("撤回证据必须用 --reason 写明原因")
-        record = base_record("retract", record_fingerprint(task, args, excludes), args)
+        record = base_record("retract", record_fingerprint(task, args, scope), args)
         record.update({"target": args.retract, "reason": args.reason})
     elif args.command is not None:
         if args.exit_code is None:
             raise Fail("--command 需要同时给出 --exit-code")
-        record = base_record("command", record_fingerprint(task, args, excludes), args)
+        record = base_record("command", record_fingerprint(task, args, scope), args)
         record.update({"command": args.command, "exit_code": args.exit_code})
         if args.artifact:
             record["artifacts"] = artifacts_of(repo, args.artifact)
@@ -777,12 +811,12 @@ def cmd_record(args):
         if missing:
             where = f"在提交 {reviewed[:7]} 里" if reviewed else ""
             raise Fail(f"文件{where}不存在：{', '.join(missing)}")
-        record = base_record("review", record_fingerprint(task, args, excludes), args)
+        record = base_record("review", record_fingerprint(task, args, scope), args)
         record.update({"items": item_ids, "verdict": args.verdict, "files": {path: hashes[path] for path in paths}})
         if reviewed:
             record["reviewed_commit"] = reviewed
     else:
-        record = test_record(task, data, args, record_fingerprint(task, args, excludes))
+        record = test_record(task, data, args, record_fingerprint(task, args, scope))
     append_record(task, record)
     print(describe_record(record))
     for path in record.get("unresolved_files", []):
@@ -815,10 +849,10 @@ class Evaluation:
         self.goal_ids = {entry["id"] for entry in self.goal_entries}
         self.all_records, self.record_errors = load_records(task)
         self.records = in_time_order(effective_records(self.all_records))
-        self.excludes = excludes_of(self.data)
-        self.test_excludes = excludes_of(self.data, "test_exclude")
-        self.entries = worktree_entries(self.repo, self.excludes)
-        self.fp = compute_fingerprint(self.repo, self.excludes, self.entries)
+        self.scope = scope_of(self.data)
+        self.test_excludes = path_list(self.data, "test_exclude")
+        self.entries = worktree_entries(self.repo, self.scope)
+        self.fp = compute_fingerprint(self.repo, self.scope, self.entries)
         tags = {check["tag"] for entry in self.items for check in (entry.get("done_when") or [])
                 if isinstance(check, dict) and check.get("type") == "test" and isinstance(check.get("tag"), str)}
         self.tag_files = find_tag_files(self.repo, tags)
@@ -832,7 +866,7 @@ class Evaluation:
         if not commit or git(self.repo, "cat-file", "-e", f"{commit}^{{commit}}", check=False).returncode != 0:
             result = None
         else:
-            old = tree_entries(self.repo, commit, self.excludes)
+            old = tree_entries(self.repo, commit, self.scope)
             result = sorted(path for path in set(old) | set(self.entries) if old.get(path) != self.entries.get(path))
         self._changed[commit] = result
         return result
@@ -841,12 +875,21 @@ class Evaluation:
         changed = self.changed_since(record.get("commit"))
         when = short_time(record["ran_at"]) if record.get("ran_at") else f"记录于 {short_time(record.get('time'))}"
         where = f"{(record.get('commit') or '')[:7]}（{when}，{record.get('host')}）"
+        recorded, current = record.get("scope"), scope_record(self.scope)
+        if recorded is not None and recorded != current:
+            reason = f"{what}在 {where} 上通过，记录时的指纹范围（{describe_scope(recorded)}）和现在的设置（{describe_scope(current)}）不同，要在现在的设置下重跑"
+            if record.get("host") != local_host():
+                reason += "；在别的机器上算指纹时，要带上同样的 --include 和 --exclude"
+            return "older", reason, []
         reason = f"{what}在 {where} 上通过，之后代码改过"
         if changed is None:
             reason += "；记录里的提交在本地找不到，列不出改了哪些文件"
             changed = []
         elif record.get("dirty"):
             reason += "；记录时有未提交改动，列出的文件可能偏多"
+        elif not changed:
+            reason = (f"{what}在 {where} 上通过，但指纹和现在不同；按现在的指纹设置比较，记录时的提交和现在没有文件差别："
+                      "测试机上的文件和提交不同，或指纹设置改过，都会这样")
         return "older", reason, changed
 
     def host_ok(self, record, host):
@@ -857,7 +900,7 @@ class Evaluation:
 
     def tree_digest(self, commit):
         if commit not in self._tree_digests:
-            self._tree_digests[commit] = digest_lines(tree_entries(self.repo, commit, self.excludes))
+            self._tree_digests[commit] = digest_lines(tree_entries(self.repo, commit, self.scope))
         return self._tree_digests[commit]
 
     def tested_commit(self, record):
@@ -1131,7 +1174,8 @@ class Evaluation:
             "counts": counts,
             "items": items,
             "changes_since_last": [],
-            "warnings": self.goal_errors + self.record_errors,
+            "include": self.scope[0],
+            "warnings": self.goal_errors + self.record_errors + include_problems(self.repo, self.scope[0]),
         }
 
 
@@ -1185,6 +1229,8 @@ def format_status(report, previous):
         f"代码：HEAD {(report['commit'] or '（还没有提交）')[:7]}{dirty}；指纹 {report['fingerprint'][:12]}",
         summary_line(report["counts"]),
     ]
+    if report["include"]:
+        lines.insert(2, f"指纹只看：{'、'.join(report['include'])}")
     for status in DISPLAY_ORDER:
         group = [entry for entry in report["items"] if entry["status"] == status]
         if not group:
@@ -1342,6 +1388,9 @@ def validate_items(data, goal_ids):
     fingerprint = data.get("fingerprint")
     if fingerprint is not None and not (isinstance(fingerprint, dict) and isinstance(fingerprint.get("exclude", []), list)):
         errors.append("items.json 的 fingerprint.exclude 必须是路径列表")
+    include = fingerprint.get("include", []) if isinstance(fingerprint, dict) else []
+    if not (isinstance(include, list) and all(isinstance(value, str) for value in include)):
+        errors.append('items.json 的 fingerprint.include 必须是路径列表，例如 ["skill-a/", "README.md"]')
     test_exclude = fingerprint.get("test_exclude", []) if isinstance(fingerprint, dict) else []
     if not (isinstance(test_exclude, list) and all(isinstance(value, str) for value in test_exclude)):
         errors.append('items.json 的 fingerprint.test_exclude 必须是路径列表，例如 ["docs/", "AGENTS.md"]')
@@ -1418,6 +1467,7 @@ def lint_task(task):
         errors.append(str(error))
     if data:
         errors += validate_items(data, goal_ids)
+        errors += include_problems(task.repo, path_list(data, "include"))
         if not data["items"]:
             warnings.append("items.json 里还没有条目")
     records, record_errors = load_records(task)
@@ -1585,6 +1635,7 @@ def cmd_context(args):
 
 def cmd_fingerprint(args):
     repo = repo_from(args)
+    includes = list(args.include or [])
     excludes = list(args.exclude or [])
     task = None
     if args.task:
@@ -1595,14 +1646,18 @@ def cmd_fingerprint(args):
             raise Fail("有多个进行中的任务，请用 --task 指定：" + "、".join(entry.name for entry in active))
         task = active[0] if active else None
     if task:
-        excludes += [value for value in excludes_of(load_items(task)) if value not in excludes]
-    entries = worktree_entries(repo, excludes)
+        data = load_items(task)
+        includes += [value for value in path_list(data, "include") if value not in includes]
+        excludes += [value for value in path_list(data, "exclude") if value not in excludes]
+    scope = (includes, excludes)
+    entries = worktree_entries(repo, scope)
     if args.list:
         for line in fingerprint_lines(entries):
             sys.stdout.buffer.write(line.encode("utf-8", "surrogateescape") + b"\n")
         return 0
-    result = compute_fingerprint(repo, excludes, entries)
-    result.update({"host": local_host(), "time": iso(now()), "excludes": excludes, "task": task.name if task else None})
+    result = compute_fingerprint(repo, scope, entries)
+    result.update({"host": local_host(), "time": iso(now()), "includes": includes, "excludes": excludes,
+                   "task": task.name if task else None})
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
     else:
@@ -1770,6 +1825,7 @@ def build_parser():
 
     fingerprint = commands.add_parser("fingerprint", help="算当前代码内容指纹")
     fingerprint.add_argument("--task")
+    fingerprint.add_argument("--include", action="append")
     fingerprint.add_argument("--exclude", action="append")
     output = fingerprint.add_mutually_exclusive_group()
     output.add_argument("--json", action="store_true")

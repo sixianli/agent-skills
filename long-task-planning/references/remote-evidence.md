@@ -34,7 +34,7 @@
 2. 每次同步代码后、跑测试前，在测试机上算代码指纹：
    `LONGTASK_HOST=<主机名> python3 <脚本副本> --repo <检出目录> fingerprint --json > <证据目录>/fp.json`
    - 指纹文件和测试报告都写在检出目录之外，或写进 git 忽略的目录：检出目录里多出来的新文件会被算进指纹。
-   - 检出目录里有任务目录 `.agents/tasks/<任务名>/` 时，脚本自己读 items.json 里的 `fingerprint.exclude`（不参与指纹计算的路径），不用加参数。没有任务目录时，`fingerprint.exclude` 里的每一项都要加一个 `--exclude <路径前缀>`，放在 `fingerprint` 后面。`fingerprint.test_exclude` 不影响指纹，不用加。
+   - 检出目录里有任务目录 `.agents/tasks/<任务名>/` 时，脚本自己读 items.json 里的 `fingerprint.include`（只让这些路径参与指纹计算）和 `fingerprint.exclude`（不参与指纹计算的路径），不用加参数。没有任务目录时，`fingerprint.include` 里的每一项都要加一个 `--include <路径前缀>`，`fingerprint.exclude` 里的每一项都要加一个 `--exclude <路径前缀>`，放在 `fingerprint` 后面。`fingerprint.test_exclude` 不影响指纹，不用加。
    - 检出目录里有多个进行中的任务时，加 `--task <任务名>`。
 3. 跑测试，把 JSON（Vitest 这个 JavaScript 测试框架用 `--reporter=json`）或 JUnit XML 报告写到 `<证据目录>`：`<测试命令>`。
    - 让测试命令自己跑完再停，不要中途终止：记录证据需要完整报告。
@@ -49,7 +49,7 @@
 运行 `status`。测试机的指纹和本机不同时，这些记录显示“旧版本验证过”，意思是测试机测的不是本机这份代码。找出不同的文件：在两台机器上分别运行 `python3 <脚本> --repo <目录> fingerprint --list > <文件>`，带回同一台机器后用 `diff` 比较。常见原因：
 
 - 同步时漏了文件，或测试机上多了未提交的新文件；
-- 测试机没有任务目录，又漏加了 `--exclude`，两边排除的路径不一样；
+- 测试机没有任务目录，又漏加了 `--include` 或 `--exclude`，两边算指纹的路径不一样。这时 `status` 会直接写“记录时的指纹范围（…）和现在的设置（…）不同”；
 - 在测试机上改过代码。代码只在本机改，再同步过去。
 
 ## 命令检查和环境检查

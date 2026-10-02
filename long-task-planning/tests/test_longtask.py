@@ -367,6 +367,117 @@ class FingerprintTests(Base):
         self.assertEqual(digest, self.fingerprint(repo)["fingerprint"])
 
 
+class IncludeTests(Base):
+    def include_repo(self, checks=None, scope=None):
+        repo = self.make_repo()
+        write(repo, "other/x.txt", "x\n")
+        write(repo, "src/gen/z.ts", "z\n")
+        self.commit_all(repo, "more")
+        extra = {"fingerprint": scope} if scope else None
+        self.init_task(repo, [item("T-A1", checks or [tag_check("T-A1")])], extra=extra)
+        return repo
+
+    def host_checkout(self, repo):
+        checkout = self.root / "checkout"
+        self.git(self.root, "clone", "-q", str(repo), str(checkout))
+        shutil.rmtree(checkout / ".agents")
+        write(checkout, "other/x.txt", "changed on the test host\n")
+        return checkout
+
+    def fingerprint_file_from(self, checkout, *args):
+        data = self.fingerprint(checkout, *args)
+        data["host"] = "cloud"
+        path = self.report_path("fp.json")
+        path.write_text(json.dumps(data), encoding="utf-8")
+        return path
+
+    def test_include_limits_the_fingerprint_to_listed_paths(self):
+        repo = self.include_repo(scope={"include": ["src", "test/"], "exclude": ["src/gen/"]})
+        lines = self.ok(self.cli(repo, "fingerprint", "--list")).stdout.splitlines()
+        self.assertEqual([line.split(" ", 2)[2] for line in lines], ["src/app.ts", "test/app.test.ts"])
+        self.record_vitest(repo, self.passing(repo))
+        before = self.fingerprint(repo)["fingerprint"]
+        write(repo, "other/x.txt", "x2\n")
+        write(repo, "third/y.txt", "y\n")
+        write(repo, "src/gen/z.ts", "z2\n")
+        write(repo, "srcx/a.txt", "a\n")
+        self.assertEqual(self.fingerprint(repo)["fingerprint"], before)
+        self.assertEqual(self.status_of(repo, "T-A1"), "verified")
+        write(repo, "src/app.ts", "export const x = 9;\n")
+        entry = self.item_of(self.status(repo)[1], "T-A1")
+        self.assertEqual(entry["status"], "older")
+        self.assertEqual(entry["changed_files"], ["src/app.ts"])
+
+    def test_include_paths_must_exist(self):
+        repo = self.include_repo(scope={"include": ["src/", "scr/"]})
+        code, output = self.lint(repo)
+        self.assertEqual(code, 1, output)
+        self.assertIn("fingerprint.include 里的 scr/", output)
+        self.assertNotIn("fingerprint.include 里的 src/", output)
+        warnings = self.status(repo)[1]["warnings"]
+        self.assertTrue(any("scr/" in warning for warning in warnings), warnings)
+        self.set_items(repo, [item("T-A1", [tag_check("T-A1")])], extra={"fingerprint": {"include": "src/"}})
+        code, output = self.lint(repo)
+        self.assertEqual(code, 1, output)
+        self.assertIn("fingerprint.include", output)
+        self.set_items(repo, [item("T-A1", [tag_check("T-A1")])], extra={"fingerprint": {"include": ["src/", "test/app.test.ts"]}})
+        code, output = self.lint(repo)
+        self.assertEqual(code, 0, output)
+
+    def test_fingerprint_command_reads_include_and_accepts_the_flag(self):
+        repo = self.include_repo(scope={"include": ["src/", "test/"]})
+        local = self.fingerprint(repo)
+        self.assertEqual(local["includes"], ["src/", "test/"])
+        checkout = self.host_checkout(repo)
+        self.assertNotEqual(self.fingerprint(checkout)["fingerprint"], local["fingerprint"])
+        flagged = self.fingerprint(checkout, "--include", "src/", "--include", "test/")
+        self.assertEqual(flagged["fingerprint"], local["fingerprint"])
+        self.assertEqual(flagged["includes"], ["src/", "test/"])
+
+    def test_status_shows_the_include_paths(self):
+        repo = self.include_repo(scope={"include": ["src/", "test/"]})
+        text = self.ok(self.cli(repo, "status", "--no-save")).stdout
+        self.assertIn("指纹只看：src/、test/", text)
+        self.assertEqual(self.status(repo)[1]["include"], ["src/", "test/"])
+        self.set_items(repo, [item("T-A1", [tag_check("T-A1")])], extra={"fingerprint": {}})
+        self.assertNotIn("指纹只看", self.ok(self.cli(repo, "status", "--no-save")).stdout)
+
+    def test_scope_change_is_named_instead_of_code_change(self):
+        checks = [{"type": "command", "run": "make check"}]
+        repo = self.include_repo(checks=checks)
+        self.ok(self.cli(repo, "record", "--command", "make check", "--exit-code", "0"))
+        self.assertEqual(self.records(repo)[-1]["scope"], {"include": [], "exclude": []})
+        self.assertEqual(self.status_of(repo, "T-A1"), "verified")
+        self.set_items(repo, [item("T-A1", checks)], extra={"fingerprint": {"include": ["test/", "src/"], "exclude": ["src/gen/"]}})
+        entry = self.item_of(self.status(repo)[1], "T-A1")
+        self.assertEqual(entry["status"], "older")
+        reasons = " ".join(entry["reasons"])
+        self.assertIn("指纹范围", reasons)
+        self.assertIn("只看 src/、test/，不算 src/gen/", reasons)
+        self.assertNotIn("之后代码改过", reasons)
+        self.assertEqual(entry["changed_files"], [])
+        path = repo / TASK / "evidence.jsonl"
+        record = json.loads(path.read_text(encoding="utf-8").splitlines()[-1])
+        del record["scope"]
+        path.write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
+        reasons = " ".join(self.item_of(self.status(repo)[1], "T-A1")["reasons"])
+        self.assertIn("没有文件差别", reasons)
+
+    def test_remote_fingerprint_with_other_scope_is_named(self):
+        repo = self.include_repo(scope={"include": ["src/", "test/"]})
+        checkout = self.host_checkout(repo)
+        record = self.record_vitest(repo, self.passing(repo), "--fingerprint-file", str(self.fingerprint_file_from(checkout)))
+        self.assertEqual(record["scope"], {"include": [], "exclude": []})
+        entry = self.item_of(self.status(repo)[1], "T-A1")
+        self.assertEqual(entry["status"], "older")
+        reasons = " ".join(entry["reasons"])
+        self.assertIn("指纹范围", reasons)
+        self.assertIn("--include", reasons)
+        fp_file = self.fingerprint_file_from(checkout, "--include", "src/", "--include", "test/")
+        self.record_vitest(repo, self.passing(repo), "--fingerprint-file", str(fp_file))
+        self.assertEqual(self.status_of(repo, "T-A1"), "verified")
+
+
 class RecordTests(Base):
     def setUp(self):
         super().setUp()

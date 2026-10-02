@@ -73,6 +73,7 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 
 - `prefix`: letters and digits, starting with a letter. Every `id` starts with `<prefix>-`.
 - `fingerprint.exclude`: path prefixes left out of the fingerprint for every check. Add one only after checking that no test, command or review depends on those paths.
+- `fingerprint.include`: path prefixes; when set, only files under them enter the fingerprint, minus `exclude`. For a repository holding several independent projects; see [Several projects in one repository](../SKILL.md#several-projects-in-one-repository). `lint` refuses an entry that matches no file.
 - `fingerprint.test_exclude`: path prefixes that only test checks ignore, for documents no test reads. See [Documentation-only changes](../SKILL.md#documentation-only-changes). It does not change the fingerprint.
 - Check fields: `test` needs `tag`, or both `file` and `name` (`name` appears verbatim in the file and in the reported names, with no placeholder such as `%s`); `doc` needs `path`, optional `heading`; `review` optional `by`; `user` needs `ref` (null until decided) and `question`; `command` needs `run`, and with `"scope": "environment"` also `host` and `max_age_days` (a positive whole number of days). `test` and `command` accept `host`.
 - `done_when` needs at least one check, except on an item with `withdrawn`: an item dropped from the start may leave `done_when` out or empty.
@@ -122,6 +123,7 @@ One JSON object per line, appended under a file lock. `lint` compares each commi
 | `time`, `by`, `host` | When, which agent, which machine |
 | `kind` | `test`, `command`, `review` or `retract` |
 | `fingerprint`, `commit`, `dirty` | The code it applies to; `dirty` means uncommitted changes existed. `fingerprint` is `unknown` for results recorded without one; each such record is judged on its own |
+| `scope` | `{include, exclude}`: the paths the fingerprint was computed with. Missing in older records and in records from a hand-written fingerprint file |
 | `note` | Optional free text |
 
 Kind-specific fields:
@@ -133,14 +135,14 @@ Kind-specific fields:
 
 ## Fingerprint
 
-1. Start from the index (`git ls-files -s`), skipping the task directory, `fingerprint.exclude` prefixes and `.DS_Store`, `Thumbs.db`, `._*`.
+1. Start from the index (`git ls-files -s`), skipping the task directory, `fingerprint.exclude` prefixes, every path outside `fingerprint.include` when it is set, and `.DS_Store`, `Thumbs.db`, `._*`.
 2. Re-hash files that differ from the index (`git diff-files`) and untracked files git does not ignore; drop deleted files. Modes are `120000` (symlink), `100755` (executable) or `100644`.
 3. Sort lines `<mode> <blob> <path>` by path, join with `\n`, SHA-256. `fingerprint --list` prints these lines.
 4. `dirty` is true when the same computation over `HEAD`'s tree gives a different value.
 
 Same content gives the same fingerprint on any machine and whether or not it is committed.
 
-A fingerprint file (`record --fingerprint-file`) is the output of `fingerprint --json` on the host that ran the tests. `record` needs `fingerprint`, `commit` and `dirty`; `host` is optional and defaults to `--host` or this machine. The other fields of `fingerprint --json` (`time`, `excludes`, `task`) are informational. For old reports whose code version is unknown, write one by hand:
+A fingerprint file (`record --fingerprint-file`) is the output of `fingerprint --json` on the host that ran the tests. `record` needs `fingerprint`, `commit` and `dirty`; `host` is optional and defaults to `--host` or this machine. `includes` and `excludes` from `fingerprint --json` become the record's `scope`; `time` and `task` are informational. For old reports whose code version is unknown, write one by hand:
 
 ```json
 {"fingerprint": "unknown", "commit": "<commit they probably ran on>", "dirty": false, "host": "cloud"}
@@ -155,6 +157,7 @@ A fingerprint file (`record --fingerprint-file`) is the output of `fingerprint -
   "counts": {"verified": 3, "older": 5, "not_done": 12, "unknown": 1, "waiting": 0, "withdrawn": 1},
   "items": [{"id": "R2-D4", "title": "…", "status": "unknown", "reasons": ["…"], "changed_files": [], "checks": [{"type": "test", "status": "unknown", "reason": "…", "changed_files": []}]}],
   "changes_since_last": [{"id": "R2-D1", "from": "verified", "to": "older"}],
+  "include": [],
   "warnings": []
 }
 ```
@@ -162,4 +165,5 @@ A fingerprint file (`record --fingerprint-file`) is the output of `fingerprint -
 - `counts` covers every item in `items.json`, withdrawn ones included; the summary line's total (`共 N 项`) is their sum, so it always equals the number of items.
 - `reasons`: for an unfinished item, one line per check not yet verified on the current code, worst first; for a verified item, its checks.
 - `changed_files` of an item: files changed since the older evidence of any check that is not verified.
+- `include`: `fingerprint.include` from `items.json`, empty when not set. `warnings` lists goal and evidence problems and `include` entries that match no file.
 - `changed_files` of a check: the files behind its status. For a test check verified under `test_exclude`, the files changed since the tested commit, all under `test_exclude`.

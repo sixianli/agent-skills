@@ -7,27 +7,28 @@
 
 ## 当前批次
 
-- S2-F18a：items.json 的 fingerprint.include 只让列出的路径进指纹（exclude 在其中再排除），lint 要求每个路径都对应仓库里的文件，status 显示只看的路径，fingerprint 命令读 include 并支持 --include；同步 SKILL.md、formats.md、remote-evidence.md；证据：四个新测试先失败后通过，变异检查
-- S2-F18b：新记录写入当时的指纹范围（include、exclude），status 在记录的范围和现在不同时说明是设置变了；远程指纹文件带的范围也照此比较；证据：两个新测试先失败后通过，变异检查
+- S2-R6：读定时任务第一次运行的会话记录，确认它把 F18–F20 当作本任务已覆盖的条目跳过、没有改仓库里的文件；证据：我的审核
+- S2-R4：写 long-task-planning/tests/verification/2026-10-03-feedback/README.md（怎么重跑、改了什么、测试方法、真实试用、发现的问题、没有验证的部分），原始日志放同目录不进 git 的 local/；证据：文件存在，我的审核
+- S2-R5：FEEDBACK.md 的 F18–F20 末尾补“已处理”，更新记忆文件；证据：我的审核
+- 同时在本任务的 items.json 加 fingerprint.include（两个 skill 目录和 .gitignore），看已有证据的 status 是否写明“指纹范围不同”，然后在新设置下重跑测试
 
 ## 之后
 
-- S2-R1、S2-R2、S2-R3：最后一个提交上跑总校验、变异检查、私人信息检查
-- S2-R4：写本轮验证记录
-- S2-R5：FEEDBACK.md 补“已处理”，更新记忆
-- S2-R6：看定时任务第一次运行的结果
+- S2-R1、S2-R2、S2-R3：最后一个提交上跑总校验、完整变异检查、私人信息检查
 
 ## 计划改动记录
 
 - 2026-10-02 23:53 建立任务。
 - 2026-10-03 00:05 按用户批准的方案（G2）建立条目 S2-F18a 到 S2-F20b 和最终检查 S2-R1 到 S2-R5；按 G3、G4 加 S2-R6。当前批次 S2-F20a、S2-F20b、S2-F19，先做 F20，因为另一个真实项目已经靠手工挪行绕过报错，挪行会改变审核结果。
 - 2026-10-03 00:14 当前批次改为 S2-F18a、S2-F18b。原因：status 显示当前版本已验证 3、未完成 8；S2-F20a、S2-F20b、S2-F19 的测试都在当前版本上通过（E20261003T001324-7084c5、E20261003T001324-7c9e7d）。
+- 2026-10-03 00:23 当前批次改为 S2-R6、S2-R4、S2-R5，并在本任务试用 fingerprint.include。原因：status 显示当前版本已验证 5、未完成 6；S2-F18a、S2-F18b 的测试在当前版本上通过（E20261003T002248-39ccad、E20261003T002248-9186fe）；总校验、变异和私人信息检查是命令检查，要等最后一个提交再跑。
 
 ## 意外和发现
 
 - 2026-10-03 核实时发现三处 FEEDBACK 没写到的问题：给已有任务改 fingerprint.exclude 后，status 写“之后代码改过”但文件列表为空；check-brief 把全文任何位置的编号都当本批条目，没有本批列表的简报也能通过；evidence.jsonl 的“不是只追加”报错一旦提交就永久留在历史里，手工挪行会让审核检查取错“最近一次”。分别并入 S2-F18b、S2-F19、S2-F20b。
 - 2026-10-03 S2-F20a 的调换/删除测试和 goal/plan 插行测试在改代码前就通过：它们守的是不能放宽的现有行为，靠变异检查证明有效（“evidence order ignored”“goal insertions allowed”“plan log insertions allowed”都被发现）。
 - 2026-10-03 codex-orchestration 的 test_codex_launch.py 用的简报没有“范围”一节，S2-F19 后被拒；这是用户批准的写法变化，测试简报改成模板格式，无效简报的用例也改成“范围里的编号不存在”。用新规则对另一个真实项目最近 3 份简报只读试跑：两份通过且取出的本批条目和本意一致，一份因为其中的条目后来被撤回而被拒，符合预期。
+- 2026-10-03 S2-F18 把 excludes 参数统一换成 scope 后，整套测试里 test_mutate 报 3 个变异的匹配文本失效（untracked files skipped、porcelain diff for changed files、dirty always false），记录 E20261003T002039-690440 有 1 个失败；改成新写法后 3 个变异都被发现，重跑整套通过。第一轮加的 test_mutate 在这里拦住了变异检查悄悄失效。
 
 ## 决定
 
