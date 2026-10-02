@@ -829,6 +829,62 @@ class ReviewTests(Base):
         self.assertEqual(self.status_of(self.repo, "T-R1"), "not_done")
 
 
+class EnvironmentCheckTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.repo = self.make_repo()
+
+    def env_check(self, **extra):
+        return {"type": "command", "run": "bwrap --version", "scope": "environment", "host": "mac-test",
+                "max_age_days": 7, **extra}
+
+    def record_run(self, exit_code, when):
+        self.env["LONGTASK_NOW"] = when
+        self.ok(self.cli(self.repo, "record", "--command", "bwrap --version", "--exit-code", str(exit_code)))
+
+    def test_environment_command_check_follows_age_not_code(self):
+        self.init_task(self.repo, [item("T-E1", [self.env_check()]), item("T-E2", [self.env_check(host="cloud")])])
+        entry = self.item_of(self.status(self.repo)[1], "T-E1")
+        self.assertEqual(entry["status"], "not_done")
+        self.assertIn("mac-test", " ".join(entry["reasons"]))
+        self.record_run(0, "2026-10-02T10:00:00+08:00")
+        self.assertEqual(self.status_of(self.repo, "T-E1"), "verified")
+        self.assertEqual(self.status_of(self.repo, "T-E2"), "not_done")
+        write(self.repo, "src/app.ts", "export const x = 3;\n")
+        self.commit_all(self.repo, "code")
+        self.env["LONGTASK_NOW"] = "2026-10-09T09:00:00+08:00"
+        self.assertEqual(self.status_of(self.repo, "T-E1"), "verified")
+        self.env["LONGTASK_NOW"] = "2026-10-09T11:00:00+08:00"
+        entry = self.item_of(self.status(self.repo)[1], "T-E1")
+        self.assertEqual(entry["status"], "older")
+        self.assertIn("7 天", " ".join(entry["reasons"]))
+        self.record_run(1, "2026-10-09T11:00:00+08:00")
+        self.assertEqual(self.status_of(self.repo, "T-E1"), "not_done")
+        self.record_run(0, "2026-10-09T12:00:00+08:00")
+        self.assertEqual(self.status_of(self.repo, "T-E1"), "verified")
+
+    def test_environment_command_check_needs_host_and_max_age(self):
+        without_host = self.env_check()
+        without_host.pop("host")
+        cases = [
+            ("T-B1", without_host, "host"),
+            ("T-B2", self.env_check(max_age_days=0), "max_age_days"),
+            ("T-B3", self.env_check(max_age_days="7"), "max_age_days"),
+            ("T-B4", self.env_check(scope="global"), "scope"),
+        ]
+        self.init_task(self.repo, [item(item_id, [check]) for item_id, check, _ in cases])
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 1)
+        for item_id, _, word in cases:
+            with self.subTest(item=item_id):
+                lines = [line for line in output.splitlines() if item_id in line]
+                self.assertTrue(lines, output)
+                self.assertIn(word, " ".join(lines))
+        code, data = self.status(self.repo)
+        self.assertEqual(code, 2)
+        self.assertEqual({entry["status"] for entry in data["items"]}, {"unknown"})
+
+
 class TestExcludeTests(Base):
     def setUp(self):
         super().setUp()

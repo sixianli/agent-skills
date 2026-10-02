@@ -76,6 +76,7 @@ New findings that do not serve this task's goal go to the project's backlog (for
 | `{"type":"review","by":"claude"}` | The latest review of the item (by that reviewer) approved it and the reviewed files are unchanged | Files changed since → 旧版本验证过; rejected or none → 未完成 |
 | `{"type":"user","ref":null,"question":"…"}` | `ref` names a `goal.md` entry holding the user's decision | `ref` null → 等你决定; `ref` missing from `goal.md` → 无法判断 |
 | `{"type":"command","run":"…"}`, optional `"host"` | A record of exactly this command with exit code 0 on the current fingerprint | Use sparingly; prefer tagged tests |
+| `{"type":"command","run":"…","scope":"environment","host":"…","max_age_days":7}` | For the environment, not the code (a tool version on the test server). The latest record of exactly this command on `host` has exit code 0 and was recorded at most `max_age_days` days ago; code changes do not matter | Older than that → 旧版本验证过; latest record failed → 未完成. Age counts from when the evidence was recorded. Record a run on another host with that host's fingerprint file like any remote result |
 
 Tag tests with the item ID in the title, for example `it("[R2-D1] 期限早于准备上限时归为执行期限", …)`. Renaming files or wording keeps the tag. A tag counts only in test files (`*.test.*`, `*.spec.*`, `test_*.py`, `*_test.py`, `*_test.go`, or under `test/`, `tests/`, `__tests__/`, `e2e/`, `spec/`), never in `.md` or `.txt`. Skipped or filtered-out tests never count as passed. Commits may end with an `Item: R2-D1` trailer for tracing, but a trailer never counts as evidence.
 

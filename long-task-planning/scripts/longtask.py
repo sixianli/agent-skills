@@ -476,6 +476,17 @@ def placeholder_problem(selector):
     return None
 
 
+def environment_problem(check):
+    if check.get("scope") != "environment":
+        return f"环境检查的 scope 只能写 \"environment\"，现在是 {check.get('scope')!r}"
+    if not (isinstance(check.get("host"), str) and check["host"]):
+        return "环境检查缺少 host：只认那台主机上的结果"
+    days = check.get("max_age_days")
+    if isinstance(days, bool) or not isinstance(days, int) or days < 1:
+        return f"环境检查的 max_age_days 要写有效天数（正整数），现在是 {days!r}"
+    return None
+
+
 def parse_vitest(path):
     data = json.loads(read_text(path))
     start = data.get("startTime")
@@ -985,6 +996,11 @@ class Evaluation:
         run, host = check.get("run"), check.get("host")
         if not isinstance(run, str) or not run:
             return "unknown", "命令类完成条件缺少 run", []
+        if "scope" in check:
+            problem = environment_problem(check)
+            if problem:
+                return "unknown", problem, []
+            return self.check_environment(run, host, check["max_age_days"])
         relevant = [record for record in self.records if record.get("kind") == "command"
                     and record.get("command") == run and self.host_ok(record, host)]
         current = [record for record in relevant if self.current(record)]
@@ -997,6 +1013,24 @@ class Evaluation:
             if record.get("exit_code") == 0:
                 return self.older(record, f"“{run}”")
         return "not_done", f"当前版本上还没有跑“{run}”" + (f"（只认 {host} 上的结果）" if host else ""), []
+
+    def check_environment(self, run, host, days):
+        records = [record for record in self.records if record.get("kind") == "command"
+                   and record.get("command") == run and record.get("host") == host]
+        if not records:
+            return "not_done", f"还没有在 {host} 上跑“{run}”的记录", []
+        latest = records[-1]
+        when = short_time(latest.get("time"))
+        if latest.get("exit_code") != 0:
+            return "not_done", f"“{run}”在 {host} 上最近一次（{when}）失败，退出码 {latest.get('exit_code')}（{latest['id']}）", []
+        moment = report_moment(latest.get("time"))
+        if moment is None:
+            return "unknown", f"记录 {latest['id']} 的时间读不出来", []
+        if moment.tzinfo is None:
+            moment = moment.astimezone()
+        if now() - moment > dt.timedelta(days=days):
+            return "older", f"“{run}”在 {host} 上 {when} 通过，已超过 {days} 天有效期，需要重验", []
+        return "verified", f"“{run}”在 {host} 上 {when} 通过，{days} 天内有效，和代码版本无关", []
 
     def item(self, entry):
         result = {"id": entry.get("id"), "title": entry.get("title") or "", "status": None,
@@ -1225,6 +1259,10 @@ def validate_check(name, check):
             errors.append(f"条目 {name} 等你决定的完成条件要写 question")
     elif kind == "command" and not (isinstance(check.get("run"), str) and check.get("run")):
         errors.append(f"条目 {name} 的命令类完成条件缺少 run")
+    elif kind == "command" and "scope" in check:
+        problem = environment_problem(check)
+        if problem:
+            errors.append(f"条目 {name} 的{problem}")
     if "host" in check and not isinstance(check["host"], str):
         errors.append(f"条目 {name} 的 host 必须是字符串")
     return errors

@@ -263,6 +263,27 @@ mutant("file-less review mixed with files accepted",
 mutant("file-less review hides its note",
        [('        if not files:\n            return "verified", f"{latest.get(\'by\')} 在', '        if False:\n            return "verified", f"{latest.get(\'by\')} 在')],
        ["ReviewTests.test_review_without_files_ignores_code_changes"])
+mutant("environment scope ignored",
+       [('        if "scope" in check:\n            problem = environment_problem(check)\n            if problem:\n                return "unknown"', '        if False:\n            problem = environment_problem(check)\n            if problem:\n                return "unknown"')],
+       ["EnvironmentCheckTests"])
+mutant("environment age not checked",
+       [('        if now() - moment > dt.timedelta(days=days):', '        if False:')],
+       ["EnvironmentCheckTests.test_environment_command_check_follows_age_not_code"])
+mutant("environment failure ignored",
+       [('        if latest.get("exit_code") != 0:\n            return "not_done", f"“{run}”在 {host} 上最近一次', '        if False:\n            return "not_done", f"“{run}”在 {host} 上最近一次')],
+       ["EnvironmentCheckTests.test_environment_command_check_follows_age_not_code"])
+mutant("environment host ignored",
+       [('                   and record.get("command") == run and record.get("host") == host]', '                   and record.get("command") == run]')],
+       ["EnvironmentCheckTests.test_environment_command_check_follows_age_not_code"])
+mutant("environment oldest record decides",
+       [('        latest = records[-1]', '        latest = records[0]')],
+       ["EnvironmentCheckTests.test_environment_command_check_follows_age_not_code"])
+mutant("environment lint unchecked",
+       [('    elif kind == "command" and "scope" in check:\n        problem', '    elif False:\n        problem')],
+       ["EnvironmentCheckTests.test_environment_command_check_needs_host_and_max_age"])
+mutant("zero max age accepted",
+       [('    if isinstance(days, bool) or not isinstance(days, int) or days < 1:', '    if not isinstance(days, int):')],
+       ["EnvironmentCheckTests.test_environment_command_check_needs_host_and_max_age"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")
