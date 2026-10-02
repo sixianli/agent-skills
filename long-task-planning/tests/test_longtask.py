@@ -1045,6 +1045,86 @@ class TestExcludeTests(Base):
         self.assertEqual(code, 0, output)
 
 
+DESCRIBE = "calculator operations"
+MATH_SPEC = """describe("calculator operations", () => {
+  it("adds [T-A1] numbers", () => {});
+  it("subtracts numbers", () => {});
+  it.each(["one", "two"])("parses %s value", () => {});
+});
+"""
+
+
+class FindTestsTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.repo = self.make_repo()
+        write(self.repo, "test/math.test.ts", MATH_SPEC)
+        self.commit_all(self.repo, "math tests")
+
+    def find(self, *args):
+        return self.cli(self.repo, "find-tests", *args)
+
+    def names(self, *args):
+        result = self.find(*args)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return [json.loads(line)["name"] for line in result.stdout.splitlines()]
+
+    def math_results(self):
+        spec = str(self.repo / "test/math.test.ts")
+        return [(spec, f"{DESCRIBE} {title}", "passed") for title in ("adds [T-A1] numbers", "subtracts numbers", "parses one value", "parses two value")]
+
+    def write_report(self, results):
+        report = self.report_path()
+        vitest_report(report, results)
+        data = json.loads(report.read_text(encoding="utf-8"))
+        for suite in data["testResults"]:
+            for assertion in suite["assertionResults"]:
+                if assertion["fullName"].startswith(DESCRIBE + " "):
+                    assertion.update(ancestorTitles=[DESCRIBE], title=assertion["fullName"].removeprefix(DESCRIBE + " "))
+        report.write_text(json.dumps(data), encoding="utf-8")
+        return report
+
+    def test_find_tests_prints_checks_that_verify_after_recording(self):
+        report = self.write_report(self.math_results())
+        result = self.find("--vitest", str(report))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        checks = [json.loads(line) for line in result.stdout.splitlines()]
+        self.assertEqual(checks, [
+            {"type": "test", "file": "test/math.test.ts", "name": "adds [T-A1] numbers"},
+            {"type": "test", "file": "test/math.test.ts", "name": "subtracts numbers"},
+            {"type": "test", "file": "test/math.test.ts", "name": "parses"},
+        ])
+        self.assertIn("“parses”同时对应报告里这个文件的 2 个测试", result.stderr)
+        self.init_task(self.repo, [item(f"T-S{n}", [check]) for n, check in enumerate(checks, 1)])
+        self.ok(self.cli(self.repo, "record", "--vitest", str(report), "--by", "codex"))
+        data = self.status(self.repo)[1]
+        self.assertEqual([self.item_of(data, f"T-S{n}")["status"] for n in (1, 2, 3)], ["verified"] * 3)
+
+    def test_find_tests_filters_by_commit_and_word(self):
+        write(self.repo, "test/text.test.ts", 'it("trims [T-B1] spaces", () => {});\nit("Joins words", () => {});\n')
+        self.commit_all(self.repo, "text tests")
+        text_commit = self.git(self.repo, "rev-parse", "HEAD").strip()
+        text = str(self.repo / "test/text.test.ts")
+        report = self.write_report([*self.math_results()[:2], (text, "trims [T-B1] spaces", "passed"), (text, "Joins words", "failed"),
+                                    (text, "ignores case", "skipped"), ("/elsewhere/gone.test.ts", "gone", "passed")])
+        result = self.find("--vitest", str(report), "--commit", text_commit)
+        self.assertEqual([json.loads(line)["name"] for line in result.stdout.splitlines()], ["trims [T-B1] spaces", "Joins words"])
+        self.assertIn("1 个测试被跳过（skipped），没有列出", result.stderr)
+        self.assertIn("报告里的文件 /elsewhere/gone.test.ts 在仓库里找不到", result.stderr)
+        self.assertEqual(self.names("--vitest", str(report), "--grep", "NUMBERS"), ["adds [T-A1] numbers", "subtracts numbers"])
+        self.assertEqual(self.names("--vitest", str(report), "--commit", text_commit, "--grep", "join"), ["Joins words"])
+        missing = self.find("--vitest", str(report), "--commit", "0000000")
+        self.assertEqual(missing.returncode, 1)
+        self.assertIn("提交 0000000 不存在", missing.stderr)
+        write(self.repo, "test/test_util.py", "class UtilTests:\n    def test_rounds_half_up(self):\n        pass\n")
+        junit = self.report_path("xml")
+        junit.write_text('<testsuite><testcase classname="test_util.UtilTests" name="test_rounds_half_up" file="test/test_util.py"/></testsuite>',
+                         encoding="utf-8")
+        result = self.find("--junit", str(junit))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {"type": "test", "file": "test/test_util.py", "name": "test_rounds_half_up"})
+
+
 class LintTests(Base):
     def setUp(self):
         super().setUp()

@@ -102,6 +102,7 @@ List path prefixes that no test reads in `items.json` under `fingerprint.test_ex
 
   If the remote fingerprint differs from the local one, status shows 旧版本验证过: the host did not test exactly this code. Find the differing files with `fingerprint --list` on both hosts and `diff`.
 - **Selector checks** (`file` + `name`) are matched when the report is recorded. Write or change them before recording; after changing one, record the retained report again.
+  To write them for existing tests, run `$LT find-tests --vitest <report>` (or `--junit`), optionally with `--commit <sha>` (only test files that commit added or changed) and `--grep <word>` (full test name contains the word, any case). It prints one paste-ready check per test: `name` is the longest run of whole words from the test's own title that appears verbatim in the file. It reports on stderr when a `name` also matches other tests in the same file (normal for parameterized tests), when no such run exists, and which tests it left out.
 - **Run time**: status shows when the tests ran if the report says so (Vitest `startTime`, JUnit `timestamp`); otherwise it shows when the evidence was recorded (`记录于 …`).
 - **Commands**: `$LT record --command "<exact command>" --exit-code <n> --by <agent>`.
 - **Reviews**: `$LT record --review --items R2-D1,R2-D2 --verdict approved|rejected --files <reviewed files…> --by claude`. To record a review done earlier, add `--commit <reviewed commit>`: the files are hashed as they were in that commit, so changes made since show as 旧版本验证过. A review that does not depend on any file, such as a test-environment problem, uses `--no-files --note "<what was reviewed>"` instead of `--files`: code changes never age it, and the item's latest review still decides.
@@ -183,6 +184,7 @@ Then run `$LT lint` and commit the task directory.
 | `context [--task T]` | Print what the hook injects |
 | `fingerprint [--json \| --list] [--exclude P]` | Current fingerprint, or the per-file lines it hashes |
 | `check-brief <brief> [--task T]` | Refuse a brief without valid item IDs |
+| `find-tests --vitest F \| --junit F [--commit C] [--grep W]` | Print paste-ready `file` + `name` checks for the tests in a report |
 | `hook` | Session-start hook; reads the hook JSON on stdin |
 
 Global option `--repo <path>`. `--task` is needed only when several tasks are active.

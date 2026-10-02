@@ -351,6 +351,36 @@ mutant("formatter reminder always shown",
 mutant("install path resolved through the symlink",
        [("SCRIPT_PATH = Path(os.path.abspath(__file__))", "SCRIPT_PATH = Path(__file__).resolve()")],
        ["ContextHookTests.test_symlinked_install_reports_the_install_path"])
+mutant("find-tests picks fragments from the full name",
+       [("        fragment = title_fragment(title, texts[path])", "        fragment = title_fragment(full, texts[path])")],
+       ["FindTestsTests.test_find_tests_prints_checks_that_verify_after_recording"])
+mutant("find-tests prefers the shortest fragment",
+       [("key=lambda span: span[0] - span[1])", "key=lambda span: span[1] - span[0])")],
+       ["FindTestsTests.test_find_tests_prints_checks_that_verify_after_recording"])
+mutant("find-tests ignores grep",
+       [("        if (word is None or word in full.casefold()) and", "        if True and")],
+       ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])
+mutant("find-tests grep is case sensitive",
+       [("word in full.casefold()", "word in full")],
+       ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])
+mutant("find-tests ignores commit",
+       [("and (changed is None or path in changed):", "and True:")],
+       ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])
+mutant("find-tests repeats checks",
+       [("        if (path, fragment) in printed:\n            continue\n", "")],
+       ["FindTestsTests.test_find_tests_prints_checks_that_verify_after_recording"])
+mutant("find-tests hides shared fragments",
+       [("        if matches > 1:", "        if matches > 2:")],
+       ["FindTestsTests.test_find_tests_prints_checks_that_verify_after_recording"])
+mutant("find-tests lists skipped tests",
+       [('        if status == "skipped":\n            skipped += 1\n            continue\n', "")],
+       ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])
+mutant("find-tests hides unmapped files",
+       [('    notes += [f"报告里的文件 {name} 在仓库里找不到，它的测试没有列出" for name in sorted(unmapped)]\n', "")],
+       ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])
+mutant("junit title missing",
+       [('status, name or classname))', 'status, classname))')],
+       ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

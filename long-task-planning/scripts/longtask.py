@@ -512,10 +512,12 @@ def parse_vitest(path):
         names = [suite["name"]] if suite.get("name") else []
         assertions = suite.get("assertionResults") or []
         if not assertions and suite.get("status") == "failed":
-            results.append((names, f"（整个文件失败：{truncate(suite.get('message') or '', 120)}）", "failed"))
+            whole = f"（整个文件失败：{truncate(suite.get('message') or '', 120)}）"
+            results.append((names, whole, "failed", whole))
         for assertion in assertions:
             full = assertion.get("fullName") or " ".join([*(assertion.get("ancestorTitles") or []), assertion.get("title") or ""])
-            results.append((names, full.strip(), normalize_status(assertion.get("status"))))
+            title = assertion.get("title") or full
+            results.append((names, full.strip(), normalize_status(assertion.get("status")), title.strip()))
     return results, started
 
 
@@ -542,7 +544,7 @@ def parse_junit(path):
             status = "skipped"
         else:
             status = "passed"
-        results.append((junit_files(case), f"{classname} {name}".strip(), status))
+        results.append((junit_files(case), f"{classname} {name}".strip(), status, name or classname))
     moments = [moment for moment in (report_moment(suite.get("timestamp")) for suite in root.iter("testsuite")
                                      if suite.get("timestamp")) if moment]
     aware = [moment for moment in moments if moment.tzinfo]
@@ -650,7 +652,7 @@ def test_record(task, data, args, fingerprint):
     selectors = selectors_of(data)
     counts = {"passed": 0, "failed": 0, "skipped": 0}
     tags, selected, failures, unresolved = {}, {}, [], set()
-    for names, full, status in results:
+    for names, full, status, _title in results:
         counts[status] += 1
         path = mapper.first(names)
         if path is None:
@@ -1588,6 +1590,65 @@ def cmd_fingerprint(args):
     return 0
 
 
+def title_fragment(title, text):
+    words = list(re.finditer(r"\S+", title))
+    spans = [(words[first].start(), words[last].end()) for first in range(len(words)) for last in range(first, len(words))]
+    for start, end in sorted(spans, key=lambda span: span[0] - span[1]):
+        if title[start:end] in text:
+            return title[start:end]
+    return None
+
+
+def cmd_find_tests(args):
+    repo = repo_from(args)
+    report = args.vitest or args.junit
+    if not Path(report).is_file():
+        raise Fail(f"测试报告 {report} 不存在")
+    try:
+        results, _ = parse_vitest(report) if args.vitest else parse_junit(report)
+    except (json.JSONDecodeError, ElementTree.ParseError) as error:
+        raise Fail(f"读不了测试报告 {report}：{error}")
+    changed = None
+    if args.commit:
+        commit = resolve_commit(repo, args.commit)
+        changed = set(split_z(git_out(repo, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", "-z", "--diff-filter=AM", commit)))
+    mapper = PathMapper(repo_files(repo))
+    word = args.grep.casefold() if args.grep else None
+    by_path, chosen, notes, unmapped, skipped = {}, [], [], set(), 0
+    for names, full, status, title in results:
+        if status == "skipped":
+            skipped += 1
+            continue
+        path = mapper.first(names)
+        if path is None:
+            unmapped.add(names[0] if names else "（报告里没有文件名）")
+            continue
+        by_path.setdefault(path, []).append(full)
+        if (word is None or word in full.casefold()) and (changed is None or path in changed):
+            chosen.append((path, full, title))
+    printed, texts = [], {}
+    for path, full, title in chosen:
+        if path not in texts:
+            texts[path] = (repo / path).read_text(encoding="utf-8", errors="replace")
+        fragment = title_fragment(title, texts[path])
+        if fragment is None:
+            notes.append(f"{path} 里找不到测试“{full}”标题里原样出现的一段，请手动挑一段")
+            continue
+        if (path, fragment) in printed:
+            continue
+        printed.append((path, fragment))
+        print(json.dumps({"type": "test", "file": path, "name": fragment}, ensure_ascii=False))
+        matches = sum(fragment in other for other in by_path[path])
+        if matches > 1:
+            notes.append(f"{path} 的“{fragment}”同时对应报告里这个文件的 {matches} 个测试；参数化测试这样正常，否则手动换一段更长的")
+    notes += [f"报告里的文件 {name} 在仓库里找不到，它的测试没有列出" for name in sorted(unmapped)]
+    if skipped:
+        notes.append(f"{skipped} 个测试被跳过（skipped），没有列出")
+    for note in notes:
+        print(f"提醒：{note}", file=sys.stderr)
+    return 0
+
+
 def cmd_check_brief(args):
     repo = repo_from(args)
     task = resolve_task(repo, args.task)
@@ -1704,6 +1765,13 @@ def build_parser():
 
     commands.add_parser("hook", help="会话开始钩子：从标准输入读 JSON")
 
+    find = commands.add_parser("find-tests", help="从测试报告列出可直接粘贴进 done_when 的测试检查")
+    find_source = find.add_mutually_exclusive_group(required=True)
+    find_source.add_argument("--vitest", help="Vitest JSON 报告")
+    find_source.add_argument("--junit", help="JUnit XML 报告")
+    find.add_argument("--commit", help="只列这个提交新增或修改过的测试文件里的测试")
+    find.add_argument("--grep", help="只列完整测试名里含这个词的测试，不分大小写")
+
     brief = commands.add_parser("check-brief", help="检查简报是否写了有效的条目编号")
     brief.add_argument("brief")
     brief.add_argument("--task")
@@ -1719,6 +1787,7 @@ COMMANDS = {
     "context": cmd_context,
     "hook": cmd_hook,
     "check-brief": cmd_check_brief,
+    "find-tests": cmd_find_tests,
 }
 
 
