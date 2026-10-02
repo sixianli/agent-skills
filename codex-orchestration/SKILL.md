@@ -84,12 +84,19 @@ covers how to talk to Codex, not what the goal or progress is.
 ## Sessions
 
 - Model, reasoning effort and speed follow the user's standing preference in
-  memory. Current preference (2026-10-02): `gpt-6.1-sol` with `max` and
+  memory. Current preference (2026-10-03): `gpt-6.1-sol` with `ultra` and
   **fast** for all Codex work (coding, hard problems, documentation), on
-  every launch and resume (`-m gpt-6.1-sol -c model_reasoning_effort="max"
-  -c service_tier="fast"`), until the user says credits are tight. This
-  replaced the 2026-10-01 split (`xhigh` for coding, `gpt-6-astra` for hard
-  problems, `high` for docs, never `max`). Speed, like effort, is fixed per turn:
+  every launch and resume (`-m gpt-6.1-sol -c model_reasoning_effort="ultra"
+  -c service_tier="fast"`), until the user says credits are tight. The
+  model list in `~/.codex/models_cache.json` gives the levels low, medium,
+  high, xhigh, max and ultra; `ultra` is described as maximum reasoning with
+  automatic task delegation, so Codex may start its own sub-agents. Until
+  that has been observed in a batch, say in the brief that sub-agents follow
+  the same project rules (test host, no tests on forbidden machines, commit
+  and push rules), and check the session log for sub-agent commands at
+  review time. This replaced `max` + fast (2026-10-02) and the 2026-10-01
+  split (`xhigh` for coding, `gpt-6-astra` for hard problems, `high` for
+  docs). Speed, like effort, is fixed per turn:
   a running turn keeps its tier, so apply a change at the next stop by
   stopping and resuming, not with `codex queue`. State the chosen model,
   effort, speed and the reason in each brief.
