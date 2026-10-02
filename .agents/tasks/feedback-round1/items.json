@@ -1,0 +1,604 @@
+{
+  "task": "feedback-round1",
+  "prefix": "SK",
+  "fingerprint": {
+    "test_exclude": [
+      "README.md",
+      "long-task-planning/SKILL.md",
+      "long-task-planning/references/",
+      "long-task-planning/tests/verification/",
+      "codex-orchestration/SKILL.md",
+      "codex-orchestration/templates/"
+    ]
+  },
+  "items": [
+    {
+      "id": "SK-R9",
+      "title": "unittest 的结果能作为证据记录（JUnit 报告）",
+      "goal_ref": [
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_junit_report.py",
+          "name": "test_report_marks_every_outcome"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_junit_report.py",
+          "name": "test_recorded_report_satisfies_selector_checks"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "本任务的测试证据要按测试方法记录，仓库只有 unittest"
+      }
+    },
+    {
+      "id": "SK-F14",
+      "title": "只改测试不读的文件时，测试证据仍算当前版本",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_doc_only_change_keeps_test_evidence_current"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_code_change_after_doc_only_change_is_older"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_failure_then_doc_only_change_stays_not_done"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_dirty_or_unknown_test_records_are_not_relaxed"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_commands_and_reviews_ignore_test_exclude"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_test_exclude_must_be_a_list_of_paths"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 A1，FEEDBACK F14"
+      }
+    },
+    {
+      "id": "SK-F9",
+      "title": "补录审核时按指定提交里的文件内容记录",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_backfilled_review_binds_to_the_reviewed_commit"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_review_commit_must_contain_the_files"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 A2，FEEDBACK F9"
+      }
+    },
+    {
+      "id": "SK-F15",
+      "title": "和代码无关的审核可以不绑定文件",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_review_without_files_needs_a_note"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_review_without_files_ignores_code_changes"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 A3，FEEDBACK F15"
+      }
+    },
+    {
+      "id": "SK-F11",
+      "title": "环境类命令检查按有效天数判断，不随代码变旧",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_environment_command_check_follows_age_not_code"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_environment_command_check_needs_host_and_max_age"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 A4，FEEDBACK F11"
+      }
+    },
+    {
+      "id": "SK-F2",
+      "title": "status 的总数包含不做的条目",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_total_counts_withdrawn_items"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 A5，FEEDBACK F2"
+      }
+    },
+    {
+      "id": "SK-F6",
+      "title": "status --brief 每项一行",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_brief_status_prints_one_line_per_item"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 B1，FEEDBACK F6"
+      }
+    },
+    {
+      "id": "SK-F3",
+      "title": "钩子把用户回答的问题和回答一起显示",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_context_shows_the_question_with_the_answer"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 B2，FEEDBACK F3"
+      }
+    },
+    {
+      "id": "SK-F13",
+      "title": "选择题里的决定用“用户选择”来源记录",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_context_shows_the_question_with_the_answer"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 B2，FEEDBACK F13"
+      }
+    },
+    {
+      "id": "SK-F16",
+      "title": "简报里的“失败就停”写明等测试命令自己结束",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 B3，FEEDBACK F16"
+      }
+    },
+    {
+      "id": "SK-F7",
+      "title": "当前批次只数行首的条目编号",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_batch_counts_only_lines_that_start_with_an_item"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 B4，FEEDBACK F7"
+      }
+    },
+    {
+      "id": "SK-F12",
+      "title": "远端记录证据的步骤写成可直接贴进简报的说明",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "doc",
+          "path": "long-task-planning/references/remote-evidence.md"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 B5，FEEDBACK F12"
+      }
+    },
+    {
+      "id": "SK-F5",
+      "title": "find-tests 从测试报告列出可直接粘贴的检查",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_find_tests_prints_checks_that_verify_after_recording"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_find_tests_filters_by_commit_and_word"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 B6，FEEDBACK F5"
+      }
+    },
+    {
+      "id": "SK-F1",
+      "title": "指纹文件的必需字段写进文档和报错",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_fingerprint_file_error_lists_required_fields"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 C1，FEEDBACK F1"
+      }
+    },
+    {
+      "id": "SK-F8",
+      "title": "计划里不写“已提交”这类进度词",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_commit_and_review_progress_words_are_refused"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 C2，FEEDBACK F8"
+      }
+    },
+    {
+      "id": "SK-F10",
+      "title": "撤回的条目可以不写完成条件",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_withdrawn_item_may_have_no_completion_conditions"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 C3，FEEDBACK F10"
+      }
+    },
+    {
+      "id": "SK-F4",
+      "title": "钩子按日期显示目标，G1 在最前",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_context_orders_goals_by_date_after_the_first"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划 C4，FEEDBACK F4"
+      }
+    },
+    {
+      "id": "SK-F17",
+      "title": "接入时让项目的格式检查跳过任务目录，init 发现格式化配置时提醒",
+      "goal_ref": [
+        "G7"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_init_reminds_to_skip_task_files_when_a_formatter_is_configured"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "FEEDBACK F17"
+      }
+    },
+    {
+      "id": "SK-R4",
+      "title": "通过符号链接运行时显示安装路径",
+      "goal_ref": [
+        "G6"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_symlinked_install_reports_the_install_path"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "安装改为符号链接后，钩子里的命令路径要指向安装位置"
+      }
+    },
+    {
+      "id": "SK-R1",
+      "title": "两个 skill 迁入 agent-skills 并登记，仓库总校验通过",
+      "goal_ref": [
+        "G2",
+        "G4",
+        "G5"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "uv run --no-project --with pyyaml python scripts/validate_all.py"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "用户要求用 git 管理这套 skill"
+      }
+    },
+    {
+      "id": "SK-R5",
+      "title": "全部变异都被测试发现",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "python3 long-task-planning/tests/mutate.py"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "每个新行为都要有能发现它被改坏的测试"
+      }
+    },
+    {
+      "id": "SK-R2",
+      "title": "公开仓库里不含私人信息",
+      "goal_ref": [
+        "G3"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "test -s .agents/local/private-patterns.txt && { git grep -q --untracked -IEf .agents/local/private-patterns.txt -- long-task-planning codex-orchestration README.md skills.json .gitignore .agents/tasks; test $? -eq 1; }"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "用户选择只公开通用部分"
+      }
+    },
+    {
+      "id": "SK-R3",
+      "title": "安装改为指向仓库的符号链接，Claude Code 能识别，钩子照常",
+      "goal_ref": [
+        "G6"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "host": "mac",
+          "scope": "environment",
+          "max_age_days": 30,
+          "run": "test -L \"$HOME/.claude/skills/long-task-planning\" && test -L \"$HOME/.claude/skills/codex-orchestration\" && test \"$(cd \"$HOME/.claude/skills/long-task-planning\" && pwd -P)\" = \"$(cd long-task-planning && pwd -P)\" && test \"$(cd \"$HOME/.claude/skills/codex-orchestration\" && pwd -P)\" = \"$(cd codex-orchestration && pwd -P)\""
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "用户选择符号链接"
+      }
+    },
+    {
+      "id": "SK-R6",
+      "title": "在真实项目的临时克隆上试用新脚本",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "计划里的试用：只改文档、--brief 行数、问题行显示"
+      }
+    },
+    {
+      "id": "SK-R7",
+      "title": "本轮验证记录",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "doc",
+          "path": "long-task-planning/tests/verification/2026-10-02-feedback/README.md"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "公开的验证记录，原始数据只留本机"
+      }
+    },
+    {
+      "id": "SK-R8",
+      "title": "FEEDBACK.md 逐条补“已处理”，记忆文件改为指向仓库",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-02",
+        "why": "FEEDBACK.md 自己的规则要求处理后补一行"
+      }
+    }
+  ]
+}
