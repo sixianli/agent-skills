@@ -1345,9 +1345,10 @@ def validate_items(data, goal_ids):
         if not (isinstance(added, dict) and added.get("by") and added.get("on")):
             errors.append(f"条目 {name} 的 added 要写 by 和 on")
         checks = entry.get("done_when")
-        if not (isinstance(checks, list) and checks):
-            errors.append(f"条目 {name} 没有完成条件（done_when 为空）")
-        else:
+        may_be_empty = entry.get("withdrawn") is not None and checks in (None, [])
+        if not may_be_empty and not (isinstance(checks, list) and checks):
+            errors.append(f"条目 {name} 没有完成条件（done_when 为空）；只有写了 withdrawn 的条目可以不写")
+        elif isinstance(checks, list):
             for check in checks:
                 errors += validate_check(name, check)
         withdrawn = entry.get("withdrawn")

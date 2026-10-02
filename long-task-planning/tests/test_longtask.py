@@ -1082,6 +1082,23 @@ class LintTests(Base):
         code, output = self.lint(self.repo)
         self.assertEqual(code, 0, output)
 
+    def test_withdrawn_item_may_have_no_completion_conditions(self):
+        withdrawn = {"on": "2026-10-02", "ref": "G1"}
+        without_key = item("T-W2", [], withdrawn=withdrawn)
+        del without_key["done_when"]
+        items = [item("T-A1", [tag_check("T-A1")]), item("T-W1", [], withdrawn=withdrawn), without_key]
+        self.init_task(self.repo, items)
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 0, output)
+        data = self.status(self.repo)[1]
+        self.assertEqual([self.item_of(data, value)["status"] for value in ("T-W1", "T-W2")], ["withdrawn", "withdrawn"])
+        self.set_items(self.repo, [*items, item("T-B1", [])])
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 1, output)
+        self.assertIn("条目 T-B1 没有完成条件", output)
+        self.assertNotIn("T-W1 没有完成条件", output)
+        self.assertNotIn("T-W2 没有完成条件", output)
+
     def test_commit_and_review_progress_words_are_refused(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
         plan = self.repo / TASK / "plan.md"

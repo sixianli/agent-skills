@@ -327,6 +327,12 @@ mutant("commit and review progress words allowed",
 mutant("progress hint missing",
        [('PROGRESS_HINT = "计划只写做什么、用什么证据，不写到哪一步了；做没做完用 status 算"', 'PROGRESS_HINT = "计划只写打算，做没做完用 status 算"')],
        ["LintTests.test_commit_and_review_progress_words_are_refused"])
+mutant("withdrawn items still need completion conditions",
+       [('        may_be_empty = entry.get("withdrawn") is not None and checks in (None, [])', '        may_be_empty = False')],
+       ["LintTests.test_withdrawn_item_may_have_no_completion_conditions"])
+mutant("empty completion conditions allowed for every item",
+       [('        may_be_empty = entry.get("withdrawn") is not None and checks in (None, [])', '        may_be_empty = checks in (None, [])')],
+       ["LintTests.test_withdrawn_item_may_have_no_completion_conditions"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")
