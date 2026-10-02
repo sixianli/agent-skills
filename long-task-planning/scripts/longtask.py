@@ -713,14 +713,20 @@ def cmd_record(args):
         if args.artifact:
             record["artifacts"] = artifacts_of(repo, args.artifact)
     elif args.review:
-        if not args.items or not args.verdict or not args.files:
-            raise Fail("--review 需要 --items、--verdict 和 --files")
+        if not args.items or not args.verdict:
+            raise Fail("--review 需要 --items 和 --verdict")
+        if args.no_files and (args.files or args.commit):
+            raise Fail("--no-files 不能和 --files 或 --commit 一起用")
+        if args.no_files and not args.note:
+            raise Fail("--no-files 要用 --note 写明审核了什么，例如“测试环境问题，和代码无关”")
+        if not args.no_files and not args.files:
+            raise Fail("--review 需要 --files 写明审核过的文件；审核和代码无关时改用 --no-files --note \"审核了什么\"")
         known = {entry.get("id") for entry in data["items"] if isinstance(entry, dict)}
         item_ids = [value.strip() for value in args.items.split(",") if value.strip()]
         unknown = [value for value in item_ids if value not in known]
         if unknown:
             raise Fail(f"条目 {', '.join(unknown)} 在 items.json 里不存在")
-        paths = [resolve_repo_path(repo, path) for path in args.files]
+        paths = [resolve_repo_path(repo, path) for path in args.files or []]
         reviewed = resolve_commit(repo, args.commit) if args.commit else None
         hashes = commit_blobs(repo, reviewed, paths) if reviewed else hash_paths(repo, paths)
         missing = [path for path, blob in hashes.items() if blob is None]
@@ -938,6 +944,8 @@ class Evaluation:
         if latest.get("verdict") != "approved":
             return "not_done", f"最近一次审核结论是 {latest.get('verdict')}（{latest['id']}）", []
         files = latest.get("files") or {}
+        if not files:
+            return "verified", f"{latest.get('by')} 在 {short_time(latest.get('time'))} 审核通过；没有绑定文件：{latest.get('note') or '（没有说明）'}", []
         current = hash_paths(self.repo, list(files))
         changed = sorted(path for path, blob in files.items() if current.get(path) != blob)
         when = short_time(latest.get("time"))
@@ -1581,6 +1589,7 @@ def build_parser():
     record.add_argument("--items", help="审核涉及的条目，逗号分隔")
     record.add_argument("--verdict", choices=("approved", "rejected"))
     record.add_argument("--files", nargs="+")
+    record.add_argument("--no-files", action="store_true", help="审核和代码无关时不绑定文件，要配 --note")
     record.add_argument("--commit", help="补录审核时，按这个提交里的文件内容记录")
     record.add_argument("--reason")
     record.add_argument("--fingerprint-file")

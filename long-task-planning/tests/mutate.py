@@ -254,6 +254,15 @@ mutant("commit without review accepted",
 mutant("reviewed commit not stored",
        [('        if reviewed:\n            record["reviewed_commit"] = reviewed', '        if False:\n            record["reviewed_commit"] = reviewed')],
        ["ReviewTests.test_backfilled_review_binds_to_the_reviewed_commit"])
+mutant("file-less review without note accepted",
+       [('        if args.no_files and not args.note:\n            raise Fail(', '        if False:\n            raise Fail(')],
+       ["ReviewTests.test_review_without_files_needs_a_note"])
+mutant("file-less review mixed with files accepted",
+       [('        if args.no_files and (args.files or args.commit):\n            raise Fail(', '        if False:\n            raise Fail(')],
+       ["ReviewTests.test_review_without_files_needs_a_note"])
+mutant("file-less review hides its note",
+       [('        if not files:\n            return "verified", f"{latest.get(\'by\')} 在', '        if False:\n            return "verified", f"{latest.get(\'by\')} 在')],
+       ["ReviewTests.test_review_without_files_ignores_code_changes"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

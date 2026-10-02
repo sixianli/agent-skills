@@ -116,7 +116,7 @@ Kind-specific fields:
 
 - `test`: `source` (`vitest-json` or `junit-xml`), `counts` `{passed, failed, skipped}`, `tags` `{TAG: {passed, failed, files}}` (skipped tests excluded), `selected` (results for `file`+`name` checks), `failures` (first 20 names), `artifacts` `[{path, sha256}]`, optional `ran`, `ran_at` (when the tests ran, from the report) and `unresolved_files`.
 - `command`: `command`, `exit_code`, optional `artifacts`.
-- `review`: `items`, `verdict`, `files` `{path: git blob hash at review time}`, optional `reviewed_commit` (recorded with `--commit`; the hashes then come from that commit).
+- `review`: `items`, `verdict`, `files` `{path: git blob hash at review time}`, optional `reviewed_commit` (recorded with `--commit`; the hashes then come from that commit). `files` is `{}` for a `--no-files` review; its `note` says what was reviewed.
 - `retract`: `target` (an evidence id), `reason`. The target stops counting; the failure or pass it recorded is ignored.
 
 ## Fingerprint

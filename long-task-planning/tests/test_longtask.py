@@ -802,6 +802,32 @@ class ReviewTests(Base):
         self.assertIn("--review", result.stderr)
         self.assertEqual(self.records(self.repo), [])
 
+    def test_review_without_files_needs_a_note(self):
+        result = self.review()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("--no-files", result.stderr)
+        result = self.review("--no-files")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("--note", result.stderr)
+        for extra in (("--files", "src/app.ts"), ("--commit", "HEAD")):
+            with self.subTest(extra=extra):
+                result = self.review("--no-files", "--note", "测试环境问题", *extra)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("--no-files", result.stderr)
+        self.assertEqual(self.records(self.repo), [])
+
+    def test_review_without_files_ignores_code_changes(self):
+        self.ok(self.review("--no-files", "--note", "测试环境的 umask 问题，和代码无关"))
+        self.assertEqual(self.records(self.repo)[-1]["files"], {})
+        entry = self.item_of(self.status(self.repo)[1], "T-R1")
+        self.assertEqual(entry["status"], "verified")
+        self.assertIn("测试环境的 umask 问题", " ".join(entry["reasons"]))
+        write(self.repo, "src/app.ts", "export const x = 5;\n")
+        self.assertEqual(self.status_of(self.repo, "T-R1"), "verified")
+        self.ok(self.cli(self.repo, "record", "--review", "--items", "T-R1", "--verdict", "rejected", "--by", "claude",
+                         "--no-files", "--note", "复查发现还有问题"))
+        self.assertEqual(self.status_of(self.repo, "T-R1"), "not_done")
+
 
 class TestExcludeTests(Base):
     def setUp(self):

@@ -101,7 +101,7 @@ List path prefixes that no test reads in `items.json` under `fingerprint.test_ex
 - **Selector checks** (`file` + `name`) are matched when the report is recorded. Write or change them before recording; after changing one, record the retained report again.
 - **Run time**: status shows when the tests ran if the report says so (Vitest `startTime`, JUnit `timestamp`); otherwise it shows when the evidence was recorded (`记录于 …`).
 - **Commands**: `$LT record --command "<exact command>" --exit-code <n> --by <agent>`.
-- **Reviews**: `$LT record --review --items R2-D1,R2-D2 --verdict approved|rejected --files <reviewed files…> --by claude`. To record a review done earlier, add `--commit <reviewed commit>`: the files are hashed as they were in that commit, so changes made since show as 旧版本验证过.
+- **Reviews**: `$LT record --review --items R2-D1,R2-D2 --verdict approved|rejected --files <reviewed files…> --by claude`. To record a review done earlier, add `--commit <reviewed commit>`: the files are hashed as they were in that commit, so changes made since show as 旧版本验证过. A review that does not depend on any file, such as a test-environment problem, uses `--no-files --note "<what was reviewed>"` instead of `--files`: code changes never age it, and the item's latest review still decides.
 - **Retraction**: `$LT record --retract <evidence id> --reason "<why it must not count>"`, for example a failure proven unrelated to the change and tracked in the backlog. Never edit `evidence.jsonl`.
 
 Commit `evidence.jsonl` with the code it verifies; the task directory is outside the fingerprint, so committing it does not age the evidence. Keep report files under the project's evidence-retention rules; each record stores their SHA-256.
