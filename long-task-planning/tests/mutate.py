@@ -384,6 +384,12 @@ mutant("find-tests lists skipped tests",
 mutant("find-tests hides unmapped files",
        [('    notes += [f"报告里的文件 {name} 在仓库里找不到，它的测试没有列出" for name in sorted(unmapped)]\n', "")],
        ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])
+mutant("find-tests silent when nothing matches",
+       [('    if not chosen:\n        notes.append("报告里没有符合条件的测试，没有列出任何检查")\n', "")],
+       ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])
+mutant("find-tests says nothing matched when checks were printed",
+       [("    if not chosen:\n", "    if not printed:\n")],
+       ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])
 mutant("junit title missing",
        [('status, name or classname))', 'status, classname))')],
        ["FindTestsTests.test_find_tests_filters_by_commit_and_word"])

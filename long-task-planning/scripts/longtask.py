@@ -1626,6 +1626,8 @@ def cmd_find_tests(args):
         if (word is None or word in full.casefold()) and (changed is None or path in changed):
             chosen.append((path, full, title))
     printed, texts = [], {}
+    if not chosen:
+        notes.append("报告里没有符合条件的测试，没有列出任何检查")
     for path, full, title in chosen:
         if path not in texts:
             texts[path] = (repo / path).read_text(encoding="utf-8", errors="replace")
