@@ -84,14 +84,12 @@ covers how to talk to Codex, not what the goal or progress is.
 ## Sessions
 
 - Model, reasoning effort and speed follow the user's standing preference in
-  memory. Current preference (2026-10-01): `gpt-6.1-sol` with `xhigh` for
-  ordinary coding (production code, tests, fixes with a known cause);
-  `gpt-6-astra` with `xhigh` only for hard, unexplained problems or work that
-  needs strong architecture skills; `gpt-6.1-sol` with `high` for
-  documentation-only work, Runbook resealing and evidence write-ups. Speed:
-  **fast** (`-c service_tier="fast"` on every launch and resume) since the
-  user's 2026-10-01 decision, until the user says credits are tight and asks
-  to turn it off; never `max`/`ultra`. Speed, like effort, is fixed per turn:
+  memory. Current preference (2026-10-02): `gpt-6.1-sol` with `max` and
+  **fast** for all Codex work (coding, hard problems, documentation), on
+  every launch and resume (`-m gpt-6.1-sol -c model_reasoning_effort="max"
+  -c service_tier="fast"`), until the user says credits are tight. This
+  replaced the 2026-10-01 split (`xhigh` for coding, `gpt-6-astra` for hard
+  problems, `high` for docs, never `max`). Speed, like effort, is fixed per turn:
   a running turn keeps its tier, so apply a change at the next stop by
   stopping and resuming, not with `codex queue`. State the chosen model,
   effort, speed and the reason in each brief.
@@ -128,8 +126,10 @@ covers how to talk to Codex, not what the goal or progress is.
   `service_tier` the user's current preference requires (fast since
   2026-10-01). Codex 0.159 records `-c service_tier="fast"` in the log as
   `"service_tier":"priority"` inside `thread_settings_applied`; `status`
-  prints `priority` for fast and `default` for standard speed (verified
-  2026-10-02).
+  prints `priority` for fast (verified 2026-10-02 on a resumed session). A
+  new session launched with `codex-launch.sh` may write no tier field to
+  the log at all; `status` then prints `not in log`, and the TUI footer
+  (`GPT-6.1-Sol xhigh fast`) is the evidence instead (seen 2026-10-02).
 
 ## Waiting
 

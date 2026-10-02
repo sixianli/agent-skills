@@ -79,7 +79,7 @@ for line in open(sys.argv[1]):
             usage = p["info"].get("total_token_usage") or usage
 if ctx:
     print(f"model: {ctx.get('model')}  effort: {ctx.get('effort')}  approval: {ctx.get('approval_policy')}")
-print(f"service_tier: {tier or 'default'}")
+print(f"service_tier: {tier or 'not in log (check the TUI footer: fast shows as \"fast\")'}")
 if usage:
     i, c, o = usage.get("input_tokens", 0), usage.get("cached_input_tokens", 0), usage.get("output_tokens", 0)
     rate = f"{c / i:.1%}" if i else "n/a"

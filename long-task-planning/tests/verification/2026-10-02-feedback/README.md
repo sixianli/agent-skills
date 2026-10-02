@@ -75,7 +75,7 @@ python3 long-task-planning/tests/mutate.py
 
 - 每个行为改动都先写测试，在旧代码上运行确认失败，而且失败原因就是要修的问题，再改代码。失败日志按条目保存在 `local/red/`。
 - 每个新行为都配了变异：把实现里的关键判断改坏，确认对应测试会失败。变异定义在 [mutate.py](../../mutate.py)，本轮结束时共 131 个。[test_mutate.py](../../test_mutate.py) 随完整测试一起跑，检查每个变异要替换的代码片段在目标文件里正好出现一次、引用的测试都存在，代码改了而变异没跟着改时马上能发现。全部变异的最终结果是条目 SK-R5 的证据，看 `status`。
-- 每次提交前跑完整的 long-task-planning 测试并用 `record --junit` 记录，报告保存在 `local/reports/`。本轮最后一次代码改动后是 105 个测试；codex-orchestration 自己的 3 个测试也通过。
+- 每次提交前跑完整的 long-task-planning 测试并用 `record --junit` 记录，报告保存在 `local/reports/`。本轮最后一次代码改动后是 105 个测试；codex-orchestration 自己的 5 个测试也通过。
 - 代码风格检查用 ruff（一个 Python 代码检查工具，用 uv 临时安装运行）：`uv run --with ruff ruff check long-task-planning/scripts long-task-planning/tests`。
 - 环境：Mac，Python 3.14.7，git 2.47.1。
 
@@ -120,7 +120,7 @@ python3 long-task-planning/tests/mutate.py
 | SK-R1 | 仓库总校验 | `uv run --no-project --with pyyaml python scripts/validate_all.py`（uv 是 Python 的包管理和运行工具，这里临时装上 PyYAML 来跑校验） |
 | SK-R5 | 全部变异都被测试发现 | `python3 long-task-planning/tests/mutate.py` |
 | SK-R2 | 公开文件里不含私人信息 | 用只在本机的 `.agents/local/private-patterns.txt`（项目名、地址、用户名等）对公开路径做 `git grep`，命令原文见 items.json |
-| SK-R3 | 本机安装改为指向本仓库的符号链接 | 原安装目录先备份，再建链接；items.json 里的命令确认两个链接都指向本仓库，再用 Claude Code 命令行确认能识别 skill、钩子照常输出 |
+| SK-R3 | 本机安装改为指向本仓库的符号链接 | 先把迁入之后另一个会话在安装目录里做的改动合并进仓库（`codex-session.sh` 在日志里没有速度档位时不再显示 default，SKILL.md 的模型偏好改为 2026-10-02 的决定），新增 `codex-orchestration/tests/test_codex_session.py`；原安装目录先备份，再建链接；items.json 里的命令确认两个链接都指向本仓库，再用 Claude Code 命令行确认能识别 skill、钩子照常输出 |
 | SK-R8 | 反馈文件逐条标注“已处理” | 本机的 `FEEDBACK.md` 不进 git，由审核记录说明 |
 
 SK-R1、SK-R5、SK-R2 是命令检查，绑定代码指纹：本文之后对代码或文档的任何改动都会让它们变旧，需要重跑。SK-R3 的环境检查只看主机和记录时间，不随代码变旧。

@@ -554,6 +554,11 @@
           "run": "test -L \"$HOME/.claude/skills/long-task-planning\" && test -L \"$HOME/.claude/skills/codex-orchestration\" && test \"$(cd \"$HOME/.claude/skills/long-task-planning\" && pwd -P)\" = \"$(cd long-task-planning && pwd -P)\" && test \"$(cd \"$HOME/.claude/skills/codex-orchestration\" && pwd -P)\" = \"$(cd codex-orchestration && pwd -P)\""
         },
         {
+          "type": "test",
+          "file": "codex-orchestration/tests/test_codex_session.py",
+          "name": "test_status_says_the_tier_is_missing_instead_of_guessing_default"
+        },
+        {
           "type": "review",
           "by": "claude"
         }
