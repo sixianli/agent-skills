@@ -14,11 +14,15 @@ if [ "$cmd" = "new" ]; then
   since=$2
   [ -e "$since" ] || { echo "no such file: $since" >&2; exit 1; }
   deadline=$(( $(date +%s) + ${3:-120} ))
+  since_stamp=$(date -r "$since" +%Y-%m-%dT%H-%M-%S)
   while :; do
     found=""
     while IFS= read -r candidate; do
+      started=$(basename "$candidate" | sed -E 's/^rollout-([0-9T-]{19})-.*/\1/')
+      [[ "$started" < "$since_stamp" ]] && continue
+      grep -Eq '"model": *"codex-auto-review"' "$candidate" && continue
       if grep -q '"turn_context"' "$candidate"; then found=$candidate; break; fi
-    done < <(find "$HOME/.codex/sessions" -name 'rollout-*.jsonl' -newer "$since" 2>/dev/null)
+    done < <(find "$HOME/.codex/sessions" -name 'rollout-*.jsonl' -newer "$since" 2>/dev/null | sort)
     [ -n "$found" ] && break
     [ "$(date +%s)" -lt "$deadline" ] || { echo "no new session log with a turn after $since" >&2; exit 1; }
     sleep 3

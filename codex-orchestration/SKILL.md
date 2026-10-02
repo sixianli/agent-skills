@@ -115,12 +115,15 @@ covers how to talk to Codex, not what the goal or progress is.
   which is where most token savings come from.
 - After launching a new session, get its UUID and settings in one step
   (sandbox disabled): `scripts/codex-session.sh new <brief path>`. It waits
-  for the first session log newer than the brief that has a turn, then
-  prints `status`. Since Codex 0.159 one launch can create two logs: the main
-  thread (`"originator":"codex-tui"`, the requested model and effort) and an
-  approval-review thread (`"model":"codex-auto-review"`, effort `low`). Use
-  the main thread's UUID for status, wait and queue; confirm with
-  `grep -c '"model":"<model>"' <log>`.
+  for the first session log that started after the brief was written (the
+  start time in the log's file name) and has a turn, then prints `status`.
+  Since Codex 0.159 one launch can create two logs: the main thread
+  (`"originator":"codex-tui"`, the requested model and effort) and an
+  approval-review thread (`"model":"codex-auto-review"`, effort `low`); `new`
+  skips the review thread. It also skips older sessions that are still being
+  written, such as the user's own Codex Desktop work (on 2026-10-02 the
+  earlier modification-time check picked one of those). Confirm the main
+  thread with `grep -c '"model":"<model>"' <log>`.
 - After every launch or resume, run
   `scripts/codex-session.sh status <uuid>` and check model, effort and the
   `service_tier` the user's current preference requires (fast since
