@@ -1082,6 +1082,22 @@ class LintTests(Base):
         code, output = self.lint(self.repo)
         self.assertEqual(code, 0, output)
 
+    def test_commit_and_review_progress_words_are_refused(self):
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
+        plan = self.repo / TASK / "plan.md"
+        for line, word in (("- T-A1：修复已提交（325ef03）", "已提交"), ("- T-A1：已修，等完整测试", "已修"),
+                           ("- T-A1：分支已合并", "已合并"), ("- T-A1：已审核", "已审核"), ("- T-A1：已推送", "已推送"),
+                           ("- T-A1：待验证", "待验证"), ("- T-A1：待审核", "待审核"), ("- T-A1：已做完", "已做完")):
+            with self.subTest(word=word):
+                plan.write_text(plan_text(batch=[line]), encoding="utf-8")
+                code, output = self.lint(self.repo)
+                self.assertEqual(code, 1, output)
+                self.assertIn(f"“{word}”", output)
+                self.assertIn("只写做什么、用什么证据", output)
+        plan.write_text(plan_text(batch=["- T-A1：修好后提交，推送前由 Claude 审核；证据：提交里跑过的单元测试全过"]), encoding="utf-8")
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 0, output)
+
     def test_changed_completion_condition_needs_a_log_line(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
         self.set_items(self.repo, [item("T-A1", [tag_check("T-A1", host="cloud")])])

@@ -321,6 +321,12 @@ mutant("fingerprint file dirty optional",
 mutant("fingerprint file error example incomplete",
        [('"dirty": False, "host": "<主机名>"}', '"dirty": False}')],
        ["RecordTests.test_fingerprint_file_error_lists_required_fields"])
+mutant("commit and review progress words allowed",
+       [("已提交|已合并|已推送|已审核|已做完|做完了|待验证|待审核|", "")],
+       ["LintTests.test_commit_and_review_progress_words_are_refused"])
+mutant("progress hint missing",
+       [('PROGRESS_HINT = "计划只写做什么、用什么证据，不写到哪一步了；做没做完用 status 算"', 'PROGRESS_HINT = "计划只写打算，做没做完用 status 算"')],
+       ["LintTests.test_commit_and_review_progress_words_are_refused"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

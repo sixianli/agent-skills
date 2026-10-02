@@ -107,7 +107,7 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 ```
 
 - The five `##` sections are required. In `当前批次`, `lint` counts only bullets that start with an item ID, and allows at most three. Items that the batch's test run only verifies, without work of their own, go on a bullet that does not start with an ID; they do not count, but every ID in the section must exist in `items.json`.
-- No checkboxes or status words outside the last three sections. HTML comments are ignored.
+- No checkboxes or progress words outside the last three sections. `lint` refuses 已完成, 已修复, 已修好, 已修, 已通过, 已验证, 已解决, 已提交, 已合并, 已推送, 已审核, 已做完, 做完了, 待验证, 待审核, 进行中, 未开始, 完成了, ✅, ☑, ✔ and `[ ]` / `[x]`. The rule behind the list: a plan line says what to do and what evidence is needed, not how far it has got. Words the list misses still break that rule. HTML comments are ignored.
 - The last three sections are append only, checked against git history.
 
 ## evidence.jsonl

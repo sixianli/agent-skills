@@ -39,7 +39,8 @@ LABELS = {
 }
 PLAN_SECTIONS = ("当前批次", "之后", "计划改动记录", "意外和发现", "决定")
 LOG_SECTIONS = ("计划改动记录", "意外和发现", "决定")
-STATUS_WORDS = re.compile(r"已完成|已修复|已修好|已通过|已验证|已解决|进行中|未开始|完成了|✅|☑|✔|\[[xX ]\]")
+STATUS_WORDS = re.compile(r"已完成|已修复|已修好|已修|已通过|已验证|已解决|已提交|已合并|已推送|已审核|已做完|做完了|待验证|待审核|进行中|未开始|完成了|✅|☑|✔|\[[xX ]\]")
+PROGRESS_HINT = "计划只写做什么、用什么证据，不写到哪一步了；做没做完用 status 算"
 QUESTION_PREFIX = "问题："
 GOAL_HEADER = re.compile(r"^## (G\d+|CLOSED) (\d{4}-\d{2}-\d{2}) (\S.*)$")
 ID_BODY = r"[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*"
@@ -1407,13 +1408,13 @@ def lint_task(task):
         for number, line, in_comment in lines:
             match = None if in_comment else STATUS_WORDS.search(line)
             if match:
-                errors.append(f"plan.md 第 {number} 行写了进度（“{match.group(0)}”）：计划只写打算，做没做完用 status 算")
+                errors.append(f"plan.md 第 {number} 行写了进度（“{match.group(0)}”）：{PROGRESS_HINT}")
     for number, line in enumerate(plan.splitlines(), 1):
         if line.startswith("## "):
             break
         match = None if "<!--" in line else STATUS_WORDS.search(line)
         if match and not line.startswith("#"):
-            errors.append(f"plan.md 第 {number} 行写了进度（“{match.group(0)}”）")
+            errors.append(f"plan.md 第 {number} 行写了进度（“{match.group(0)}”）：{PROGRESS_HINT}")
     if data and isinstance(data.get("prefix"), str):
         pattern = re.compile(rf"(?<![A-Za-z0-9]){re.escape(data['prefix'])}-{ID_BODY}")
         known = {entry.get("id") for entry in data["items"] if isinstance(entry, dict)}
