@@ -333,6 +333,12 @@ mutant("withdrawn items still need completion conditions",
 mutant("empty completion conditions allowed for every item",
        [('        may_be_empty = entry.get("withdrawn") is not None and checks in (None, [])', '        may_be_empty = checks in (None, [])')],
        ["LintTests.test_withdrawn_item_may_have_no_completion_conditions"])
+mutant("goals shown in record order",
+       [('    goals = goals[:1] + sorted(goals[1:], key=lambda entry: entry["date"])\n', '')],
+       ["ContextHookTests.test_context_orders_goals_by_date_after_the_first"])
+mutant("first goal sorted with the rest",
+       [('    goals = goals[:1] + sorted(goals[1:], key=', '    goals = sorted(goals, key=')],
+       ["ContextHookTests.test_context_orders_goals_by_date_after_the_first"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

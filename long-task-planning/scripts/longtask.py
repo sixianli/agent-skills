@@ -1483,6 +1483,7 @@ def build_context(task, budget):
     except Fail as error:
         return truncate(f"{header}\n读取出错：{error}。先修好再按 long-task-planning 的规则工作（{home_short(SKILL_MD)}）。", budget)
     goals = [entry for entry in evaluation.goal_entries if entry["id"] != "CLOSED"]
+    goals = goals[:1] + sorted(goals[1:], key=lambda entry: entry["date"])
     plan_path = task.path("plan.md")
     plan = read_text(plan_path) if plan_path.exists() else ""
     batch = context_lines(plan, "当前批次")

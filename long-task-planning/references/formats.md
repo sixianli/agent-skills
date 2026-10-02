@@ -37,7 +37,8 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 - Headings match `## G<number> <YYYY-MM-DD> <source>` or `## CLOSED <YYYY-MM-DD> <source>`. Source is `用户原话` (typed by the user), `用户选择` (an option picked in a multiple-choice question) or `转述：<where from>`.
 - The quote lines start with `> `. For `用户选择`, quote the chosen option's label and description exactly as shown.
 - An optional `问题：<question>` line above the quote holds the question the user answered. Use it for every `用户选择` entry and for any short answer that is unclear on its own. `context` prints such an entry as `问：<question> 答：<answer>`.
-- IDs are unique; `CLOSED` is last and makes the task inactive.
+- IDs are unique and show the order entries were recorded, not when things were said: a decision found later gets the next free number with its own date. `context` shows G1 first, then the rest by date; entries of the same day keep their recorded order.
+- `CLOSED` is last and makes the task inactive.
 - Append only: every committed version and the working copy must start with the previous version's lines.
 
 ## items.json

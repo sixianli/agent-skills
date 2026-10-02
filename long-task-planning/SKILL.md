@@ -165,7 +165,7 @@ Then run `$LT lint` and commit the task directory.
 ## Hooks
 
 - Claude Code (`~/.claude/settings.json`) and Codex (`~/.codex/hooks.json`) run `$LT hook` at session start, resume, clear and after compaction. Codex runs it only after the user trusts it in `/hooks`.
-- With an active task the hook injects, within 1,600 characters, the goal quotes, the computed status, the problem items, the current batch and the latest plan change. Without one it prints nothing, except a one-line reminder after compaction or resume to check whether the work needs full mode.
+- With an active task the hook injects, within 1,600 characters, the goal quotes (G1 first, the rest by date), the computed status, the problem items, the current batch and the latest plan change. Without one it prints nothing, except a one-line reminder after compaction or resume to check whether the work needs full mode.
 - If the injected text reports an error, run `lint` and fix the task files before continuing.
 - There is deliberately no Stop hook: it would fight stop files and waiting for user authorization.
 
