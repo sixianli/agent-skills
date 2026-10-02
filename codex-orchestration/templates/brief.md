@@ -18,7 +18,7 @@
 
 <逐条写清楚“什么证据算完成”，包括跑哪一层测试、跑几次、在哪个版本上跑。不要写“连续跑 N 次”这类含糊要求，除非确实需要，并说明是哪个测试组。>
 
-新测试的标题里写上条目编号，例如 `it("[<条目编号>] …")`。测试证据用 `python3 ~/.claude/skills/long-task-planning/scripts/longtask.py record --vitest <报告> --by codex --ran "<命令>"` 记录。测试在别的机器上跑时，同步代码后、跑测试前，先在那台机器上算代码指纹：`LONGTASK_HOST=<主机名> python3 <脚本副本> --repo <检出目录> fingerprint --json > <检出目录之外>/fp.json`；带回本机后，记录时加 `--fingerprint-file <fp.json>`。不要改任务目录里的 goal.md、items.json、plan.md。
+新测试的标题里写上条目编号，例如 `it("[<条目编号>] …")`。测试证据用 `python3 ~/.claude/skills/long-task-planning/scripts/longtask.py record --vitest <报告> --by codex --ran "<命令>"` 记录。测试在别的机器上跑时，把 `~/.claude/skills/long-task-planning/references/remote-evidence.md` 里“可直接贴进简报的步骤”一节整段贴在这里，并替换占位。不要改任务目录里的 goal.md、items.json、plan.md。
 
 在未提交的工作区上跑测试时，保存工作区补丁作为快照；保存前先对新建文件执行 `git add --intent-to-add <文件>`，让补丁里包含新文件。
 

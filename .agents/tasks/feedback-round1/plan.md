@@ -6,15 +6,12 @@
 
 ## 当前批次
 
-- SK-F16：SKILL.md 的“和 Codex 一起用”一节和 codex-orchestration 的 templates/brief.md 写明：要求“失败就停”时，是等这次测试命令自己跑完、拿到完整报告再停，不是中途终止；先重读简报模板；证据：我对两处文档的审核
-- SK-F7：plan.md 当前批次“最多 3 项”只数以条目编号开头的行，顺带验证的条目写在说明里不算数；先写测试看它失败；证据：1 个测试通过
-- SK-F12：新建 references/remote-evidence.md，写远端记录证据的中文步骤，可直接贴进简报；SKILL.md 和简报模板引用它；证据：文件存在，加我的审核
+- SK-F1：指纹文件缺字段时，报错列出全部必需字段（fingerprint、commit、dirty）并给一个可照抄的例子；SKILL.md 升级一节和 formats.md 写出完整字段；先写测试看它失败；证据：1 个测试通过，加我对文档的审核
+- SK-F8：plan.md 的进度词表补上“已提交、已修、已合并、已审核、待验证”这类词；SKILL.md 写明判断原则：只写做什么、用什么证据，不写到哪一步；先写测试看它失败；证据：1 个测试通过，加我对文档的审核
+- SK-F10：有 withdrawn 的条目允许 done_when 为空；没有 withdrawn 时仍要求至少一条；先写测试看它失败；证据：1 个测试通过
 
 ## 之后
 
-- SK-F1
-- SK-F8
-- SK-F10
 - SK-F4
 - SK-F17
 - SK-R4
@@ -33,6 +30,7 @@
 - 2026-10-02 14:30 当前批次改为 SK-F6、SK-F3、SK-F13。原因：status 显示当前版本已验证 6、旧版本验证过 2、未完成 18，第二批三项的测试都在当前版本上通过，按计划进入 B 组。
 - 2026-10-02 14:37 当前批次改为 SK-F16、SK-F7、SK-F12。原因：status 显示当前版本已验证 9、旧版本验证过 2、未完成 15，第三批三项都在当前版本上验证，按计划继续 B 组。
 - 2026-10-02 14:45 SK-F14 的完成条件加一个测试 test_evidence_recorded_before_its_commit_is_relaxed_from_that_commit，并把 test_dirty_or_unknown_test_records_are_not_relaxed 改名为 test_uncommitted_or_unknown_test_records_are_not_relaxed。原因：先记录再提交时放宽从不生效，见“意外和发现”。
+- 2026-10-02 14:50 当前批次改为 SK-F1、SK-F8、SK-F10。原因：仓库新版脚本的 status 显示当前版本已验证 10、旧版本验证过 4、未完成 12；SK-F16、SK-F7、SK-F12 的证据都已记录，按计划进入 C 组和剩下的 B 组。
 
 ## 意外和发现
 
@@ -45,3 +43,4 @@
 - 2026-10-02 本任务的进度记录用安装目录里的旧版 longtask.py，换成符号链接后改用仓库里的新版；测试证据用 tests/junit_report.py 生成的 JUnit 报告记录，报告放在不进 git 的 .agents/local/reports/。
 - 2026-10-02 记录证据时设 LONGTASK_HOST=mac，避免把本机主机名写进公开仓库。
 - 2026-10-02 test_exclude 只放文档：本仓库的测试只读脚本和测试文件本身，不读 SKILL.md、references/、README.md 和验证记录。
+- 2026-10-02 从 SK-F12 起，status 和 record 改用仓库里的新版 longtask.py（LONGTASK_HOST=mac 不变）。原因：安装目录的旧版没有 test_exclude 放宽，只改文档就把全部测试证据显示成旧版本验证过（旧版显示已验证 1、旧版本验证过 13，新版显示已验证 10、旧版本验证过 4）；新版已过 93 个测试，记录格式和旧版兼容。钩子注入的内容仍由旧版生成，换成符号链接（SK-R3）后一致。

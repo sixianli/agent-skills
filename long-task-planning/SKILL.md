@@ -92,7 +92,7 @@ List path prefixes that no test reads in `items.json` under `fingerprint.test_ex
 ## Recording evidence
 
 - **Tests on this machine**: produce a JSON (Vitest `--reporter=json`) or JUnit XML report, then `$LT record --vitest <report> --by <agent> --ran "<command>"` (or `--junit`). Test file paths in the report may be absolute or from another checkout; they are matched to repository files by suffix.
-- **Tests on another host** (for example the cloud test server). The fingerprint must be computed there, on the synced code, **before** the tests run:
+- **Tests on another host** (for example the cloud test server). The fingerprint must be computed there, on the synced code, **before** the tests run. [references/remote-evidence.md](references/remote-evidence.md) has the same steps in Chinese, ready to paste into a brief:
   1. Copy `longtask.py` once to a task-owned directory on that host.
   2. After syncing the code: `LONGTASK_HOST=<host name used in checks> python3 <copy> --repo <checkout> fingerprint --json > <outside>/fp.json`. Write `fp.json` and reports outside the checkout or into a git-ignored directory; a new file inside the checkout becomes part of the fingerprint. If the checkout lacks the task directory, add `--exclude <prefix>` for every `fingerprint.exclude` entry.
   3. Run the tests with a JSON or JUnit reporter; bring `fp.json` and the report back.
