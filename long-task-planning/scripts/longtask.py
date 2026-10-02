@@ -1593,11 +1593,9 @@ def cmd_fingerprint(args):
 
 def title_fragment(title, text):
     words = list(re.finditer(r"\S+", title))
-    spans = [(words[first].start(), words[last].end()) for first in range(len(words)) for last in range(first, len(words))]
-    for start, end in sorted(spans, key=lambda span: span[0] - span[1]):
-        if title[start:end] in text:
-            return title[start:end]
-    return None
+    found = [title[words[first].start():words[last].end()] for first in range(len(words)) for last in range(first, len(words))]
+    found = [span for span in found if span in text]
+    return min(found, key=lambda span: (text.count(span), -len(span)), default=None)
 
 
 def cmd_find_tests(args):

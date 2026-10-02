@@ -1052,6 +1052,10 @@ MATH_SPEC = """describe("calculator operations", () => {
   it.each(["one", "two"])("parses %s value", () => {});
 });
 """
+STATE_SPEC = """it.each([["idle", "running"], ["running", "idle"]])("allows %s -> %s", () => {});
+it.each([["running", "running"]])("rejects %s -> %s", () => {});
+it("keeps running after a retry", () => {});
+"""
 
 
 class FindTestsTests(Base):
@@ -1099,6 +1103,22 @@ class FindTestsTests(Base):
         self.ok(self.cli(self.repo, "record", "--vitest", str(report), "--by", "codex"))
         data = self.status(self.repo)[1]
         self.assertEqual([self.item_of(data, f"T-S{n}")["status"] for n in (1, 2, 3)], ["verified"] * 3)
+
+    def test_find_tests_prefers_template_words_to_parameter_values(self):
+        write(self.repo, "test/state.test.ts", STATE_SPEC)
+        self.commit_all(self.repo, "state tests")
+        spec = str(self.repo / "test/state.test.ts")
+        report = self.write_report([*[(spec, title, "passed") for title in ("allows idle -> running", "allows running -> idle", "rejects running -> running")],
+                                    (spec, "keeps running after a retry", "failed")])
+        result = self.find("--vitest", str(report), "--commit", "HEAD")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        checks = [json.loads(line) for line in result.stdout.splitlines()]
+        self.assertEqual([check["name"] for check in checks], ["allows", "rejects", "keeps running after a retry"])
+        self.assertIn("“allows”同时对应报告里这个文件的 2 个测试", result.stderr)
+        self.init_task(self.repo, [item(f"T-S{n}", [check]) for n, check in enumerate(checks, 1)])
+        self.ok(self.cli(self.repo, "record", "--vitest", str(report), "--by", "codex"))
+        data = self.status(self.repo)[1]
+        self.assertEqual([self.item_of(data, f"T-S{n}")["status"] for n in (1, 2, 3)], ["verified", "verified", "not_done"])
 
     def test_find_tests_filters_by_commit_and_word(self):
         write(self.repo, "test/text.test.ts", 'it("trims [T-B1] spaces", () => {});\nit("Joins words", () => {});\n')

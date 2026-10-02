@@ -329,6 +329,11 @@
           "type": "test",
           "file": "long-task-planning/tests/test_longtask.py",
           "name": "test_find_tests_filters_by_commit_and_word"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_find_tests_prefers_template_words_to_parameter_values"
         }
       ],
       "added": {

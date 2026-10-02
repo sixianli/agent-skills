@@ -355,7 +355,13 @@ mutant("find-tests picks fragments from the full name",
        [("        fragment = title_fragment(title, texts[path])", "        fragment = title_fragment(full, texts[path])")],
        ["FindTestsTests.test_find_tests_prints_checks_that_verify_after_recording"])
 mutant("find-tests prefers the shortest fragment",
-       [("key=lambda span: span[0] - span[1])", "key=lambda span: span[1] - span[0])")],
+       [("key=lambda span: (text.count(span), -len(span))", "key=lambda span: (text.count(span), len(span))")],
+       ["FindTestsTests.test_find_tests_prints_checks_that_verify_after_recording"])
+mutant("find-tests prefers the longest fragment",
+       [("key=lambda span: (text.count(span), -len(span))", "key=lambda span: -len(span)")],
+       ["FindTestsTests.test_find_tests_prefers_template_words_to_parameter_values"])
+mutant("find-tests keeps fragments missing from the file",
+       [("    found = [span for span in found if span in text]\n", "")],
        ["FindTestsTests.test_find_tests_prints_checks_that_verify_after_recording"])
 mutant("find-tests ignores grep",
        [("        if (word is None or word in full.casefold()) and", "        if True and")],
