@@ -577,6 +577,16 @@
           ]
         }
       ]
+    },
+    {
+      "name": "hermes-ssh",
+      "package_dir": "hermes-ssh",
+      "readme": "hermes-ssh/SKILL.md",
+      "skill_dir": "hermes-ssh",
+      "description": "Connect to the Hermes Linux server through SSH and Cloudflare Access, verify the remote host, and diagnose connection failures.",
+      "implicit_invocation": true,
+      "has_tests": false,
+      "checks": []
     }
   ]
 }

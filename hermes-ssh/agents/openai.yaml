@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hermes SSH"
+  short_description: "Connect to Hermes through Cloudflare Access"
+  default_prompt: "Use $hermes-ssh to connect to Hermes and verify the remote host before running the requested command."
