@@ -761,6 +761,48 @@ class StatusTests(Base):
         self.assertIn("共 2 项", result.stdout)
 
 
+class ReviewTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.repo = self.make_repo()
+        self.init_task(self.repo, [item("T-R1", [{"type": "review", "by": "claude"}])])
+
+    def review(self, *args):
+        return self.cli(self.repo, "record", "--review", "--items", "T-R1", "--verdict", "approved", "--by", "claude", *args)
+
+    def test_backfilled_review_binds_to_the_reviewed_commit(self):
+        reviewed = self.git(self.repo, "rev-parse", "HEAD").strip()
+        reviewed_blob = self.git(self.repo, "rev-parse", f"{reviewed}:src/app.ts").strip()
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        self.commit_all(self.repo, "change after the review")
+        result = self.ok(self.review("--files", "src/app.ts", "--commit", reviewed[:7]))
+        self.assertIn(reviewed[:7], result.stdout)
+        record = self.records(self.repo)[-1]
+        self.assertEqual(record["files"], {"src/app.ts": reviewed_blob})
+        self.assertEqual(record["reviewed_commit"], reviewed)
+        entry = self.item_of(self.status(self.repo)[1], "T-R1")
+        self.assertEqual(entry["status"], "older")
+        self.assertEqual(entry["changed_files"], ["src/app.ts"])
+
+    def test_review_commit_must_contain_the_files(self):
+        reviewed = self.git(self.repo, "rev-parse", "HEAD").strip()
+        write(self.repo, "src/new.ts", "export const y = 1;\n")
+        result = self.review("--files", "src/new.ts", "--commit", reviewed)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("src/new.ts", result.stderr)
+        self.assertIn("不存在", result.stderr)
+        result = self.review("--files", "src/app.ts", "--commit", "0" * 40)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("不存在", result.stderr)
+        result = self.review("--files", "src", "--commit", reviewed)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("不存在", result.stderr)
+        result = self.cli(self.repo, "record", "--command", "make check", "--exit-code", "0", "--commit", reviewed)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("--review", result.stderr)
+        self.assertEqual(self.records(self.repo), [])
+
+
 class TestExcludeTests(Base):
     def setUp(self):
         super().setUp()

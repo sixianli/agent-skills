@@ -242,6 +242,18 @@ mutant("relaxed note hidden",
 mutant("relaxed files counted as item changes",
        [('            if status == "verified":\n                continue\n            for path in changed:', '            for path in changed:')],
        ["TestExcludeTests.test_doc_only_change_keeps_test_evidence_current"])
+mutant("review commit ignored",
+       [('        hashes = commit_blobs(repo, reviewed, paths) if reviewed else hash_paths(repo, paths)', '        hashes = hash_paths(repo, paths)')],
+       ["ReviewTests.test_backfilled_review_binds_to_the_reviewed_commit", "ReviewTests.test_review_commit_must_contain_the_files"])
+mutant("directory accepted as a reviewed file",
+       [('        found[path] = parts[2] if len(parts) == 3 and parts[1] == "blob" and name == path else None', '        found[path] = parts[2] if len(parts) == 3 else None')],
+       ["ReviewTests.test_review_commit_must_contain_the_files"])
+mutant("commit without review accepted",
+       [('    if args.commit and not args.review:\n        raise Fail(', '    if False:\n        raise Fail(')],
+       ["ReviewTests.test_review_commit_must_contain_the_files"])
+mutant("reviewed commit not stored",
+       [('        if reviewed:\n            record["reviewed_commit"] = reviewed', '        if False:\n            record["reviewed_commit"] = reviewed')],
+       ["ReviewTests.test_backfilled_review_binds_to_the_reviewed_commit"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

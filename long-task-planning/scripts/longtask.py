@@ -662,6 +662,23 @@ def test_record(task, data, args, fingerprint):
     return record
 
 
+def resolve_commit(repo, value):
+    result = git(repo, "rev-parse", "--verify", "-q", f"{value}^{{commit}}", check=False)
+    if result.returncode != 0:
+        raise Fail(f"提交 {value} 不存在")
+    return result.stdout.strip()
+
+
+def commit_blobs(repo, commit, paths):
+    found = {}
+    for path in paths:
+        line = git_out(repo, "ls-tree", "-z", "--full-tree", commit, "--", path).split("\0")[0]
+        meta, _, name = line.partition("\t")
+        parts = meta.split()
+        found[path] = parts[2] if len(parts) == 3 and parts[1] == "blob" and name == path else None
+    return found
+
+
 def resolve_repo_path(repo, path):
     candidate = Path(path)
     full = candidate if candidate.is_absolute() else (Path.cwd() / candidate)
@@ -678,6 +695,8 @@ def cmd_record(args):
     task = resolve_task(repo, args.task)
     data = load_items(task)
     excludes = excludes_of(data)
+    if args.commit and not args.review:
+        raise Fail("--commit 只能和 --review 一起用：补录审核时按那个提交里的文件内容记录")
     if args.retract:
         records, _ = load_records(task)
         if args.retract not in {record["id"] for record in records}:
@@ -702,12 +721,16 @@ def cmd_record(args):
         if unknown:
             raise Fail(f"条目 {', '.join(unknown)} 在 items.json 里不存在")
         paths = [resolve_repo_path(repo, path) for path in args.files]
-        hashes = hash_paths(repo, paths)
+        reviewed = resolve_commit(repo, args.commit) if args.commit else None
+        hashes = commit_blobs(repo, reviewed, paths) if reviewed else hash_paths(repo, paths)
         missing = [path for path, blob in hashes.items() if blob is None]
         if missing:
-            raise Fail(f"文件不存在：{', '.join(missing)}")
+            where = f"在提交 {reviewed[:7]} 里" if reviewed else ""
+            raise Fail(f"文件{where}不存在：{', '.join(missing)}")
         record = base_record("review", record_fingerprint(task, args, excludes), args)
         record.update({"items": item_ids, "verdict": args.verdict, "files": {path: hashes[path] for path in paths}})
+        if reviewed:
+            record["reviewed_commit"] = reviewed
     else:
         record = test_record(task, data, args, record_fingerprint(task, args, excludes))
     append_record(task, record)
@@ -726,7 +749,8 @@ def describe_record(record):
     if record["kind"] == "command":
         return f"{head}：{record['command']} 退出码 {record['exit_code']}"
     if record["kind"] == "review":
-        return f"{head}：{', '.join(record['items'])} 审核结论 {record['verdict']}"
+        source = f"（按提交 {record['reviewed_commit'][:7]} 里的文件内容）" if record.get("reviewed_commit") else ""
+        return f"{head}：{', '.join(record['items'])} 审核结论 {record['verdict']}{source}"
     return f"{head}：撤回 {record['target']}"
 
 
@@ -1557,6 +1581,7 @@ def build_parser():
     record.add_argument("--items", help="审核涉及的条目，逗号分隔")
     record.add_argument("--verdict", choices=("approved", "rejected"))
     record.add_argument("--files", nargs="+")
+    record.add_argument("--commit", help="补录审核时，按这个提交里的文件内容记录")
     record.add_argument("--reason")
     record.add_argument("--fingerprint-file")
     record.add_argument("--host")
