@@ -1,0 +1,304 @@
+{
+  "task": "feedback-round2",
+  "prefix": "S2",
+  "items": [
+    {
+      "id": "S2-F20a",
+      "title": "证据文件允许在已提交的行之间插入新行，改动、删除、调换已提交的行仍报错",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_evidence_lines_inserted_between_committed_lines_pass"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_evidence_reordered_or_removed_committed_lines_fail"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_goal_line_inserted_between_old_lines_fails"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "FEEDBACK F20"
+      }
+    },
+    {
+      "id": "S2-F20b",
+      "title": "审核和环境检查按记录时间取最近一次，不按文件行序",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_latest_review_is_chosen_by_time_not_line_order"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_latest_environment_record_is_chosen_by_time_not_line_order"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_evidence_time_must_be_readable"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "FEEDBACK F20，复现时发现手工挪行会改变审核结果"
+      }
+    },
+    {
+      "id": "S2-F19",
+      "title": "check-brief 只把“范围”一节里以编号开头的列表行当本批条目，别处的已撤回编号只警告",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_batch_is_the_id_led_bullets_in_the_scope_section"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_withdrawn_item_outside_the_batch_only_warns"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_item_mentioned_only_outside_the_scope_section_is_not_a_batch"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_brief_batch_is_limited_to_three_items"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_brief_with_withdrawn_item_fails"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "FEEDBACK F19"
+      }
+    },
+    {
+      "id": "S2-F18a",
+      "title": "fingerprint.include：指纹只看列出的路径，路径必须存在",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_include_limits_the_fingerprint_to_listed_paths"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_include_paths_must_exist"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_fingerprint_command_reads_include_and_accepts_the_flag"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_status_shows_the_include_paths"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "FEEDBACK F18"
+      }
+    },
+    {
+      "id": "S2-F18b",
+      "title": "指纹范围和记录时不同时，说明是设置变了，不写“之后代码改过”加空文件列表",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_scope_change_is_named_instead_of_code_change"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_remote_fingerprint_with_other_scope_is_named"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "FEEDBACK F18，复现时发现"
+      }
+    },
+    {
+      "id": "S2-R1",
+      "title": "仓库总校验通过",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "uv run --no-project --with pyyaml python scripts/validate_all.py"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "最终检查"
+      }
+    },
+    {
+      "id": "S2-R2",
+      "title": "全部变异都被测试发现",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "python3 long-task-planning/tests/mutate.py"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_mutate.py",
+          "name": "test_every_mutant_applies_to_its_target_exactly_once"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_mutate.py",
+          "name": "test_every_mutant_names_tests_that_exist"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "最终检查"
+      }
+    },
+    {
+      "id": "S2-R3",
+      "title": "本轮改动的路径里不含私人信息",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "test -s .agents/local/private-patterns.txt && { git grep -q --untracked -IEf .agents/local/private-patterns.txt -- long-task-planning codex-orchestration .gitignore .agents/tasks; test $? -eq 1; }"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "最终检查；README.md、skills.json 里有别人原有的私人信息，按用户要求不动，所以不在检查范围内"
+      }
+    },
+    {
+      "id": "S2-R4",
+      "title": "本轮验证记录",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "doc",
+          "path": "long-task-planning/tests/verification/2026-10-03-feedback/README.md"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "最终检查"
+      }
+    },
+    {
+      "id": "S2-R5",
+      "title": "FEEDBACK.md 的 F18–F20 补“已处理”，记忆文件更新",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "收尾"
+      }
+    },
+    {
+      "id": "S2-R6",
+      "title": "每 6 小时检查 FEEDBACK 的定时任务能正确判断待处理条目并按授权行事",
+      "goal_ref": [
+        "G3",
+        "G4"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-03",
+        "why": "用户 2026-10-03 要求的定时任务；看第一次运行的结果"
+      }
+    }
+  ],
+  "fingerprint": {
+    "test_exclude": [
+      "README.md",
+      "long-task-planning/SKILL.md",
+      "long-task-planning/references/",
+      "long-task-planning/tests/verification/",
+      "codex-orchestration/SKILL.md",
+      "codex-orchestration/templates/"
+    ]
+  }
+}
