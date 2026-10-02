@@ -354,6 +354,19 @@ class RecordTests(Base):
         self.repo = self.make_repo()
         self.task = self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
 
+    def test_fingerprint_file_error_lists_required_fields(self):
+        report = self.report_path()
+        vitest_report(report, self.passing(self.repo))
+        fp_file = self.report_path("fp.json")
+        fp_file.write_text(json.dumps({"fingerprint": "unknown", "commit": "abc1234", "host": "cloud"}), encoding="utf-8")
+        result = self.cli(self.repo, "record", "--vitest", str(report), "--fingerprint-file", str(fp_file), "--by", "codex")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("缺少字段：dirty", result.stderr)
+        self.assertIn("必需字段是 fingerprint、commit、dirty", result.stderr)
+        example = result.stderr[result.stderr.index("{"):result.stderr.rindex("}") + 1]
+        self.assertEqual(set(json.loads(example)), {"fingerprint", "commit", "dirty", "host"})
+        self.assertEqual(self.records(self.repo), [])
+
     def test_vitest_report_counts_tags_with_repository_paths(self):
         fp_file = self.fingerprint_file(self.repo, host="cloud")
         record = self.record_vitest(self.repo, [

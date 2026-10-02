@@ -159,7 +159,7 @@ Then run `$LT lint` and commit the task directory.
 
 1. `$LT init` with the user's verbatim goal; append further statements as G entries.
 2. Turn the session todos into items with `done_when` checks.
-3. Record existing reports: normally if the code has not changed since they ran; otherwise use a fingerprint file with `"fingerprint": "unknown"` and the commit they probably ran on, plus `--note "升级前的结果，需要重验"`. They then show as 旧版本验证过 and get re-run. Each `unknown` record is judged on its own, so a failing report from before a fix does not cancel a passing one from after it.
+3. Record existing reports: normally if the code has not changed since they ran; otherwise write a fingerprint file by hand with all required fields, for example `{"fingerprint": "unknown", "commit": "<commit they probably ran on>", "dirty": false, "host": "<host>"}`, and record with `--fingerprint-file` plus `--note "升级前的结果，需要重验"`. They then show as 旧版本验证过 and get re-run. Each `unknown` record is judged on its own, so a failing report from before a fix does not cancel a passing one from after it.
 4. Append to `计划改动记录`: `从轻量升级，原因：…`.
 
 ## Hooks

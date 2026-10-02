@@ -138,6 +138,12 @@ Kind-specific fields:
 
 Same content gives the same fingerprint on any machine and whether or not it is committed.
 
+A fingerprint file (`record --fingerprint-file`) is the output of `fingerprint --json` on the host that ran the tests. `record` needs `fingerprint`, `commit` and `dirty`; `host` is optional and defaults to `--host` or this machine. The other fields of `fingerprint --json` (`time`, `excludes`, `task`) are informational. For old reports whose code version is unknown, write one by hand:
+
+```json
+{"fingerprint": "unknown", "commit": "<commit they probably ran on>", "dirty": false, "host": "cloud"}
+```
+
 ## status --json
 
 ```json

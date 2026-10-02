@@ -47,6 +47,7 @@ ITEM_ID = re.compile(rf"[A-Za-z][A-Za-z0-9]*-{ID_BODY}")
 TAG_IN_NAME = re.compile(rf"\[([A-Za-z][A-Za-z0-9]*-{ID_BODY})\]")
 TEMPLATE_PLACEHOLDER = re.compile(r"%[sdifjo#$]")
 UNKNOWN_FINGERPRINT = "unknown"
+FINGERPRINT_FILE_FIELDS = ("fingerprint", "commit", "dirty")
 TEST_FILE_PATTERNS = ("*.test.*", "*.spec.*", "test_*.py", "*_test.py", "*_test.go")
 TEST_DIR_NAMES = {"test", "tests", "__tests__", "e2e", "spec"}
 NON_TEST_SUFFIXES = {".md", ".txt"}
@@ -588,9 +589,12 @@ def record_fingerprint(task, args, excludes):
             data = json.loads(read_text(args.fingerprint_file))
         except (OSError, json.JSONDecodeError) as error:
             raise Fail(f"读不了指纹文件 {args.fingerprint_file}：{error}")
-        missing = [key for key in ("fingerprint", "commit", "dirty") if key not in data]
+        missing = [key for key in FINGERPRINT_FILE_FIELDS if key not in data]
         if missing:
-            raise Fail(f"指纹文件缺少字段：{', '.join(missing)}")
+            raise Fail(f"指纹文件缺少字段：{', '.join(missing)}。必需字段是 {'、'.join(FINGERPRINT_FILE_FIELDS)}，host 可选；"
+                       f"最好直接用那台机器上 `longtask.py fingerprint --json` 的输出。补录不知道代码版本的旧报告时可以手写，例如 "
+                       + json.dumps({"fingerprint": UNKNOWN_FINGERPRINT, "commit": "<大概跑在哪个提交>", "dirty": False, "host": "<主机名>"},
+                                    ensure_ascii=False))
         host = data.get("host") or args.host or local
         if args.host and args.host != host:
             raise Fail(f"--host {args.host} 和指纹文件里的主机 {host} 不一致")

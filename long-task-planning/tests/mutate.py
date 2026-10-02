@@ -315,6 +315,12 @@ mutant("goal question not shown",
 mutant("goal question repeated in the answer",
        [("        lines = [line for line in lines if not line.strip().startswith(QUESTION_PREFIX)]\n", "")],
        ["ContextHookTests.test_context_shows_the_question_with_the_answer"])
+mutant("fingerprint file dirty optional",
+       [('FINGERPRINT_FILE_FIELDS = ("fingerprint", "commit", "dirty")', 'FINGERPRINT_FILE_FIELDS = ("fingerprint", "commit")')],
+       ["RecordTests.test_fingerprint_file_error_lists_required_fields"])
+mutant("fingerprint file error example incomplete",
+       [('"dirty": False, "host": "<主机名>"}', '"dirty": False}')],
+       ["RecordTests.test_fingerprint_file_error_lists_required_fields"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")
