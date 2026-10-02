@@ -215,6 +215,33 @@ mutant("brief withdrawn accepted",
 mutant("brief unknown accepted",
        [('    unknown = [value for value in mentioned if value not in items]', '    unknown = []')],
        ["CheckBriefTests.test_brief_with_unknown_item_fails"])
+mutant("test exclusions ignored",
+       [('        return self.current(record) or self.untested_changes(record) is not None', '        return self.current(record)')],
+       ["TestExcludeTests.test_doc_only_change_keeps_test_evidence_current"])
+mutant("tested commit not checked",
+       [('            same_as_commit = untested_only and digest_lines(tree_entries(self.repo, commit, self.excludes)) == record.get("fingerprint")', '            same_as_commit = untested_only')],
+       ["TestExcludeTests.test_dirty_or_unknown_test_records_are_not_relaxed"])
+mutant("every change treated as untested",
+       [('            untested_only = changed is not None and all(excluded(path, self.test_excludes) for path in changed)', '            untested_only = changed is not None')],
+       ["TestExcludeTests.test_code_change_after_doc_only_change_is_older"])
+mutant("relaxed failures ignored",
+       [('            failed = [record for record in current if record["tags"][tag].get("failed", 0)]', '            failed = [record for record in current if self.current(record) and record["tags"][tag].get("failed", 0)]')],
+       ["TestExcludeTests.test_failure_then_doc_only_change_stays_not_done"])
+mutant("commands follow test exclusions",
+       [('        current = [record for record in relevant if self.current(record)]\n        if current:\n            failed = [record for record in current if record.get("exit_code") != 0]', '        current = [record for record in relevant if self.test_current(record)]\n        if current:\n            failed = [record for record in current if record.get("exit_code") != 0]')],
+       ["TestExcludeTests.test_commands_and_reviews_ignore_test_exclude"])
+mutant("selector ignores test exclusions",
+       [('        current_records = [record for record in relevant if self.test_current(record)]', '        current_records = [record for record in relevant if self.current(record)]')],
+       ["TestExcludeTests.test_doc_only_change_keeps_test_evidence_current"])
+mutant("test_exclude unchecked in lint",
+       [('    if not (isinstance(test_exclude, list) and all(isinstance(value, str) for value in test_exclude)):', '    if False:')],
+       ["TestExcludeTests.test_test_exclude_must_be_a_list_of_paths"])
+mutant("relaxed note hidden",
+       [('                    if check["changed_files"]:\n', '                    if False:\n')],
+       ["TestExcludeTests.test_doc_only_change_keeps_test_evidence_current"])
+mutant("relaxed files counted as item changes",
+       [('            if status == "verified":\n                continue\n            for path in changed:', '            for path in changed:')],
+       ["TestExcludeTests.test_doc_only_change_keeps_test_evidence_current"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

@@ -761,6 +761,101 @@ class StatusTests(Base):
         self.assertIn("共 2 项", result.stdout)
 
 
+class TestExcludeTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.repo = self.make_repo()
+        write(self.repo, "docs/guide.md", "# 指南\n")
+        self.commit_all(self.repo, "docs")
+
+    def task_with(self, items):
+        return self.init_task(self.repo, items, extra={"fingerprint": {"test_exclude": ["docs/"]}})
+
+    def head(self):
+        return self.git(self.repo, "rev-parse", "HEAD").strip()
+
+    def test_doc_only_change_keeps_test_evidence_current(self):
+        self.task_with([item("T-A1", [tag_check("T-A1")]),
+                        item("T-S1", [{"type": "test", "file": "test/app.test.ts", "name": "adds"}]),
+                        item("T-H1", [tag_check("T-A1", host="cloud")])])
+        tested = self.head()
+        self.record_vitest(self.repo, self.passing(self.repo))
+        fp_file = self.fingerprint_file(self.repo, host="cloud")
+        self.record_vitest(self.repo, self.passing(self.repo), "--fingerprint-file", str(fp_file))
+        write(self.repo, "docs/guide.md", "# 指南\n\n新的一段\n")
+        for stage in ("uncommitted", "committed"):
+            with self.subTest(stage=stage):
+                if stage == "committed":
+                    self.commit_all(self.repo, "docs only")
+                data = self.status(self.repo)[1]
+                for item_id in ("T-A1", "T-S1", "T-H1"):
+                    entry = self.item_of(data, item_id)
+                    self.assertEqual(entry["status"], "verified", entry)
+                    self.assertEqual(entry["changed_files"], [])
+                    check = entry["checks"][0]
+                    self.assertIn(tested[:7], check["reason"])
+                    self.assertIn("测试不读", check["reason"])
+                    self.assertEqual(check["changed_files"], ["docs/guide.md"])
+                output = self.ok(self.cli(self.repo, "status", "--no-save")).stdout
+                self.assertIn(tested[:7], output)
+                self.assertIn("docs/guide.md", output)
+
+    def test_code_change_after_doc_only_change_is_older(self):
+        self.task_with([item("T-A1", [tag_check("T-A1")])])
+        self.record_vitest(self.repo, self.passing(self.repo))
+        write(self.repo, "docs/guide.md", "# 只改文档\n")
+        self.assertEqual(self.status_of(self.repo, "T-A1"), "verified")
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        entry = self.item_of(self.status(self.repo)[1], "T-A1")
+        self.assertEqual(entry["status"], "older")
+        self.assertIn("src/app.ts", entry["changed_files"])
+
+    def test_failure_then_doc_only_change_stays_not_done(self):
+        self.task_with([item("T-A1", [tag_check("T-A1")])])
+        self.record_vitest(self.repo, self.passing(self.repo))
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        self.commit_all(self.repo, "code")
+        failed = self.record_vitest(self.repo, [(str(self.repo / "test/app.test.ts"), "[T-A1] adds", "failed")])
+        write(self.repo, "docs/guide.md", "# 只改文档\n")
+        entry = self.item_of(self.status(self.repo)[1], "T-A1")
+        self.assertEqual(entry["status"], "not_done")
+        self.assertIn(failed["id"], " ".join(entry["reasons"]))
+
+    def test_dirty_or_unknown_test_records_are_not_relaxed(self):
+        self.task_with([item("T-A1", [tag_check("T-A1")])])
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        self.record_vitest(self.repo, self.passing(self.repo))
+        write(self.repo, "src/app.ts", "export const x = 1;\n")
+        fp_file = self.report_path("fp.json")
+        fp_file.write_text(json.dumps({"fingerprint": "unknown", "commit": self.head(), "dirty": False, "host": "cloud"}),
+                           encoding="utf-8")
+        self.record_vitest(self.repo, self.passing(self.repo), "--fingerprint-file", str(fp_file))
+        write(self.repo, "docs/guide.md", "# 只改文档\n")
+        self.assertEqual(self.status_of(self.repo, "T-A1"), "older")
+
+    def test_commands_and_reviews_ignore_test_exclude(self):
+        self.task_with([item("T-C1", [{"type": "command", "run": "make check"}]), item("T-R1", [{"type": "review"}])])
+        self.ok(self.cli(self.repo, "record", "--command", "make check", "--exit-code", "0"))
+        self.ok(self.cli(self.repo, "record", "--review", "--items", "T-R1", "--verdict", "approved",
+                         "--files", "docs/guide.md"))
+        write(self.repo, "docs/guide.md", "# 改了文档\n")
+        self.assertEqual(self.status_of(self.repo, "T-C1"), "older")
+        self.assertEqual(self.status_of(self.repo, "T-R1"), "older")
+
+    def test_test_exclude_must_be_a_list_of_paths(self):
+        items = [item("T-A1", [tag_check("T-A1")])]
+        self.init_task(self.repo, items)
+        for value in ("docs/", ["docs/", 3]):
+            with self.subTest(value=value):
+                self.set_items(self.repo, items, extra={"fingerprint": {"test_exclude": value}})
+                code, output = self.lint(self.repo)
+                self.assertEqual(code, 1, output)
+                self.assertIn("test_exclude", output)
+        self.set_items(self.repo, items, extra={"fingerprint": {"test_exclude": ["docs/"]}})
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 0, output)
+
+
 class LintTests(Base):
     def setUp(self):
         super().setUp()

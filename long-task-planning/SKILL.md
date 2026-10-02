@@ -19,6 +19,7 @@ The model forgets; files and scripts do not. This skill keeps three things apart
 - [Light mode](#light-mode)
 - [Full mode files](#full-mode-files)
 - [Completion conditions](#completion-conditions)
+  - [Documentation-only changes](#documentation-only-changes)
 - [Recording evidence](#recording-evidence)
 - [Reading state](#reading-state)
 - [Replanning](#replanning)
@@ -77,6 +78,15 @@ New findings that do not serve this task's goal go to the project's backlog (for
 | `{"type":"command","run":"…"}`, optional `"host"` | A record of exactly this command with exit code 0 on the current fingerprint | Use sparingly; prefer tagged tests |
 
 Tag tests with the item ID in the title, for example `it("[R2-D1] 期限早于准备上限时归为执行期限", …)`. Renaming files or wording keeps the tag. A tag counts only in test files (`*.test.*`, `*.spec.*`, `test_*.py`, `*_test.py`, `*_test.go`, or under `test/`, `tests/`, `__tests__/`, `e2e/`, `spec/`), never in `.md` or `.txt`. Skipped or filtered-out tests never count as passed. Commits may end with an `Item: R2-D1` trailer for tracing, but a trailer never counts as evidence.
+
+### Documentation-only changes
+
+List path prefixes that no test reads in `items.json` under `fingerprint.test_exclude`, for example `["docs/", "AGENTS.md"]`. A test record still counts as current when both hold:
+
+1. It was recorded on a clean commit: that commit's fingerprint equals the recorded one. Records made with uncommitted changes or with an `unknown` fingerprint never qualify, so record test reports after committing the code they ran on.
+2. Every file changed since that commit is under `test_exclude`.
+
+`status` then shows `测试跑在 <commit> 上，之后只改了测试不读的文件` with the files. Failures follow the same rule, so editing a document never hides a failure. Commands, reviews and doc checks ignore `test_exclude`; a documentation validator still has to run again. `fingerprint.exclude` is different: it removes paths from the fingerprint for every check.
 
 ## Recording evidence
 

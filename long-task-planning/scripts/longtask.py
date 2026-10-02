@@ -264,10 +264,10 @@ def load_items(task):
     return data
 
 
-def excludes_of(data):
+def excludes_of(data, key="exclude"):
     section = data.get("fingerprint") or {}
-    values = section.get("exclude") or []
-    return [value for value in values if isinstance(value, str)]
+    values = section.get(key) or []
+    return [value for value in values if isinstance(value, str)] if isinstance(values, list) else []
 
 
 def load_records(task):
@@ -742,12 +742,14 @@ class Evaluation:
         self.all_records, self.record_errors = load_records(task)
         self.records = effective_records(self.all_records)
         self.excludes = excludes_of(self.data)
+        self.test_excludes = excludes_of(self.data, "test_exclude")
         self.entries = worktree_entries(self.repo, self.excludes)
         self.fp = compute_fingerprint(self.repo, self.excludes, self.entries)
         tags = {check["tag"] for entry in self.items for check in (entry.get("done_when") or [])
                 if isinstance(check, dict) and check.get("type") == "test" and isinstance(check.get("tag"), str)}
         self.tag_files = find_tag_files(self.repo, tags)
         self._changed = {}
+        self._untested = {}
 
     def changed_since(self, commit):
         if commit in self._changed:
@@ -778,6 +780,29 @@ class Evaluation:
     def current(self, record):
         return record.get("fingerprint") == self.fp["fingerprint"]
 
+    def untested_changes(self, record):
+        if not self.test_excludes:
+            return None
+        commit = record.get("commit")
+        key = (commit, record.get("fingerprint"))
+        if key not in self._untested:
+            changed = self.changed_since(commit)
+            untested_only = changed is not None and all(excluded(path, self.test_excludes) for path in changed)
+            same_as_commit = untested_only and digest_lines(tree_entries(self.repo, commit, self.excludes)) == record.get("fingerprint")
+            self._untested[key] = changed if same_as_commit else None
+        return self._untested[key]
+
+    def test_current(self, record):
+        return self.current(record) or self.untested_changes(record) is not None
+
+    def relaxed_note(self, records):
+        relaxed = [record for record in records if not self.current(record)]
+        if not relaxed:
+            return "", []
+        commits = sorted({(record.get("commit") or "")[:7] for record in relaxed})
+        files = sorted({path for record in relaxed for path in self.untested_changes(record)})
+        return f"测试跑在 {'、'.join(commits)} 上，之后只改了测试不读的文件", files
+
     def check(self, entry, check):
         if not isinstance(check, dict) or check.get("type") not in CHECK_TYPES:
             kind = check.get("type") if isinstance(check, dict) else check
@@ -805,7 +830,7 @@ class Evaluation:
             return "not_done", f"还没有带 [{tag}] 的测试", []
         relevant = [record for record in self.records if record.get("kind") == "test"
                     and tag in (record.get("tags") or {}) and self.host_ok(record, host)]
-        current = [record for record in relevant if self.current(record)]
+        current = [record for record in relevant if self.test_current(record)]
         if current:
             passed = sum(record["tags"][tag].get("passed", 0) for record in current)
             failed = [record for record in current if record["tags"][tag].get("failed", 0)]
@@ -818,6 +843,9 @@ class Evaluation:
                 ran.update(record["tags"][tag].get("files", []))
             missing = [path for path in files if path not in ran]
             if passed and not missing:
+                note, untested = self.relaxed_note(current)
+                if note:
+                    return "verified", f"[{tag}] 通过 {passed} 个{host_note}；{note}", untested
                 return "verified", f"[{tag}] 在当前版本上通过 {passed} 个{host_note}", []
             if missing:
                 more = f" 等 {len(missing)} 个" if len(missing) > 3 else ""
@@ -828,7 +856,7 @@ class Evaluation:
         seen = set()
         for record in reversed(relevant):
             fingerprint = record.get("fingerprint")
-            if self.current(record) or fingerprint in seen:
+            if self.test_current(record) or fingerprint in seen:
                 continue
             if fingerprint == UNKNOWN_FINGERPRINT:
                 group = [counts_of(record)]
@@ -863,12 +891,16 @@ class Evaluation:
 
         relevant = [record for record in self.records if record.get("kind") == "test"
                     and entry_of(record) is not None and self.host_ok(record, host)]
-        current = [entry_of(record) for record in relevant if self.current(record)]
+        current_records = [record for record in relevant if self.test_current(record)]
+        current = [entry_of(record) for record in current_records]
         label = f"“{name}”（{file_rel}）"
         if current:
             if any(entry.get("failed", 0) for entry in current):
                 return "not_done", f"当前版本上 {label} 失败过；失败和改动无关时用 record --retract 撤回并写明原因", []
             if any(entry.get("passed", 0) for entry in current):
+                note, untested = self.relaxed_note(current_records)
+                if note:
+                    return "verified", f"{label} 通过；{note}", untested
                 return "verified", f"{label} 在当前版本上通过", []
         return self.older_or_missing(relevant, entry_of, label, f"当前版本上没有 {label} 的通过记录")
 
@@ -961,7 +993,9 @@ class Evaluation:
             status, reason, changed = self.check(entry, check)
             statuses.append(status)
             result["checks"].append({"type": check.get("type") if isinstance(check, dict) else None,
-                                     "status": status, "reason": reason})
+                                     "status": status, "reason": reason, "changed_files": changed})
+            if status == "verified":
+                continue
             for path in changed:
                 if path not in result["changed_files"]:
                     result["changed_files"].append(path)
@@ -1046,6 +1080,9 @@ def format_status(report, previous):
         for entry in group:
             lines.append(f"  {entry['id']}  {entry['title']}")
             if status == "verified":
+                for check in entry["checks"]:
+                    if check["changed_files"]:
+                        lines.append(f"      {check['reason']}：{format_files(check['changed_files'])}")
                 continue
             for reason in entry["reasons"][:3]:
                 lines.append(f"      {reason}")
@@ -1172,6 +1209,9 @@ def validate_items(data, goal_ids):
     fingerprint = data.get("fingerprint")
     if fingerprint is not None and not (isinstance(fingerprint, dict) and isinstance(fingerprint.get("exclude", []), list)):
         errors.append("items.json 的 fingerprint.exclude 必须是路径列表")
+    test_exclude = fingerprint.get("test_exclude", []) if isinstance(fingerprint, dict) else []
+    if not (isinstance(test_exclude, list) and all(isinstance(value, str) for value in test_exclude)):
+        errors.append('items.json 的 fingerprint.test_exclude 必须是路径列表，例如 ["docs/", "AGENTS.md"]')
     seen = set()
     for index, entry in enumerate(data["items"], 1):
         where = f"items.json 第 {index} 个条目"

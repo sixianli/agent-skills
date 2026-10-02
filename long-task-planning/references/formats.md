@@ -37,7 +37,7 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 {
   "task": "round2",
   "prefix": "R2",
-  "fingerprint": {"exclude": ["docs/"]},
+  "fingerprint": {"test_exclude": ["docs/", "AGENTS.md"]},
   "items": [
     {
       "id": "R2-D1",
@@ -62,7 +62,8 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 ```
 
 - `prefix`: letters and digits, starting with a letter. Every `id` starts with `<prefix>-`.
-- `fingerprint.exclude`: path prefixes left out of the fingerprint. Add one only after checking that no test reads those paths.
+- `fingerprint.exclude`: path prefixes left out of the fingerprint for every check. Add one only after checking that no test, command or review depends on those paths.
+- `fingerprint.test_exclude`: path prefixes that only test checks ignore, for documents no test reads. See [Documentation-only changes](../SKILL.md#documentation-only-changes). It does not change the fingerprint.
 - Check fields: `test` needs `tag`, or both `file` and `name` (`name` appears verbatim in the file and in the reported names, with no placeholder such as `%s`); `doc` needs `path`, optional `heading`; `review` optional `by`; `user` needs `ref` (null until decided) and `question`; `command` needs `run`. `test` and `command` accept `host`.
 - `lint` compares with the version in `HEAD`: a removed item, or a changed `done_when` / `withdrawn` without a new `计划改动记录` line naming the item, is an error.
 
@@ -134,11 +135,12 @@ Same content gives the same fingerprint on any machine and whether or not it is 
   "task": "round2", "dir": ".agents/tasks/round2",
   "fingerprint": "…", "commit": "…", "dirty": false,
   "counts": {"verified": 3, "older": 5, "not_done": 12, "unknown": 1, "waiting": 0, "withdrawn": 1},
-  "items": [{"id": "R2-D4", "title": "…", "status": "unknown", "reasons": ["…"], "changed_files": [], "checks": [{"type": "test", "status": "unknown", "reason": "…"}]}],
+  "items": [{"id": "R2-D4", "title": "…", "status": "unknown", "reasons": ["…"], "changed_files": [], "checks": [{"type": "test", "status": "unknown", "reason": "…", "changed_files": []}]}],
   "changes_since_last": [{"id": "R2-D1", "from": "verified", "to": "older"}],
   "warnings": []
 }
 ```
 
 - `reasons`: for an unfinished item, one line per check not yet verified on the current code, worst first; for a verified item, its checks.
-- `changed_files`: files changed since the older evidence of any check.
+- `changed_files` of an item: files changed since the older evidence of any check that is not verified.
+- `changed_files` of a check: the files behind its status. For a test check verified under `test_exclude`, the files changed since the tested commit, all under `test_exclude`.
