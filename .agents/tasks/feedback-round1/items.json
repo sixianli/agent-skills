@@ -52,6 +52,11 @@
         {
           "type": "test",
           "file": "long-task-planning/tests/test_longtask.py",
+          "name": "test_evidence_recorded_before_its_commit_is_relaxed_from_that_commit"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
           "name": "test_code_change_after_doc_only_change_is_older"
         },
         {
@@ -62,7 +67,7 @@
         {
           "type": "test",
           "file": "long-task-planning/tests/test_longtask.py",
-          "name": "test_dirty_or_unknown_test_records_are_not_relaxed"
+          "name": "test_uncommitted_or_unknown_test_records_are_not_relaxed"
         },
         {
           "type": "test",

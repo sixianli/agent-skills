@@ -796,6 +796,7 @@ class Evaluation:
         self.tag_files = find_tag_files(self.repo, tags)
         self._changed = {}
         self._untested = {}
+        self._tree_digests = {}
 
     def changed_since(self, commit):
         if commit in self._changed:
@@ -826,16 +827,29 @@ class Evaluation:
     def current(self, record):
         return record.get("fingerprint") == self.fp["fingerprint"]
 
+    def tree_digest(self, commit):
+        if commit not in self._tree_digests:
+            self._tree_digests[commit] = digest_lines(tree_entries(self.repo, commit, self.excludes))
+        return self._tree_digests[commit]
+
+    def tested_commit(self, record):
+        commit, fingerprint = record.get("commit"), record.get("fingerprint")
+        if not commit or fingerprint in (None, UNKNOWN_FINGERPRINT):
+            return None
+        later = git(self.repo, "rev-list", "--reverse", f"{commit}..HEAD", check=False)
+        if later.returncode != 0:
+            return None
+        return next((candidate for candidate in [commit, *later.stdout.split()] if self.tree_digest(candidate) == fingerprint), None)
+
     def untested_changes(self, record):
         if not self.test_excludes:
             return None
-        commit = record.get("commit")
-        key = (commit, record.get("fingerprint"))
+        key = (record.get("commit"), record.get("fingerprint"))
         if key not in self._untested:
-            changed = self.changed_since(commit)
+            base = self.tested_commit(record)
+            changed = self.changed_since(base) if base else None
             untested_only = changed is not None and all(excluded(path, self.test_excludes) for path in changed)
-            same_as_commit = untested_only and digest_lines(tree_entries(self.repo, commit, self.excludes)) == record.get("fingerprint")
-            self._untested[key] = changed if same_as_commit else None
+            self._untested[key] = (base, changed) if untested_only else None
         return self._untested[key]
 
     def test_current(self, record):
@@ -845,8 +859,8 @@ class Evaluation:
         relaxed = [record for record in records if not self.current(record)]
         if not relaxed:
             return "", []
-        commits = sorted({(record.get("commit") or "")[:7] for record in relaxed})
-        files = sorted({path for record in relaxed for path in self.untested_changes(record)})
+        commits = sorted({self.untested_changes(record)[0][:7] for record in relaxed})
+        files = sorted({path for record in relaxed for path in self.untested_changes(record)[1]})
         return f"测试跑在 {'、'.join(commits)} 上，之后只改了测试不读的文件", files
 
     def check(self, entry, check):

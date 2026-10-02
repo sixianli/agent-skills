@@ -947,6 +947,22 @@ class TestExcludeTests(Base):
                 self.assertIn(tested[:7], output)
                 self.assertIn("docs/guide.md", output)
 
+    def test_evidence_recorded_before_its_commit_is_relaxed_from_that_commit(self):
+        self.task_with([item("T-A1", [tag_check("T-A1")])])
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        recorded = self.record_vitest(self.repo, self.passing(self.repo))
+        self.commit_all(self.repo, "code and evidence")
+        tested = self.head()
+        self.assertNotEqual(recorded["commit"], tested)
+        write(self.repo, "docs/guide.md", "# 只改文档\n")
+        self.commit_all(self.repo, "docs only")
+        entry = self.item_of(self.status(self.repo)[1], "T-A1")
+        self.assertEqual(entry["status"], "verified", entry)
+        self.assertIn(f"测试跑在 {tested[:7]} 上", entry["checks"][0]["reason"])
+        self.assertEqual(entry["checks"][0]["changed_files"], ["docs/guide.md"])
+        write(self.repo, "src/app.ts", "export const x = 3;\n")
+        self.assertEqual(self.status_of(self.repo, "T-A1"), "older")
+
     def test_code_change_after_doc_only_change_is_older(self):
         self.task_with([item("T-A1", [tag_check("T-A1")])])
         self.record_vitest(self.repo, self.passing(self.repo))
@@ -968,7 +984,7 @@ class TestExcludeTests(Base):
         self.assertEqual(entry["status"], "not_done")
         self.assertIn(failed["id"], " ".join(entry["reasons"]))
 
-    def test_dirty_or_unknown_test_records_are_not_relaxed(self):
+    def test_uncommitted_or_unknown_test_records_are_not_relaxed(self):
         self.task_with([item("T-A1", [tag_check("T-A1")])])
         write(self.repo, "src/app.ts", "export const x = 2;\n")
         self.record_vitest(self.repo, self.passing(self.repo))

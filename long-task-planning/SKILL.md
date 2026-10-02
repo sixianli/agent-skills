@@ -84,7 +84,7 @@ Tag tests with the item ID in the title, for example `it("[R2-D1] 期限早于�
 
 List path prefixes that no test reads in `items.json` under `fingerprint.test_exclude`, for example `["docs/", "AGENTS.md"]`. A test record still counts as current when both hold:
 
-1. It was recorded on a clean commit: that commit's fingerprint equals the recorded one. Records made with uncommitted changes or with an `unknown` fingerprint never qualify, so record test reports after committing the code they ran on.
+1. The tested content is in a commit: the record's own commit, or a later commit on the way to `HEAD`, has exactly the recorded fingerprint. This covers the usual order of recording a report and then committing the code together with `evidence.jsonl`. Records with an `unknown` fingerprint, or whose tested content was never committed, never qualify.
 2. Every file changed since that commit is under `test_exclude`.
 
 `status` then shows `测试跑在 <commit> 上，之后只改了测试不读的文件` with the files. Failures follow the same rule, so editing a document never hides a failure. Commands, reviews and doc checks ignore `test_exclude`; a documentation validator still has to run again. `fingerprint.exclude` is different: it removes paths from the fingerprint for every check.

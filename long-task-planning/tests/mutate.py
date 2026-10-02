@@ -218,9 +218,15 @@ mutant("brief unknown accepted",
 mutant("test exclusions ignored",
        [('        return self.current(record) or self.untested_changes(record) is not None', '        return self.current(record)')],
        ["TestExcludeTests.test_doc_only_change_keeps_test_evidence_current"])
-mutant("tested commit not checked",
-       [('            same_as_commit = untested_only and digest_lines(tree_entries(self.repo, commit, self.excludes)) == record.get("fingerprint")', '            same_as_commit = untested_only')],
-       ["TestExcludeTests.test_dirty_or_unknown_test_records_are_not_relaxed"])
+mutant("tested commit not matched to the fingerprint",
+       [("for candidate in [commit, *later.stdout.split()] if self.tree_digest(candidate) == fingerprint), None)", "for candidate in [commit, *later.stdout.split()]), None)")],
+       ["TestExcludeTests.test_uncommitted_or_unknown_test_records_are_not_relaxed"])
+mutant("later commits not searched for the tested content",
+       [("for candidate in [commit, *later.stdout.split()] if", "for candidate in [commit] if")],
+       ["TestExcludeTests.test_evidence_recorded_before_its_commit_is_relaxed_from_that_commit"])
+mutant("relaxed note names the recorded commit",
+       [("        commits = sorted({self.untested_changes(record)[0][:7] for record in relaxed})", "        commits = sorted({(record.get('commit') or '')[:7] for record in relaxed})")],
+       ["TestExcludeTests.test_evidence_recorded_before_its_commit_is_relaxed_from_that_commit"])
 mutant("every change treated as untested",
        [('            untested_only = changed is not None and all(excluded(path, self.test_excludes) for path in changed)', '            untested_only = changed is not None')],
        ["TestExcludeTests.test_code_change_after_doc_only_change_is_older"])
