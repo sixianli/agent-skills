@@ -12,6 +12,8 @@ This repository collects reusable Codex skills that I maintain for recurring per
 | `grill-with-docs` | [grill-skill/README.md](grill-skill/README.md) | `grill-with-docs/` | Interview and capture terms and decisions through Document Governance. | Yes |
 | `siblog-blog-workflow` | [siblog-blog-workflow/SKILL.md](siblog-blog-workflow/SKILL.md) | `siblog-blog-workflow/` | Prepare, translate, format, and publish SiBlog posts through the repository-owned blog commands, and draft a SiBlog technical post from the current Claude Code or Codex thread with `blog:tilian`. | Yes, for SiBlog blog commands |
 | `video-download` | [video-download/SKILL.md](video-download/SKILL.md) | `video-download/` | Download the highest available and verifiable video resolution from a supplied URL. | Yes |
+| `long-task-planning` | [long-task-planning/SKILL.md](long-task-planning/SKILL.md) | `long-task-planning/` | Keep a long coding task's goal, plan and done/not-done state from drifting; status is computed from recorded evidence, never written by hand. | Yes |
+| `codex-orchestration` | [codex-orchestration/SKILL.md](codex-orchestration/SKILL.md) | `codex-orchestration/` | Let Claude Code manage the local Codex CLI as a delegated coding agent: briefs, stop files, rulings, commit reviews and sessions. | Yes, when Claude Code delegates work to Codex |
 
 Each package README or skill entrypoint explains the specific skill's purpose, install steps, usage examples, and verification commands. The installable skill folders should stay focused on runtime resources: `SKILL.md`, `agents/openai.yaml`, `scripts/`, `references/`, and `assets/` when needed.
 
@@ -48,6 +50,23 @@ cp -R video-download "$HOME/.agents/skills/"
 The SiBlog workflow requires the SiBlog repository and its publishing checks. Video downloads require `yt-dlp` and FFmpeg (`ffprobe`); see the skill entrypoints for usage and access limits.
 
 Restart Codex if a newly installed skill does not appear immediately.
+
+### Claude Code skills
+
+`long-task-planning` and `codex-orchestration` run from Claude Code. Install both side by side in `~/.claude/skills/`, because `codex-orchestration/scripts/codex-launch.sh` calls `../../long-task-planning/scripts/longtask.py`. A symbolic link keeps the installed skill and this repository the same files, so edits made while using a skill show up in `git status`:
+
+```bash
+ln -s "$PWD/long-task-planning" "$HOME/.claude/skills/long-task-planning"
+ln -s "$PWD/codex-orchestration" "$HOME/.claude/skills/codex-orchestration"
+```
+
+`long-task-planning` also needs its session-start hook in `~/.claude/settings.json` (Claude Code) and `~/.codex/hooks.json` (Codex, matcher `startup|resume|clear|compact`; then trust it in Codex `/hooks`). Use the absolute path of the installed script:
+
+```json
+{"type": "command", "command": "python3 /absolute/home/.claude/skills/long-task-planning/scripts/longtask.py hook", "timeout": 20}
+```
+
+Point the global agent instructions (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`) at `long-task-planning/SKILL.md` so every hands-on task picks light or full mode. `long-task-planning/FEEDBACK.md` and `*/tests/verification/*/local/` stay on the maintainer's machine and are git-ignored, because they hold private project details.
 
 ## Validate
 

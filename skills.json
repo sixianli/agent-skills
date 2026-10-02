@@ -424,6 +424,110 @@
           ]
         }
       ]
+    },
+    {
+      "name": "long-task-planning",
+      "package_dir": "long-task-planning",
+      "readme": "long-task-planning/SKILL.md",
+      "skill_dir": "long-task-planning",
+      "description": "Keep a long coding task's goal, plan and done/not-done state from drifting; status is computed from recorded evidence, never written by hand.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "long-task-planning/scripts/longtask.py",
+            "long-task-planning/tests/mutate.py"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "long-task-planning/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "long-task-planning/scripts",
+            "long-task-planning/tests"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "codex-orchestration",
+      "package_dir": "codex-orchestration",
+      "readme": "codex-orchestration/SKILL.md",
+      "skill_dir": "codex-orchestration",
+      "description": "Let Claude Code manage the local Codex CLI as a delegated coding agent: briefs, stop files, rulings, commit reviews and sessions.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "codex-orchestration/scripts/snapshot-matches-commit.py",
+            "codex-orchestration/scripts/vitest-summary.py"
+          ]
+        },
+        {
+          "name": "shell-syntax",
+          "command": [
+            "bash",
+            "-c",
+            "for script in codex-orchestration/scripts/*.sh; do bash -n \"$script\" || exit 1; done"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "codex-orchestration/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "codex-orchestration/scripts",
+            "codex-orchestration/tests"
+          ]
+        }
+      ]
     }
   ]
 }
