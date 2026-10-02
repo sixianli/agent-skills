@@ -53,7 +53,7 @@ mutant("remote host accepted without fingerprint file",
        [('    if args.host and args.host != local:\n        raise Fail(', '    if False:\n        raise Fail(')],
        ["RecordTests.test_remote_host_without_fingerprint_file_is_refused"])
 mutant("report paths not mapped",
-       [('        path = mapper.first(names)', '        path = None')],
+       [('        path = mapper.first(names)\n        if path is None:\n            path = names[0] if names else ""', '        path = None\n        if path is None:\n            path = names[0] if names else ""')],
        ["RecordTests.test_vitest_report_counts_tags_with_repository_paths"])
 mutant("evidence overwritten",
        [('    with open(path, "a+", encoding="utf-8") as handle:', '    with open(path, "w+", encoding="utf-8") as handle:')],
@@ -143,7 +143,7 @@ mutant("placeholder names pass lint",
        [('    if isinstance(selector, str) and TEMPLATE_PLACEHOLDER.search(selector):', '    if False:')],
        ["LintTests.test_selector_name_with_a_template_placeholder_is_refused"])
 mutant("placeholder names judged as normal selectors",
-       [('            if problem:\n                return "unknown", problem, []', '            if False:\n                return "unknown", problem, []')],
+       [('            problem = placeholder_problem(check["name"])\n            if problem:\n                return "unknown", problem, []', '            problem = placeholder_problem(check["name"])\n            if False:\n                return "unknown", problem, []')],
        ["LintTests.test_selector_name_with_a_template_placeholder_is_refused"])
 mutant("missing goal ref ignored",
        [('        missing = [ref for ref in entry.get("goal_ref") or [] if ref not in self.goal_ids]', '        missing = []')],
@@ -197,13 +197,13 @@ mutant("goal ref unchecked in lint",
        [('                if ref not in goal_ids:\n                    errors.append(f"条目 {name} 对应的目标', '                if False:\n                    errors.append(f"条目 {name} 对应的目标')],
        ["LintTests.test_invalid_items_are_reported"])
 mutant("empty done_when allowed",
-       [('        if not (isinstance(checks, list) and checks):\n            errors.append(f"条目 {name} 没有完成条件', '        if False:\n            errors.append(f"条目 {name} 没有完成条件')],
+       [('        if not may_be_empty and not (isinstance(checks, list) and checks):\n            errors.append(f"条目 {name} 没有完成条件', '        if False:\n            errors.append(f"条目 {name} 没有完成条件')],
        ["LintTests.test_invalid_items_are_reported"])
 mutant("unknown check type allowed",
        [('    if kind not in CHECK_TYPES:\n        return [f"条目 {name} 的完成条件类型', '    if False:\n        return [f"条目 {name} 的完成条件类型')],
        ["LintTests.test_invalid_items_are_reported"])
 mutant("context budget ignored",
-       [('    for settings in ((6, 160, 6, 120), (4, 110, 4, 100), (3, 70, 3, 80), (2, 50, 2, 60)):\n        text = render(*settings)\n        if len(text) <= budget:\n            return text\n    return text[: budget - 8] + "……（已截断）"', '    return render(1000, 100000, 1000, 100000)')],
+       [('    for settings in ((6, 160, 6, 120), (4, 110, 4, 100), (3, 70, 3, 80), (2, 50, 2, 60)):\n        for questions in (True, False):\n            text = render(*settings, questions)\n            if len(text) <= budget:\n                return text\n    return text[: budget - 8] + "……（已截断）"', '    return render(1000, 100000, 1000, 100000, True)')],
        ["ContextHookTests.test_context_stays_within_budget"])
 mutant("reminder on every start",
        [('        if source in SOURCE_EVENTS:\n            return REMINDER.format(event=SOURCE_EVENTS[source],', '        if True:\n            return REMINDER.format(event=SOURCE_EVENTS.get(source, ""),')],
@@ -413,6 +413,16 @@ mutant("junit run time missing",
        ["JUnitReportTests.test_recorded_report_satisfies_selector_checks"], target="tests/junit_report.py", module="test_junit_report")
 
 
+def mutated(replacements, target):
+    code = TEXT[target]
+    for old, new in replacements:
+        count = code.count(old)
+        if count != 1:
+            return None, f"pattern found {count} times: {old[:60]!r}"
+        code = code.replace(old, new)
+    return code, None
+
+
 def run(selected):
     unknown = sorted(selected - {entry[0] for entry in M})
     if unknown:
@@ -424,14 +434,10 @@ def run(selected):
         for index, (name, replacements, tests, target, module) in enumerate(M):
             if selected and name not in selected:
                 continue
-            code = TEXT[target]
-            for old, new in replacements:
-                count = code.count(old)
-                if count != 1:
-                    print(f"BAD  {name}: pattern found {count} times: {old[:60]!r}")
-                    survived.append(name)
-                    break
-                code = code.replace(old, new)
+            code, problem = mutated(replacements, target)
+            if problem:
+                print(f"BAD  {name}: {problem}")
+                survived.append(name)
             else:
                 work = root / str(index)
                 (work / "scripts").mkdir(parents=True)

@@ -503,6 +503,16 @@
         {
           "type": "command",
           "run": "python3 long-task-planning/tests/mutate.py"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_mutate.py",
+          "name": "test_every_mutant_applies_to_its_target_exactly_once"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_mutate.py",
+          "name": "test_every_mutant_names_tests_that_exist"
         }
       ],
       "added": {
