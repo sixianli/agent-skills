@@ -141,6 +141,7 @@ Same content gives the same fingerprint on any machine and whether or not it is 
 }
 ```
 
+- `counts` covers every item in `items.json`, withdrawn ones included; the summary line's total (`共 N 项`) is their sum, so it always equals the number of items.
 - `reasons`: for an unfinished item, one line per check not yet verified on the current code, worst first; for a verified item, its checks.
 - `changed_files` of an item: files changed since the older evidence of any check that is not verified.
 - `changed_files` of a check: the files behind its status. For a test check verified under `test_exclude`, the files changed since the tested commit, all under `test_exclude`.

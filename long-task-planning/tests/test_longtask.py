@@ -760,6 +760,15 @@ class StatusTests(Base):
         self.assertIn("未完成", result.stdout)
         self.assertIn("共 2 项", result.stdout)
 
+    def test_total_counts_withdrawn_items(self):
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")]),
+                                   item("T-W1", [tag_check("T-W1")], withdrawn={"on": "2026-10-02", "ref": "G1"})])
+        for command in ("status", "context"):
+            with self.subTest(command=command):
+                output = self.ok(self.cli(self.repo, command, *(["--no-save"] if command == "status" else []))).stdout
+                self.assertIn("共 2 项", output)
+                self.assertIn("不做 1", output)
+
 
 class ReviewTests(Base):
     def setUp(self):

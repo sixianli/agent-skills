@@ -284,6 +284,9 @@ mutant("environment lint unchecked",
 mutant("zero max age accepted",
        [('    if isinstance(days, bool) or not isinstance(days, int) or days < 1:', '    if not isinstance(days, int):')],
        ["EnvironmentCheckTests.test_environment_command_check_needs_host_and_max_age"])
+mutant("withdrawn items left out of the total",
+       [('    total = sum(counts.values())', '    total = sum(value for key, value in counts.items() if key != "withdrawn")')],
+       ["StatusTests.test_total_counts_withdrawn_items"])
 mutant("junit subtest failures ignored",
        [('        if err is not None:\n            outcome = "failure"', '        if False:\n            outcome = "failure"')],
        ["JUnitReportTests.test_report_marks_every_outcome"], target="tests/junit_report.py", module="test_junit_report")

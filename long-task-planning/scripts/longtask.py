@@ -1121,7 +1121,7 @@ def changes_since(previous, report):
 
 
 def summary_line(counts):
-    total = sum(value for key, value in counts.items() if key != "withdrawn")
+    total = sum(counts.values())
     parts = [f"{LABELS[key]} {counts[key]}" for key in COUNT_ORDER if counts.get(key)]
     return f"共 {total} 项" + ("：" + " · ".join(parts) if parts else "")
 
