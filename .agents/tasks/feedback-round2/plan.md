@@ -10,7 +10,6 @@
 - S2-R6：读定时任务第一次运行的会话记录，确认它把 F18–F20 当作本任务已覆盖的条目跳过、没有改仓库里的文件；证据：我的审核
 - S2-R4：写 long-task-planning/tests/verification/2026-10-03-feedback/README.md（怎么重跑、改了什么、测试方法、真实试用、发现的问题、没有验证的部分），原始日志放同目录不进 git 的 local/；证据：文件存在，我的审核
 - S2-R5：FEEDBACK.md 的 F18–F20 末尾补“已处理”，更新记忆文件；证据：我的审核
-- 同时在本任务的 items.json 加 fingerprint.include（两个 skill 目录和 .gitignore），看已有证据的 status 是否写明“指纹范围不同”，然后在新设置下重跑测试
 
 ## 之后
 
@@ -22,6 +21,7 @@
 - 2026-10-03 00:05 按用户批准的方案（G2）建立条目 S2-F18a 到 S2-F20b 和最终检查 S2-R1 到 S2-R5；按 G3、G4 加 S2-R6。当前批次 S2-F20a、S2-F20b、S2-F19，先做 F20，因为另一个真实项目已经靠手工挪行绕过报错，挪行会改变审核结果。
 - 2026-10-03 00:14 当前批次改为 S2-F18a、S2-F18b。原因：status 显示当前版本已验证 3、未完成 8；S2-F20a、S2-F20b、S2-F19 的测试都在当前版本上通过（E20261003T001324-7084c5、E20261003T001324-7c9e7d）。
 - 2026-10-03 00:23 当前批次改为 S2-R6、S2-R4、S2-R5，并在本任务试用 fingerprint.include。原因：status 显示当前版本已验证 5、未完成 6；S2-F18a、S2-F18b 的测试在当前版本上通过（E20261003T002248-39ccad、E20261003T002248-9186fe）；总校验、变异和私人信息检查是命令检查，要等最后一个提交再跑。
+- 2026-10-03 10:00 当前批次去掉 include 试用（已做完），保留 S2-R6、S2-R4、S2-R5。原因：加 fingerprint.include 后 status 显示当前版本已验证 5、未完成 6，两套测试在新设置下通过（E20261003T095805-87d168、E20261003T095805-e46b21）；定时任务建好时是停用状态，06:17 那次没有运行，10:00 已启用并打开完成通知，S2-R6 等下一次运行（约 12:17 之后）。
 
 ## 意外和发现
 
@@ -29,6 +29,7 @@
 - 2026-10-03 S2-F20a 的调换/删除测试和 goal/plan 插行测试在改代码前就通过：它们守的是不能放宽的现有行为，靠变异检查证明有效（“evidence order ignored”“goal insertions allowed”“plan log insertions allowed”都被发现）。
 - 2026-10-03 codex-orchestration 的 test_codex_launch.py 用的简报没有“范围”一节，S2-F19 后被拒；这是用户批准的写法变化，测试简报改成模板格式，无效简报的用例也改成“范围里的编号不存在”。用新规则对另一个真实项目最近 3 份简报只读试跑：两份通过且取出的本批条目和本意一致，一份因为其中的条目后来被撤回而被拒，符合预期。
 - 2026-10-03 S2-F18 把 excludes 参数统一换成 scope 后，整套测试里 test_mutate 报 3 个变异的匹配文本失效（untracked files skipped、porcelain diff for changed files、dirty always false），记录 E20261003T002039-690440 有 1 个失败；改成新写法后 3 个变异都被发现，重跑整套通过。第一轮加的 test_mutate 在这里拦住了变异检查悄悄失效。
+- 2026-10-03 在本任务试用 fingerprint.include：先只列两个 skill 目录和 .gitignore，status 对旧证据写“记录时的指纹范围（看全部文件）和现在的设置（只看 …）不同，要在现在的设置下重跑”，没有再写“之后代码改过”加空列表，S2-F18b 的效果在真实任务上成立。随后发现总校验 validate_all.py 还读 skills.json 和 scripts/，只列两个 skill 会让它们改了也不让 S2-R1 变旧，于是把 scripts/ 和 skills.json 也加进 include。status 第二行的 include 按 items.json 原顺序显示，范围不同的说明里按字母排序显示；两处顺序不同，但都列全了路径，不影响判断，没有改。
 
 ## 决定
 

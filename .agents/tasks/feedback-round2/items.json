@@ -299,6 +299,13 @@
       "long-task-planning/tests/verification/",
       "codex-orchestration/SKILL.md",
       "codex-orchestration/templates/"
+    ],
+    "include": [
+      "long-task-planning/",
+      "codex-orchestration/",
+      "scripts/",
+      "skills.json",
+      ".gitignore"
     ]
   }
 }
