@@ -58,7 +58,7 @@ class SnapshotMatchesCommitTests(unittest.TestCase):
     def run_script(self, patch):
         self.gitconfig.write_text("[core]\n\tquotepath = false\n")
         return subprocess.run([sys.executable, str(SCRIPT), "HEAD", str(patch)], cwd=self.repo,
-                              env=self.env, capture_output=True, text=True)
+                              env=self.env, capture_output=True, text=True, check=False)
 
     def test_quoted_non_ascii_path_matches_unquoted_commit(self):
         result = self.run_script(self.change_and_snapshot(None))

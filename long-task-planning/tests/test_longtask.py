@@ -1679,13 +1679,12 @@ class CheckBriefTests(Base):
 
     def test_batch_is_the_id_led_bullets_in_the_scope_section(self):
         self.init_task(self.repo, [item(f"T-A{n}", [tag_check(f"T-A{n}")]) for n in range(1, 6)])
-        text = "\n".join([
-            "# 任务说明", "", "## 1. 为什么做", "", "- T-A3 上次已经做完，T-A4 的夹具可以复用。", "",
-            "## 2. 范围", "", "- 本批条目：", "  - `T-A1` 第一项，和 T-A5 共用夹具。", "",
-            "```bash", "# 先跑一遍", "make check", "```", "",
-            "### 第二组", "", "* T-A2 第二项。",
-            "- 顺带验证（不占名额）：`T-A3`、T-A4", "",
-            "## 3. 验收", "", "- `T-A5` 跑它的测试。", ""])
+        text = ("# 任务说明\n\n## 1. 为什么做\n\n- T-A3 上次已经做完，T-A4 的夹具可以复用。\n\n"
+                "## 2. 范围\n\n- 本批条目：\n  - `T-A1` 第一项，和 T-A5 共用夹具。\n\n"
+                "```bash\n# 先跑一遍\nmake check\n```\n\n"
+                "### 第二组\n\n* T-A2 第二项。\n"
+                "- 顺带验证（不占名额）：`T-A3`、T-A4\n\n"
+                "## 3. 验收\n\n- `T-A5` 跑它的测试。\n")
         result = self.brief(text)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("简报检查通过：本批条目 T-A1、T-A2", result.stdout)

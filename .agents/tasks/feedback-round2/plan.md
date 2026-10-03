@@ -32,6 +32,7 @@
 - 2026-10-03 codex-orchestration 的 test_codex_launch.py 用的简报没有“范围”一节，S2-F19 后被拒；这是用户批准的写法变化，测试简报改成模板格式，无效简报的用例也改成“范围里的编号不存在”。用新规则对另一个真实项目最近 3 份简报只读试跑：两份通过且取出的本批条目和本意一致，一份因为其中的条目后来被撤回而被拒，符合预期。
 - 2026-10-03 S2-F18 把 excludes 参数统一换成 scope 后，整套测试里 test_mutate 报 3 个变异的匹配文本失效（untracked files skipped、porcelain diff for changed files、dirty always false），记录 E20261003T002039-690440 有 1 个失败；改成新写法后 3 个变异都被发现，重跑整套通过。第一轮加的 test_mutate 在这里拦住了变异检查悄悄失效。
 - 2026-10-03 在本任务试用 fingerprint.include：先只列两个 skill 目录和 .gitignore，status 对旧证据写“记录时的指纹范围（看全部文件）和现在的设置（只看 …）不同，要在现在的设置下重跑”，没有再写“之后代码改过”加空列表，S2-F18b 的效果在真实任务上成立。随后发现总校验 validate_all.py 还读 skills.json 和 scripts/，只列两个 skill 会让它们改了也不让 S2-R1 变旧，于是把 scripts/ 和 skills.json 也加进 include。status 第二行的 include 按 items.json 原顺序显示，范围不同的说明里按字母排序显示；两处顺序不同，但都列全了路径，不影响判断，没有改。
+- 2026-10-03 收尾跑 S2-R1 时仓库总校验失败：ruff 报 long-task-planning/tests/test_longtask.py 的 FLY002（本轮 81d8876 写的测试）和 codex-orchestration/tests/test_snapshot_matches_commit.py 的 PLW1510（第一轮关闭后另一个会话的 20b91bb）。原因是本轮每次提交前只跑了两套测试，没跑 ruff。两处都改了写法、不改行为，两套测试重跑通过（E20261003T100825-39b532、E20261003T100825-1fd615），再在修复提交上跑收尾检查。
 
 ## 决定
 
