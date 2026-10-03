@@ -96,7 +96,7 @@ python3 long-task-planning/tests/mutate.py
 
 ## 定时检查反馈的任务
 
-按用户 2026-10-03 的要求，在 Claude 桌面应用里建了定时任务 `long-task-planning-feedback-watch`，每 6 小时检查一次 FEEDBACK 有没有新条目。任务只在本机桌面应用打开时运行，提示词只在维护者本机。它的做法：
+按用户 2026-10-03 的要求，在 Claude 桌面应用里建了定时任务 `long-task-planning-feedback-watch`，检查 FEEDBACK 有没有新条目；最初每 6 小时一次，同日按用户要求改为每天 12:17 一次。任务只在本机桌面应用打开时运行，提示词只在维护者本机。它的做法：
 
 - 条目是否处理完，只看 FEEDBACK 里这一条自己的正文：有以 `- 已处理：` 或 `- 不处理：` 开头的行，就算结束。
 - 新条目先核实；确认的再出方案。
