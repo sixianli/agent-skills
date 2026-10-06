@@ -12,6 +12,7 @@ This repository collects reusable Codex skills that I maintain for recurring per
 | `grill-with-docs` | [grill-skill/README.md](grill-skill/README.md) | `grill-with-docs/` | Interview and capture terms and decisions through Document Governance. | Yes |
 | `siblog-blog-workflow` | [siblog-blog-workflow/SKILL.md](siblog-blog-workflow/SKILL.md) | `siblog-blog-workflow/` | Prepare, translate, format, and publish SiBlog posts through the repository-owned blog commands, and draft a SiBlog technical post from the current Claude Code or Codex thread with `blog:tilian`. | Yes, for SiBlog blog commands |
 | `video-download` | [video-download/SKILL.md](video-download/SKILL.md) | `video-download/` | Download the highest available and verifiable video resolution from a supplied URL. | Yes |
+| `human-writing-zh` | [human-writing-zh/README.md](human-writing-zh/README.md) | `human-writing-zh/` | Write or edit natural Chinese articles while preserving facts, conditions, quotations, and the author's voice. | Yes, for Chinese writing and editing requests |
 | `long-task-planning` | [long-task-planning/SKILL.md](long-task-planning/SKILL.md) | `long-task-planning/` | Keep a long coding task's goal, plan and done/not-done state from drifting; status is computed from recorded evidence, never written by hand. | Yes |
 | `codex-orchestration` | [codex-orchestration/SKILL.md](codex-orchestration/SKILL.md) | `codex-orchestration/` | Let Claude Code manage the local Codex CLI as a delegated coding agent: briefs, stop files, rulings, commit reviews and sessions. | Yes, when Claude Code delegates work to Codex |
 | `readable-output` | [readable-output/SKILL.md](readable-output/SKILL.md) | `readable-output/` | Make every response to the user easy to understand and check: plain text with writing rules adapted from ASD-STE100, an ASCII diagram checked by `scripts/check_ascii.py` (display width aware, so Chinese counts as 2 columns), or an HTML Artifact with its link in the response. | Yes |
@@ -50,6 +51,8 @@ cp -R video-download "$HOME/.agents/skills/"
 ```
 
 The SiBlog workflow requires the SiBlog repository and its publishing checks. Video downloads require `yt-dlp` and FFmpeg (`ffprobe`); see the skill entrypoints for usage and access limits.
+
+For `human-writing-zh`, follow its [installation and usage guide](human-writing-zh/README.md). Copy the complete folder after checking for an existing installation, and retain `LICENSE` and `THIRD_PARTY_NOTICES.md`. The optional text review script needs Python 3.9+ and uses only the standard library. Its tests check the script's behavior; they do not establish writing quality or factual accuracy.
 
 Restart Codex if a newly installed skill does not appear immediately.
 

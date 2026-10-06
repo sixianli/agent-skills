@@ -426,6 +426,52 @@
       ]
     },
     {
+      "name": "human-writing-zh",
+      "package_dir": "human-writing-zh",
+      "readme": "human-writing-zh/README.md",
+      "skill_dir": "human-writing-zh",
+      "description": "Write or edit natural Chinese articles while preserving facts, conditions, quotations, and the author's voice.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "human-writing-zh/scripts/review_text.py",
+            "human-writing-zh/tests/test_review_text.py"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "human-writing-zh/tests",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "human-writing-zh/scripts",
+            "human-writing-zh/tests"
+          ]
+        }
+      ]
+    },
+    {
       "name": "long-task-planning",
       "package_dir": "long-task-planning",
       "readme": "long-task-planning/SKILL.md",
