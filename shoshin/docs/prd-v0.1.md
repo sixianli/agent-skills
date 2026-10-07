@@ -34,7 +34,7 @@ The primary user develops multiple projects with Codex and values explanations o
 - R09: Give shared source, personal installation copies, and generated project verification skills explicit ownership. References must not depend on this machine's absolute repository paths.
 - R10: Record requirements, technical scope, target directories, and acceptance in documents to prevent later renaming, scope expansion, or treating deferred items as commitments.
 
-- R21: The only permitted reference source for Shoshin's skill adaptation is `/Users/triggerjames/Documents/sxl_code_work_space/cursor-plugins/pstack/`. Do not consult, copy, port, or depend on `pstack-codex` designs, skills, code, scripts, or runtime, including indirectly through historical analysis or intermediate artifacts. Basis, translated from the user's instruction: "You may use only the pstack directory inside Cursor Plugins as the reference source."
+- R21: The only permitted reference source for Shoshin's skill adaptation is `<selected-upstream-checkout>/pstack/`. Do not consult, copy, port, or depend on `pstack-codex` designs, skills, code, scripts, or runtime, including indirectly through historical analysis or intermediate artifacts. Basis, translated from the user's instruction: "You may use only the pstack directory inside Cursor Plugins as the reference source."
 
 ### Excluded
 

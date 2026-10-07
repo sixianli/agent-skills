@@ -17,7 +17,7 @@
   {
     "id": "why-ordinary",
     "skill": "why",
-    "request": "Trace why the done-completion check was added to JUST-RAG client.ts, using local Git only."
+    "request": "Trace why the done-completion check was added to a fixture application stream parser, using local Git only."
   },
   {
     "id": "why-negative",
@@ -47,7 +47,7 @@
   {
     "id": "create-verification-skill-ordinary",
     "skill": "create-verification-skill",
-    "request": "Generate and exercise a verification skill for the JUST-RAG evaluation-asset CLI, using local material only."
+    "request": "Generate and exercise a verification skill for the a fixture application documented CLI, using local material only."
   },
   {
     "id": "create-verification-skill-negative",
@@ -102,7 +102,7 @@
   {
     "id": "typescript-best-practices-ordinary",
     "skill": "typescript-best-practices",
-    "request": "Read-only: review JUST-RAG ChatMessage states and the SSE parsing boundary, explaining the actual limits of its types."
+    "request": "Read-only: review a fixture application message states and the SSE parsing boundary, explaining the actual limits of its types."
   },
   {
     "id": "typescript-best-practices-negative",
@@ -117,7 +117,7 @@
   {
     "id": "maintain-verification-skill-ordinary",
     "skill": "maintain-verification-skill",
-    "request": "Maintain the source references and map in JUST-RAG verify-just-rag, leaving product files unchanged."
+    "request": "Maintain the source references and map in a fixture application verification skill, leaving product files unchanged."
   },
   {
     "id": "maintain-verification-skill-negative",
@@ -132,7 +132,7 @@
   {
     "id": "teach-ordinary",
     "skill": "teach",
-    "request": "Explain final and done in JUST-RAG SSE so a developer about to edit chat code understands the two state layers."
+    "request": "Explain final and done in a fixture application event stream so a developer about to edit chat code understands the two state layers."
   },
   {
     "id": "teach-negative",
@@ -177,7 +177,7 @@
   {
     "id": "technical-writing-ordinary",
     "skill": "technical-writing",
-    "request": "Write evaluation-asset operating instructions from existing commands in the JUST-RAG README."
+    "request": "Write CLI operating instructions from existing commands in the fixture application README."
   },
   {
     "id": "technical-writing-negative",

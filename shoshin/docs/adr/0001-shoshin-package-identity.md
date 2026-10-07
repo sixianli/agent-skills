@@ -19,7 +19,7 @@ Source maintenance and installation locations must be separate to prevent diverg
 
 Use **Shoshin** as the display name and **shoshin** as the package directory at `agent-skills/shoshin/`.
 
-On the current machine, the source root is `/Users/triggerjames/Documents/sxl_code_work_space/agent-skills/shoshin/`. This absolute path is only a local locator, not a runtime dependency or invocation instruction.
+Resolve the source root as `<repository>/shoshin/` in the selected checkout. No maintainer-specific absolute path is part of this decision or a runtime dependency.
 
 - The governed documentation root is `shoshin/docs/`. Pass `shoshin` as the project root to governance tools; `docs/` in SOURCE references resolves relative to it.
 - Shared skill source lives at `shoshin/skills/<skill-name>/`.

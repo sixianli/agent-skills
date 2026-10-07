@@ -18,7 +18,7 @@ This is the design baseline for the discussed requirements, not a claim of insta
 
 - Product authority: [SOURCE: docs/prd-v0.1.md]
 - Name and location: [SOURCE: docs/adr/0001-shoshin-package-identity.md]
-- Sole skill reference source (R21): `/Users/triggerjames/Documents/sxl_code_work_space/cursor-plugins/pstack/`.
+- Sole skill reference source (R21): `<selected-upstream-checkout>/pstack/`.
 - Do not use pstack-codex or other migration projects as design references, code sources, or runtime dependencies. Historical summaries, caches, and generated material must not bypass this restriction. Official Codex material and adopted tool instructions establish adaptation interfaces and operating rules. The user separately authorized first-party OpenAI/Anthropic material to guide subagent selection, not as another skill-source repository. [SOURCE: docs/prd-v0.1.md#included]
 - Re-read baseline: repository HEAD `71ed0d1076fec562c1b74ee353121a8d00f75382`, plugin version `0.15.0`; 50 SKILL.md files, comprising 47 ordinary skills and three Benny skills, plus 23 Playbooks.
 - This baseline supports traceable comparison; future upstream changes do not enter Shoshin automatically. Do not execute actions in source files merely to analyze documentation.
@@ -426,7 +426,7 @@ Structural checks validate metadata, references, directories, and dependencies w
 
 Behavioral checks cover ordinary cases, explicit non-triggers, missing dependencies/evidence, and read-only/design stopping points. For complex skills, inspect independent artifacts and evidence without exposing reviewer criteria to executors. Testing itself does not authorize model changes or external writes.
 
-Project-level verification originally required real code and executable paths. During implementation on 2026-09-08, the user explicitly canceled the JUST-RAG pilot and requested source completion. Outstanding real-project acceptance remains open without blocking that source delivery. Generated skills must actually run; maintenance must cover declared features; performance/visual claims need comparable baselines. Resume the canceled pilot only with new real-project scope authorization, and never mark practical acceptance passed without evidence.
+Project-level verification originally required real code and executable paths. During implementation on 2026-09-08, the user explicitly canceled the sample application pilot and requested source completion. Outstanding real-project acceptance remains open without blocking that source delivery. Generated skills must actually run; maintenance must cover declared features; performance/visual claims need comparable baselines. Resume the canceled pilot only with new real-project scope authorization, and never mark practical acceptance passed without evidence.
 
 After authorized installation, use a fresh Codex task to check discovery, explicit/implicit triggers, internal references, and cross-skill dependencies. Successful file copying is insufficient. The initial documentation phase checked only document structure and consistency; see the Plan for actual source-implementation verification.
 

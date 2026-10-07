@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "allow": [
+    {
+      "rule": "email",
+      "pattern": "[A-Za-z0-9._%+-]+@example\\.(?:com|org)",
+      "reason": "Reserved example domains in deterministic fixtures and documentation"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/blader/humanizer(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/ccf/humanize(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/holygeek00/humanizer\\-zh\\-cn(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/imputnet/cobalt(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/mattpocock/skills(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/mikf/gallery\\-dl(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/streamlink/streamlink(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/swyxio/skills/tree/main/download\\-video(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/yt\\-dlp/yt\\-dlp(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    },
+    {
+      "rule": "account-url",
+      "pattern": "https://github\\.com/cursor/plugins/tree/main/pstack(?:/[A-Za-z0-9._/-]+)?\\.?",
+      "reason": "Published upstream source attribution or official tool documentation referenced by this package"
+    }
+  ]
+}

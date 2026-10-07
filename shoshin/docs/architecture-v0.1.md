@@ -42,7 +42,7 @@ Reflect handles substantive retrospectives through three Codex native reviewers 
 
 Verification generation requires real user paths, read-only checks of the expected target, self-contained proof rules in the generated skill, preserved evidence, and cleanup of owned resources. Its feature map records shared baselines and per-entrypoint action/command/result recipes with artifact attribution and explicit skip status. Control methods follow the actual application surface; optional helpers are exercised using their documented invocation. The worked map example teaches the method without supplying purported real-project commands. Maintenance requires bidirectional coverage checks and recovery after failure. Workflow text does not automatically create persistent tasks or remote delivery.
 
-An asset CLI was run in JUST-RAG during implementation. The user later canceled the pilot, and unchanged project artifacts created by this task were cleaned up. Full UI, model calls, complete AC15/AC16 paths, and some behavioral scenarios remain unpassed. Evidence and unfinished work stay in the execution Plan; this architecture document does not manually synchronize test counts.
+A limited CLI pilot was run during implementation; its private application details are not distributed. The user later canceled the pilot, and unchanged project artifacts created by this task were cleaned up. Full UI, model calls, complete AC15/AC16 paths, and some behavioral scenarios remain unpassed. Evidence and unfinished work stay in the execution Plan; this architecture document does not manually synchronize test counts.
 
 ## Backlog Links
 

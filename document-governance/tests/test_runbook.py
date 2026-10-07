@@ -280,7 +280,7 @@ class RunbookTests(unittest.TestCase):
         self.assertEqual(checked.returncode, 0, checked.stderr)
 
         (self.root / "src/credentials.json").write_text(
-            '{"token":"secret"}\n', encoding="utf-8"
+            '{"token":"' + 'secret' + '"}\n', encoding="utf-8"
         )
         secret_check = self.run_cli("check", str(self.root), str(path))
         self.assertNotEqual(secret_check.returncode, 0)

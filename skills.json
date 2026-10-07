@@ -33,6 +33,19 @@
         "scripts/tests",
         "-v"
       ]
+    },
+    {
+      "name": "privacy",
+      "command": [
+        "python3",
+        "sensitive-information-scan/scripts/scan_sensitive.py",
+        "--repo",
+        ".",
+        "--current-author",
+        "--policy",
+        "sensitive-information-scan/assets/repository-policy.json",
+        "--fail-on-findings"
+      ]
     }
   ],
   "skills": [
@@ -333,11 +346,11 @@
       "checks": []
     },
     {
-      "name": "siblog-blog-workflow",
-      "package_dir": "siblog-blog-workflow",
-      "readme": "siblog-blog-workflow/SKILL.md",
-      "skill_dir": "siblog-blog-workflow",
-      "description": "Run SiBlog blog: commands, and draft a SiBlog technical post from the current Claude Code or Codex thread with blog:tilian.",
+      "name": "blog-workflow",
+      "package_dir": "blog-workflow",
+      "readme": "blog-workflow/SKILL.md",
+      "skill_dir": "blog-workflow",
+      "description": "Manage Hugo blog posts and draft technical articles using the target repository conventions.",
       "implicit_invocation": true,
       "has_tests": true,
       "checks": [
@@ -347,9 +360,8 @@
             "python3",
             "-m",
             "py_compile",
-            "siblog-blog-workflow/scripts/thread_transcript.py",
-            "siblog-blog-workflow/scripts/place_draft.py",
-            "siblog-blog-workflow/scripts/scan_sensitive.py"
+            "blog-workflow/scripts/thread_transcript.py",
+            "blog-workflow/scripts/place_draft.py"
           ]
         },
         {
@@ -360,7 +372,7 @@
             "unittest",
             "discover",
             "-s",
-            "siblog-blog-workflow/tests",
+            "blog-workflow/tests",
             "-v"
           ]
         },
@@ -373,8 +385,8 @@
             "ruff",
             "ruff",
             "check",
-            "siblog-blog-workflow/scripts",
-            "siblog-blog-workflow/tests"
+            "blog-workflow/scripts",
+            "blog-workflow/tests"
           ]
         }
       ]
@@ -625,14 +637,59 @@
       ]
     },
     {
-      "name": "hermes-ssh",
-      "package_dir": "hermes-ssh",
-      "readme": "hermes-ssh/SKILL.md",
-      "skill_dir": "hermes-ssh",
-      "description": "Connect to the Hermes Linux server through SSH and Cloudflare Access, verify the remote host, and diagnose connection failures.",
+      "name": "ssh-access",
+      "package_dir": "ssh-access",
+      "readme": "ssh-access/SKILL.md",
+      "skill_dir": "ssh-access",
+      "description": "Connect to a user-specified SSH target using its existing configuration and verify host identity.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
+    },
+    {
+      "name": "sensitive-information-scan",
+      "package_dir": "sensitive-information-scan",
+      "readme": "sensitive-information-scan/SKILL.md",
+      "skill_dir": "sensitive-information-scan",
+      "description": "Scan files and Git content for credentials, personal information, accounts and private project context.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "sensitive-information-scan/scripts/scan_sensitive.py"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "sensitive-information-scan/tests",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "sensitive-information-scan/scripts",
+            "sensitive-information-scan/tests"
+          ]
+        }
+      ]
     }
   ]
 }

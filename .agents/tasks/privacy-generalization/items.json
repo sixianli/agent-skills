@@ -1,0 +1,107 @@
+{
+  "prefix": "PRV",
+  "fingerprint": {
+    "exclude": [
+      ".agents/local/"
+    ]
+  },
+  "items": [
+    {
+      "id": "PRV-D1",
+      "title": "通用扫描器覆盖文件、暂存内容、历史和提交身份，报告隐藏原值",
+      "goal_ref": [
+        "G5"
+      ],
+      "added": {
+        "by": "codex",
+        "on": "2026-10-07"
+      },
+      "done_when": [
+        {
+          "type": "test",
+          "file": "sensitive-information-scan/tests/test_scan_sensitive.py",
+          "name": "test_staged_and_history_preserve_deleted_secret_and_identity"
+        }
+      ]
+    },
+    {
+      "id": "PRV-D2",
+      "title": "博客和 SSH 技能使用目标参数，不绑定维护者的项目",
+      "goal_ref": [
+        "G4"
+      ],
+      "added": {
+        "by": "codex",
+        "on": "2026-10-07"
+      },
+      "done_when": [
+        {
+          "type": "test",
+          "file": "blog-workflow/tests/test_place_draft.py",
+          "name": "test_uses_explicit_blog_root_from_an_unrelated_directory"
+        },
+        {
+          "type": "doc",
+          "path": "ssh-access/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "PRV-D3",
+      "title": "共享文件去除个人路径和其他项目内部资料，原始材料保存在本机",
+      "goal_ref": [
+        "G3"
+      ],
+      "added": {
+        "by": "codex",
+        "on": "2026-10-07"
+      },
+      "done_when": [
+        {
+          "type": "command",
+          "run": "python3 sensitive-information-scan/scripts/scan_sensitive.py --repo . --policy sensitive-information-scan/assets/repository-policy.json --private-patterns .agents/local/private-patterns.txt --fail-on-findings"
+        }
+      ]
+    },
+    {
+      "id": "PRV-D4",
+      "title": "未来提交使用隐私邮箱，实际提交钩子阻止敏感内容和私人身份",
+      "goal_ref": [
+        "G2"
+      ],
+      "added": {
+        "by": "codex",
+        "on": "2026-10-07"
+      },
+      "done_when": [
+        {
+          "type": "test",
+          "file": "sensitive-information-scan/tests/test_scan_sensitive.py",
+          "name": "test_commit_hook_rejects_secret_and_overridden_email"
+        }
+      ]
+    },
+    {
+      "id": "PRV-D5",
+      "title": "整套项目检查、技能结构检查和推送后内容核对",
+      "goal_ref": [
+        "G1"
+      ],
+      "added": {
+        "by": "codex",
+        "on": "2026-10-07"
+      },
+      "done_when": [
+        {
+          "type": "command",
+          "run": "UV_OFFLINE=1 uv run --with ruff --with pyyaml python3 scripts/validate_all.py"
+        },
+        {
+          "type": "command",
+          "run": "git diff --cached --check"
+        }
+      ]
+    }
+  ],
+  "task": "privacy-generalization"
+}

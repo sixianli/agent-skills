@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+source_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+repository=$(git rev-parse --show-toplevel)
+set -- --repo "$repository" --staged --current-author --fail-on-findings --policy "$source_root/sensitive-information-scan/assets/repository-policy.json"
+if [ -f "$repository/.agents/local/private-patterns.txt" ]; then
+    set -- "$@" --private-patterns "$repository/.agents/local/private-patterns.txt"
+fi
+exec python3 "$source_root/sensitive-information-scan/scripts/scan_sensitive.py" "$@"

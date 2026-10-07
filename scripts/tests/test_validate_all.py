@@ -10,7 +10,7 @@ SPEC = importlib.util.spec_from_file_location("validate_all", SCRIPT)
 validate_all = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(validate_all)
 
-VALID_DESCRIPTION = "Run SiBlog blog commands safely."
+VALID_DESCRIPTION = "Run Hugo blog commands safely."
 
 
 def make_skill(frontmatter: str, body: str = "# Skill\n") -> Path:

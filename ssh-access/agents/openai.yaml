@@ -1,0 +1,6 @@
+interface:
+  display_name: "SSH Access"
+  short_description: "Connect to a selected SSH target and verify its host"
+  default_prompt: "Use $ssh-access to inspect the existing SSH configuration and verify the selected remote host."
+policy:
+  allow_implicit_invocation: true

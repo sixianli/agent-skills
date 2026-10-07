@@ -1,0 +1,6 @@
+interface:
+  display_name: "Blog Workflow"
+  short_description: "Prepare and publish posts for a selected Hugo blog"
+  default_prompt: "Use $blog-workflow to process the requested blog command in the selected Hugo project."
+policy:
+  allow_implicit_invocation: true
