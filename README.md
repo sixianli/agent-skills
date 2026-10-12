@@ -6,7 +6,6 @@ This repository collects reusable agent skills. Each skill works with the user-s
 
 | Skill | Documentation | Installable folder | Purpose | Implicit invocation |
 |---|---|---|---|---|
-| `opencode-delegation` | [codex-delegate-to-opencode-skill/README.md](codex-delegate-to-opencode-skill/README.md) | `codex-delegate-to-opencode-skill/opencode-delegation/` | Delegate coding work to local OpenCode while Codex supervises, reviews, and verifies. | Yes, only for explicit OpenCode delegation requests |
 | `document-governance` | [document-governance/SKILL.md](document-governance/SKILL.md) | `document-governance/` | Govern project documentation, durable Idea/Backlog lifecycles, and fail-closed Runbook execution contracts. | Yes |
 | `grill-me` | [grill-skill/README.md](grill-skill/README.md) | `grill-me/` | Run the latest imported upstream interview without live document capture. | Yes |
 | `grill-with-docs` | [grill-skill/README.md](grill-skill/README.md) | `grill-with-docs/` | Interview and capture terms and decisions through Document Governance. | Yes |
@@ -33,14 +32,6 @@ Install one skill, for example:
 
 ```bash
 mkdir -p "$HOME/.agents/skills"
-cp -R document-governance "$HOME/.agents/skills/"
-```
-
-Install both original standalone skills (see the Shoshin package for its installation steps):
-
-```bash
-mkdir -p "$HOME/.agents/skills"
-cp -R codex-delegate-to-opencode-skill/opencode-delegation "$HOME/.agents/skills/"
 cp -R document-governance "$HOME/.agents/skills/"
 ```
 

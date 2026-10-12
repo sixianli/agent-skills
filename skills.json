@@ -50,16 +50,6 @@
   ],
   "skills": [
     {
-      "name": "opencode-delegation",
-      "package_dir": "codex-delegate-to-opencode-skill",
-      "readme": "codex-delegate-to-opencode-skill/README.md",
-      "skill_dir": "codex-delegate-to-opencode-skill/opencode-delegation",
-      "description": "Delegate coding work to local OpenCode while Codex supervises, reviews, and verifies.",
-      "implicit_invocation": true,
-      "has_tests": false,
-      "checks": []
-    },
-    {
       "name": "document-governance",
       "package_dir": "document-governance",
       "readme": "document-governance/SKILL.md",
