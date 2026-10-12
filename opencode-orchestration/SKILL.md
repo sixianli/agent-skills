@@ -157,6 +157,14 @@ revise them from experience):
 - Warn that name-based `bash` deny patterns also block harmless commands
   such as `ls` or `grep` on a file whose name matches, and tell it to use
   its read and edit tools for those files instead.
+- Deny patterns match the whole command text, so a pattern meant for the
+  local machine (for example `node *`) also blocks the same word inside an
+  `ssh host '...'` string. Tell it to put remote steps in a script file on
+  the remote host and call the script.
+- Do not start a Claude Code shell with its working directory inside a
+  tree that will be hashed or frozen: the harness may leave empty
+  `.claude/.cc-writes` directories there. Check for and remove them before
+  a freeze.
 - Give exact values you already know (paths, sizes, SHA-256, IDs) in a table
   and ask it to re-verify them rather than derive them; let it derive only
   what needs a run it performs.
