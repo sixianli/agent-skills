@@ -133,6 +133,19 @@ Silence is not progress. On every wake, and at least every 20 minutes:
 Never stop opencode while a test command it started is still running unless
 continuing would cause damage; partial reports force a full rerun.
 
+A shell call emits no JSON event until it returns, so a long remote command
+looks exactly like a hang. On 2026-10-13 a wait-and-retry loop script ran for
+over 50 minutes with no new event while working normally. Before calling a
+run stuck, list the processes on the test host (`ps -eo pid,etime,args`) and
+look at the files the command writes; set the waiter's quiet threshold above
+the longest command the brief allows (60 minutes for such loops).
+
+Two sessions can share one test host when each brief names its own result
+directories and scratch prefix and forbids touching the other session's
+directories, processes and shared inputs. Name any shared read-only input
+(for example a prepared runtime copy) in both briefs and say which session
+may delete it, and when.
+
 ## Writing briefs
 
 Use [templates/brief.md](templates/brief.md). Rules that matter more with a
