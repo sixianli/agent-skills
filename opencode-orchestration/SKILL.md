@@ -140,6 +140,14 @@ run stuck, list the processes on the test host (`ps -eo pid,etime,args`) and
 look at the files the command writes; set the waiter's quiet threshold above
 the longest command the brief allows (60 minutes for such loops).
 
+opencode itself ends a session whose single shell call stays silent for
+about an hour: on 2026-10-13 the run ended with an `aborted` error event
+"Session interrupted: inactivity", while the remote loop it had started
+kept running. Do not ask opencode to sit inside a wait of more than about
+45 minutes. Have it start such loops as a detached job on the test host
+that writes its result file, write the stop file, and let Claude (or a
+later resume) read the result.
+
 Two sessions can share one test host when each brief names its own result
 directories and scratch prefix and forbids touching the other session's
 directories, processes and shared inputs. Name any shared read-only input
