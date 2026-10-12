@@ -579,6 +579,62 @@
       ]
     },
     {
+      "name": "opencode-orchestration",
+      "package_dir": "opencode-orchestration",
+      "readme": "opencode-orchestration/SKILL.md",
+      "skill_dir": "opencode-orchestration",
+      "description": "Let Claude Code manage the local opencode CLI as a delegated coding agent: deny lists, briefs, launches, liveness, stop files and line-by-line review.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "opencode-orchestration/scripts/oc-events.py",
+            "opencode-orchestration/tests/test_oc_scripts.py"
+          ]
+        },
+        {
+          "name": "shell-syntax",
+          "command": [
+            "bash",
+            "-c",
+            "for script in opencode-orchestration/scripts/*.sh; do bash -n \"$script\" || exit 1; done"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "opencode-orchestration/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "opencode-orchestration/scripts",
+            "opencode-orchestration/tests"
+          ]
+        }
+      ]
+    },
+    {
       "name": "readable-output",
       "package_dir": "readable-output",
       "readme": "readable-output/SKILL.md",

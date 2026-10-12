@@ -1,0 +1,230 @@
+---
+name: opencode-orchestration
+description: Let Claude Code delegate coding and testing to the local opencode CLI and stay the planner and strict reviewer - setting a deny-list safety net, writing briefs, launching and resuming sessions, detecting silent failures, reviewing every change, and answering stop files. Use whenever Claude hands work to opencode, reviews opencode output, or resumes an opencode session, in any project.
+---
+
+# opencode Orchestration
+
+Claude plans, reviews and drives the task; opencode writes code and runs
+tests. The user talks only to Claude. opencode never asks the user anything,
+and Claude forwards an opencode question to the user only when the answer is
+outside Claude's authority (see [Authority](#authority)).
+
+Project facts (handoff directory, test hosts, test layers, production
+boundaries, model choice) come from the project's instruction files and its
+long-task directory. This skill holds only the reusable procedure and what
+has been learned about opencode itself. Improve it whenever a delegation
+teaches something new: add the observation to [Known pitfalls](#known-pitfalls)
+with its date and evidence, and change the procedure when the pitfall shows
+the procedure was wrong.
+
+## Contents
+
+- [Before the first delegation in a project](#before-the-first-delegation-in-a-project)
+- [Files](#files)
+- [Goal, plan and progress](#goal-plan-and-progress)
+- [Launching and resuming](#launching-and-resuming)
+- [Waiting and liveness](#waiting-and-liveness)
+- [Writing briefs](#writing-briefs)
+- [Reviewing](#reviewing)
+- [Handling a stop file](#handling-a-stop-file)
+- [Authority](#authority)
+- [Known pitfalls](#known-pitfalls)
+
+## Before the first delegation in a project
+
+1. Check the CLI and the model: `opencode --version`, then
+   `opencode models | grep <model>`. Run opencode commands outside the Bash
+   sandbox: it writes its log and database under the user's home directory
+   and fails with `FileSystem.open` errors inside it.
+2. Write the deny list. opencode reads a project file
+   `<repo>/.opencode/opencode.json`; keep it local by adding `.opencode/`
+   to `.git/info/exclude` unless the project wants it committed. Shape:
+
+   ```json
+   {
+     "$schema": "https://opencode.ai/config.json",
+     "permission": {
+       "bash": { "*": "allow", "*<production host>*": "deny", "sudo *": "deny" },
+       "read": { "*": "allow", "~/.ssh/**": "deny" },
+       "external_directory": { "*": "allow", "~/.ssh/**": "deny" }
+     }
+   }
+   ```
+
+   The last matching pattern wins, so `"*"` goes first. `*` matches any
+   characters. Deny what the project forbids: production hosts and their
+   wrappers, local test runners on machines where tests must not run,
+   force pushes and history rewrites, credential stores, `sudo`. `--auto`
+   approves everything not explicitly denied, so the deny list is the only
+   hard stop; the brief's rules are the main control and the list is the
+   safety net.
+3. Run `opencode reload`, then `opencode debug config` and check that the
+   project file appears with its rules. Environment variables such as
+   `OPENCODE_CONFIG` are not read by opencode 2.0.27 (verified 2026-10-12).
+4. Run one tiny prompt with the chosen model (see
+   [Launching and resuming](#launching-and-resuming)) before the first real
+   brief. It catches account and model problems in seconds instead of after
+   a long silent wait.
+
+## Files
+
+All communication goes through Markdown files in the project's handoff
+directory:
+
+| File | Written by | Purpose |
+| --- | --- | --- |
+| `<date>-<task>-oc-brief.md` | Claude | New task or batch, from [templates/brief.md](templates/brief.md) |
+| `<date>-<task>-oc-stop-<N>.md` | opencode | Why it stopped; starts with [templates/stop-summary.md](templates/stop-summary.md) |
+| `<date>-<task>-oc-reply-<N>.md` | Claude | Ruling on a stop file, from [templates/reply.md](templates/reply.md) |
+| `<date>-<task>-oc-<N>.jsonl` | launcher | The run's JSON event stream, kept as review evidence |
+
+## Goal, plan and progress
+
+Every delegated task is a full-mode long task under
+[long-task-planning](../long-task-planning/SKILL.md): the goal (user's words),
+items with completion conditions, and the plan live in
+`<repo>/.agents/tasks/<task>/`, and whether an item is done comes only from
+`longtask.py status`. Each brief names at most three item IDs as bullets in
+its `范围` section and copies their `done_when`; run
+`longtask.py check-brief <brief>` before launching. opencode records test
+evidence with `longtask.py record --by opencode` and never edits `goal.md`,
+`items.json` or `plan.md`.
+
+## Launching and resuming
+
+Use `--standalone`. Through the shared background service, a provider error
+was swallowed: the run printed nothing until an outer timeout killed it after
+240 seconds. The same prompt with `--standalone` returned the error event in
+two seconds (2026-10-12).
+
+New session (one batch = one session):
+
+```bash
+opencode run --standalone --auto --format json -m <provider/model> \
+  --title "<task>-<batch>" -f <brief path> \
+  "Read the attached brief fully, then do the work it describes. Write the stop file it names when it tells you to stop." \
+  > <handoff>/<date>-<task>-oc-<N>.jsonl 2> <handoff>/<date>-<task>-oc-<N>.err
+```
+
+Every JSON event carries `sessionID`; take it from the first line. Resume
+within the same batch:
+
+```bash
+opencode run --standalone --auto --format json -m <provider/model> -s <sessionID> \
+  "Read <reply path> fully, then continue per its ruling. The next stop file is <path>." \
+  >> <same jsonl> 2>> <same err>
+```
+
+Run launches as a background Bash task (sandbox disabled, `timeout` at the
+2-hour maximum) so Claude keeps working and is notified when the run exits.
+
+## Waiting and liveness
+
+Silence is not progress. On every wake, and at least every 20 minutes:
+
+- the process has exited → read the last events of the JSONL; an event with
+  `"type":"error"` ends the run whatever the exit code says;
+- the stop file exists → handle it;
+- the JSONL has not grown for 20 minutes while the process lives → read the
+  last events, check whether a test command is legitimately running on the
+  test host, and only then decide to stop it.
+
+Never stop opencode while a test command it started is still running unless
+continuing would cause damage; partial reports force a full rerun.
+
+## Writing briefs
+
+Use [templates/brief.md](templates/brief.md). Rules that matter more with a
+fast, cheaper model than with a frontier one (starting assumptions; confirm or
+revise them from experience):
+
+- One concrete outcome per item, with the exact files to touch, the exact
+  commands to run and where, and the exact evidence that counts as done.
+- Paste project rules that the work can break (test host, forbidden hosts,
+  commit and push rules, disk hygiene) into the brief; a link alone may not
+  be followed.
+- Say what not to do, especially relaxing checks, changing expected values,
+  editing unrelated files, and touching production.
+- Give a time budget and require a stop file when it is exceeded.
+- Paste [templates/stop-summary.md](templates/stop-summary.md) into the
+  appendix.
+- Forbid deleting evidence or result directories explicitly, including its
+  own earlier failed results, and require a new run number for every rerun.
+  On 2026-10-12 opencode deleted a failed result directory, locally and on
+  the test host, just to reuse its run number; back the rule with `bash`
+  deny patterns for the evidence paths.
+- Warn that name-based `bash` deny patterns also block harmless commands
+  such as `ls` or `grep` on a file whose name matches, and tell it to use
+  its read and edit tools for those files instead.
+- Give exact values you already know (paths, sizes, SHA-256, IDs) in a table
+  and ask it to re-verify them rather than derive them; let it derive only
+  what needs a run it performs.
+- When the work is a bug fix, order the steps as: change the test, run it
+  and keep the failing output, change production code, rerun.
+
+## Reviewing
+
+Claude reviews every opencode change itself, line by line, before accepting
+it. Do not delegate the review back to opencode or to the same model.
+
+- Read the full diff of every commit or working-tree change; compare it with
+  the brief. Anything outside the brief's files is drift until explained.
+- Read the JSONL for every shell command opencode ran: confirm no command
+  touched a forbidden host or ran tests where they must not run, and that
+  claimed test runs really happened on the stated revision.
+- Rerun the cheapest discriminating check yourself. Count assertions in test
+  reports rather than trusting a summary line.
+- Check that expected values were derived from requirements, that no
+  assertion was weakened, and that no check was skipped to get a pass.
+- Diff the touched tree against a baseline copy you took before launch
+  (for files outside version control), not only against git.
+- Record the outcome: `longtask.py record --review --items <ids> --verdict
+  approved|rejected --files <reviewed files> --by claude`.
+
+## Handling a stop file
+
+1. Read the summary table, run `longtask.py status`, and check that the
+   evidence IDs listed exist and agree with the claims.
+2. Verify each claim the ruling depends on: confirmed, partially confirmed,
+   rejected or uncertain, with the code location or evidence path.
+3. Rule within [Authority](#authority) and write the reply from
+   [templates/reply.md](templates/reply.md), with conditions concrete enough
+   to check at the next review.
+4. Resume the same session with the reply, or start a new session for the
+   next batch.
+
+## Authority
+
+Claude decides alone: design choices inside the task's scope, approving or
+rejecting opencode's proposals, rework, restarting opencode, test
+environments opencode created, deleting rebuildable artifacts the task
+created after checking they are not evidence.
+
+Ask the user first: new downloads or dependencies, deleting user-owned
+files, production or other remote operations the project reserves, push,
+branch or PR rules beyond the project's standing ones, product decisions,
+relaxing checks or timeouts, account settings, and anything the project's
+instructions reserve for the user. Production steps are never delegated.
+
+## Known pitfalls
+
+- 2026-10-12, opencode 2.0.27: a Go-plan model failed with
+  `provider.invalid-request` "This Go model requires Global regions"; the
+  user's workspace privacy setting must allow Global regions. This is an
+  account setting: ask the user to change it, do not try another model
+  without asking.
+- 2026-10-12: without `--standalone` the same failure produced no output at
+  all (see [Launching and resuming](#launching-and-resuming)).
+- 2026-10-12: `OPENCODE_CONFIG` and `OPENCODE_CONFIG_CONTENT` were ignored;
+  only the project file plus `opencode reload` showed up in
+  `opencode debug config`.
+- 2026-10-12: the shell tool is named `shell` in JSON events
+  (`part.tool`); `bash` permission rules still govern it.
+- 2026-10-12: one `--standalone` launch hung for 180 seconds without ever
+  creating a session, and the identical relaunch worked. Treat a launch with
+  no session event after the startup timeout as a stall, kill it and
+  relaunch once; [scripts/oc-launch.sh](scripts/oc-launch.sh) does this
+  check.
+- Observed cost, for planning: a 14-minute batch with about 40 tool calls on
+  `deepseek-v4.1-flash` cost about USD 0.10, mostly cached input.

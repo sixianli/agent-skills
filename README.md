@@ -14,6 +14,7 @@ This repository collects reusable agent skills. Each skill works with the user-s
 | `human-writing-zh` | [human-writing-zh/README.md](human-writing-zh/README.md) | `human-writing-zh/` | Write or edit natural Chinese articles while preserving facts, conditions, quotations, and the author's voice. | Yes, for Chinese writing and editing requests |
 | `long-task-planning` | [long-task-planning/SKILL.md](long-task-planning/SKILL.md) | `long-task-planning/` | Keep a long coding task's goal, plan and done/not-done state from drifting; status is computed from recorded evidence, never written by hand. | Yes |
 | `codex-orchestration` | [codex-orchestration/SKILL.md](codex-orchestration/SKILL.md) | `codex-orchestration/` | Let Claude Code manage the local Codex CLI as a delegated coding agent: briefs, stop files, rulings, commit reviews and sessions. | Yes, when Claude Code delegates work to Codex |
+| `opencode-orchestration` | [opencode-orchestration/SKILL.md](opencode-orchestration/SKILL.md) | `opencode-orchestration/` | Let Claude Code manage the local opencode CLI as a delegated coding agent: deny lists, briefs, launches, liveness, stop files and line-by-line review. | Yes, when Claude Code delegates work to opencode |
 | `readable-output` | [readable-output/SKILL.md](readable-output/SKILL.md) | `readable-output/` | Make every response to the user easy to understand and check: plain text with writing rules adapted from ASD-STE100, an ASCII diagram checked by `scripts/check_ascii.py` (display width aware, so Chinese counts as 2 columns), or an HTML Artifact with its link in the response. | Yes |
 | `ssh-access` | [ssh-access/SKILL.md](ssh-access/SKILL.md) | `ssh-access/` | Connect to a selected SSH target using existing configuration, verify the host, and diagnose connection failures. | Yes, for SSH access |
 | `sensitive-information-scan` | [sensitive-information-scan/SKILL.md](sensitive-information-scan/SKILL.md) | `sensitive-information-scan/` | Check files, staged content, local history, and Git identities for credentials and private context without printing matched values. | Yes, for privacy audits and pre-publication checks |
@@ -50,11 +51,12 @@ Restart Codex if a newly installed skill does not appear immediately.
 
 ### Claude Code skills
 
-`long-task-planning` and `codex-orchestration` run from Claude Code. Install both side by side in `~/.claude/skills/`, because `codex-orchestration/scripts/codex-launch.sh` calls `../../long-task-planning/scripts/longtask.py`. A symbolic link keeps the installed skill and this repository the same files, so edits made while using a skill show up in `git status`:
+`long-task-planning` and `codex-orchestration` run from Claude Code. Install both side by side in `~/.claude/skills/`, because `codex-orchestration/scripts/codex-launch.sh` and `opencode-orchestration/scripts/oc-launch.sh` call `../../long-task-planning/scripts/longtask.py`. A symbolic link keeps the installed skill and this repository the same files, so edits made while using a skill show up in `git status`:
 
 ```bash
 ln -s "$PWD/long-task-planning" "$HOME/.claude/skills/long-task-planning"
 ln -s "$PWD/codex-orchestration" "$HOME/.claude/skills/codex-orchestration"
+ln -s "$PWD/opencode-orchestration" "$HOME/.claude/skills/opencode-orchestration"
 ```
 
 `readable-output` publishes pages through Claude Code's Artifact tool and needs no other skill. Install it the same way:
