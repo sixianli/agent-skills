@@ -168,6 +168,11 @@ revise them from experience):
 - Give exact values you already know (paths, sizes, SHA-256, IDs) in a table
   and ask it to re-verify them rather than derive them; let it derive only
   what needs a run it performs.
+- Cap retries of any step that depends on an outside service, give a start
+  condition (for example several consecutive healthy probes), and require
+  cleanup of each failed run's scratch before the next one. On 2026-10-13
+  opencode reran a flaky-network rehearsal five times back to back and left
+  about 4 GiB of failure scratch on a shared host's root disk.
 - When the work is a bug fix, order the steps as: change the test, run it
   and keep the failing output, change production code, rerun.
 
