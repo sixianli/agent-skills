@@ -204,6 +204,12 @@ revise them from experience):
   about 4 GiB of failure scratch on a shared host's root disk.
 - When the work is a bug fix, order the steps as: change the test, run it
   and keep the failing output, change production code, rerun.
+- Never let two batches that run at the same time edit or test the same
+  directory. Give each batch its own copy, and after both pass run one
+  combined check on the merged tree. On 2026-10-13 one batch copied a shared
+  packet to the test host while another batch was still editing it; the
+  first batch's full run failed on the second batch's half-written file and
+  needed a rerun after both stopped.
 
 ## Reviewing
 
@@ -219,6 +225,13 @@ it. Do not delegate the review back to opencode or to the same model.
   reports rather than trusting a summary line.
 - Check that expected values were derived from requirements, that no
   assertion was weakened, and that no check was skipped to get a pass.
+  A fixture that builds its "real world" input from the constants of the
+  code under test only proves the code agrees with itself. Require literal
+  values taken from the real contract (a captured report, the message string
+  in the other component's source), plus a check that reads the other
+  component and fails when the two drift. On 2026-10-13 a publisher's
+  expected failure code had an extra word, and its fixture, which reused
+  that constant, still passed; only line-by-line review caught it.
 - Diff the touched tree against a baseline copy you took before launch
   (for files outside version control), not only against git.
 - Record the outcome: `longtask.py record --review --items <ids> --verdict
