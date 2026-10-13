@@ -107,6 +107,14 @@ opencode run --standalone --auto --format json -m <provider/model> \
   > <handoff>/<date>-<task>-oc-<N>.jsonl 2> <handoff>/<date>-<task>-oc-<N>.err
 ```
 
+Pick a reasoning level with a variant suffix, `-m '<provider/model>#<variant>'`
+(for example `#high`), quoted so the shell leaves `#` alone. An unknown
+variant fails at once with a `provider.no-route` error "Variant unavailable",
+so a one-line test prompt confirms a variant exists before a batch uses it.
+To change the variant of a running batch, stop opencode between two tool
+calls (no test command running), then resume the same session with the new
+`-m`; the session keeps its work.
+
 Every JSON event carries `sessionID`; take it from the first line. Resume
 within the same batch:
 
