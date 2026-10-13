@@ -244,6 +244,15 @@ Before writing the brief:
   `umask 077` by root and read by a service account passed a fixture that
   ran everything as one account.
 - Read the target's current state before briefing a tool that acts on it.
+- Trace the change down to the code that finally enforces it before fixing
+  the design in the brief. On 2026-10-13 a brief ordered a policy rule to
+  return ALLOW, but the sandbox later demands a real Grant plus an approved
+  approval, so the design could not work; opencode's plan stop caught it.
+  The next brief, written after reading the sandbox's read allowlist, named
+  the single line to change and the two look-alike lines that must stay.
+- Look for an existing precedent in the codebase that already solves the
+  same shape of problem, and point the brief at it rather than inventing a
+  new mechanism.
 - Check that every instruction can run under the deny list. A brief told
   opencode to `git commit --amend` while the deny list blocked it.
 
