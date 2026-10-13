@@ -116,6 +116,12 @@ To change the variant of a running batch, stop opencode between two tool
 calls (no test command running), then resume the same session with the new
 `-m`; the session keeps its work.
 
+To stop a run, kill the `opencode run` process itself, not only the
+launcher's wrapper: the `<prefix>.pid` file holds the wrapper shell, and on
+2026-10-13 killing it left `opencode run` alive with parent 1, still working.
+Find it with `pgrep -af "opencode run.*<sessionID>"`, kill it, and confirm
+with `ps -p <pid>` before resuming the session.
+
 Every JSON event carries `sessionID`; take it from the first line. Resume
 within the same batch:
 
@@ -306,6 +312,11 @@ it. Do not delegate the review back to opencode or to the same model.
 
 1. Read the summary table, run `longtask.py status`, and check that the
    evidence IDs listed exist and agree with the claims.
+   Then list the test processes on the test host: on 2026-10-13 a stop file
+   arrived three minutes into an `npm test` that opencode had started, said
+   the run's output directory had been deleted while that test was still
+   writing to it, and pointed to a missing appendix for the result. Wait for
+   such a test to finish and read its result yourself before ruling.
 2. Verify each claim the ruling depends on: confirmed, partially confirmed,
    rejected or uncertain, with the code location or evidence path.
 3. Rule within [Authority](#authority) and write the reply from
