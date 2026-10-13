@@ -26,6 +26,7 @@ the procedure was wrong.
 - [Launching and resuming](#launching-and-resuming)
 - [Waiting and liveness](#waiting-and-liveness)
 - [Writing briefs](#writing-briefs)
+- [Preventing rework](#preventing-rework)
 - [Reviewing](#reviewing)
 - [Handling a stop file](#handling-a-stop-file)
 - [Authority](#authority)
@@ -211,6 +212,61 @@ revise them from experience):
   first batch's full run failed on the second batch's half-written file and
   needed a rerun after both stopped.
 
+## Preventing rework
+
+Do not assume the delegated model is as capable as Claude. On 2026-10-12
+and 2026-10-13 Claude sent 13 rulings on opencode stop files. About half
+of the rework traced back to the brief: a wrong step, two batches editing
+one packet, a missing read of the target's current state, one instance of
+a defect class fixed per round, and a brief that let opencode pick the
+layer to fix. The other half fell into four recurring opencode errors:
+suppressing a symptom instead of fixing its cause, a test whose expected
+value came from the code under test or whose environment merged two things
+that differ in production, ignoring written procedure rules, and reporting
+a result it had not checked. Long briefs make the third worse: the model
+keeps the main task and drops peripheral rules.
+
+Before writing the brief:
+
+- Search the whole tree or packet for every instance of the defect class
+  and list them all in the brief. On 2026-10-13 two identical leftover
+  `db status` calls in one script were found and fixed in two separate
+  rounds.
+- List what differs between production and the test (accounts, umask,
+  whether the service is running, separate release directories) and
+  require the fixture to keep each difference. A directory created under
+  `umask 077` by root and read by a service account passed a fixture that
+  ran everything as one account.
+- Read the target's current state before briefing a tool that acts on it.
+- Check that every instruction can run under the deny list. A brief told
+  opencode to `git commit --amend` while the deny list blocked it.
+
+In the brief:
+
+- Name the forbidden fixes as well as the goal, for example "do not
+  swallow errors by HTTP status in the client". A brief that allowed a fix
+  "in the client, or in the server if the cause is there" got a client-side
+  catch-all that hid real failures.
+- For any change whose cause could sit in more than one layer, or that
+  touches authorization, sandboxing, path checks or stored data, make the
+  first stop a plan file: no edits and no test runs, only the root cause
+  with evidence, the chosen layer with `file:line`, the alternatives it
+  rejected and why, and the test list with each expected value and its
+  source. Reviewing a plan takes minutes; a wrong direction costs a full
+  test cycle on the test host. Skip this step for mechanical edits.
+- Require an expected-value source table in the final stop file (each new
+  assertion, its expected value, and where that value comes from: a
+  decision record, a spec paragraph, another component's `file:line`, a
+  real readback). Return a stop file without it.
+- Require every number in a stop file (passes, errors, free space) to come
+  with the command that produced it and the output path.
+- Keep a batch to one item and about two hours of work.
+
+After a rule is broken twice, stop repeating it in prose: turn it into a
+deny pattern or a check that fails on its own. Patterns added on
+2026-10-13 after repeat violations: `deno *`, `tsc *`, `*git gc*`,
+`*reflog expire*`.
+
 ## Reviewing
 
 Claude reviews every opencode change itself, line by line, before accepting
@@ -223,6 +279,15 @@ it. Do not delegate the review back to opencode or to the same model.
   claimed test runs really happened on the stated revision.
 - Rerun the cheapest discriminating check yourself. Count assertions in test
   reports rather than trusting a summary line.
+- Redo every hash-based or count-based check on a clean copy of the
+  commit (`git archive HEAD | tar -x -C <new temp dir>`), never in the
+  working tree: untracked files such as `.DS_Store` change directory
+  hashes. On 2026-10-13 opencode reported documentation errors "down from
+  6 to 2" from a working tree; a clean checkout went from 2 to 4, because
+  it had resealed Runbooks with `.DS_Store` files inside their directory
+  sources. Guard the temp directory: `d=$(mktemp -d ...); [ -d "$d" ] ||
+  exit 1`. The same day a failed `mktemp` left `$d` empty and turned an
+  `rsync` target into `/`; only the sandbox stopped it.
 - Check that expected values were derived from requirements, that no
   assertion was weakened, and that no check was skipped to get a pass.
   A fixture that builds its "real world" input from the constants of the
