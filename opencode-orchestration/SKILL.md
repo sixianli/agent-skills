@@ -163,6 +163,11 @@ kept running. Do not ask opencode to sit inside a wait of more than about
 that writes its result file, write the stop file, and let Claude (or a
 later resume) read the result.
 
+The rule has to be in the brief, not only here: later the same day a brief
+asked for two back-to-back full test runs (about an hour) without saying
+to start them detached, and the session was interrupted the same way. The
+brief template now carries the rule, so keep that line when filling it.
+
 Two sessions can share one test host when each brief names its own result
 directories and scratch prefix and forbids touching the other session's
 directories, processes and shared inputs. Name any shared read-only input
