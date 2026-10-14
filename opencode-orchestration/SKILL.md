@@ -18,6 +18,13 @@ teaches something new: add the observation to [Known pitfalls](#known-pitfalls)
 with its date and evidence, and change the procedure when the pitfall shows
 the procedure was wrong.
 
+When opencode, Grok, or Claude makes the same mistake a third time, a longer
+brief is not the fix: the earlier reminders already failed twice. Pause that
+line of work, find the root cause, and add a constraint the agent cannot
+skip: a `bash` deny pattern, a commit hook in the shared `.git`, a check in
+`oc-wait.sh` or another script that runs on every batch, or a test. Show it
+blocking a reproduction of the mistake before resuming.
+
 When the delegated model is a Grok model, or Claude chooses between a Grok
 model and another one, read [references/grok.md](references/grok.md) first;
 skip it otherwise.
