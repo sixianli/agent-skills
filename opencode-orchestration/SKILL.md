@@ -212,6 +212,10 @@ revise them from experience):
   local machine (for example `node *`) also blocks the same word inside an
   `ssh host '...'` string. Tell it to put remote steps in a script file on
   the remote host and call the script.
+- To let an agent reach a host only as one account, keep every command
+  that names the host's address denied and give the agent a small local
+  wrapper script that always logs in as that account. An allow rule is not
+  enough: in Grok's configuration a matching deny wins over an allow.
 - Do not start a Claude Code shell with its working directory inside a
   tree that will be hashed or frozen: the harness may leave empty
   `.claude/.cc-writes` directories there. Check for and remove them before
@@ -274,6 +278,13 @@ Before writing the brief:
   new mechanism.
 - Check that every instruction can run under the deny list. A brief told
   opencode to `git commit --amend` while the deny list blocked it.
+- Before writing a stop condition ("if X, stop and ask"), look for a
+  project rule that already decides X: a spec paragraph, a decision record,
+  an earlier change of the same shape. On 2026-10-14 a brief told Grok to
+  stop if a new error code would be stored and later read back with a
+  strict enum; the project spec had already settled that case for a larger
+  change to the same schema, so the stop cost a round trip and a ruling
+  that only quoted the spec.
 
 In the brief:
 
@@ -287,7 +298,11 @@ In the brief:
   with evidence, the chosen layer with `file:line`, the alternatives it
   rejected and why, and the test list with each expected value and its
   source. Reviewing a plan takes minutes; a wrong direction costs a full
-  test cycle on the test host. Skip this step for mechanical edits.
+  test cycle on the test host. Skip this step for mechanical edits, and
+  for small test-only fixes whose approach the brief can state outright
+  (for example "bind port 0 and read the bound port instead of probing a
+  free port first"); review of the diff catches the rest. The user
+  approved this on 2026-10-14 to save one round trip per item.
 - A plan that rests on an operating-system or runtime fact (what a flag
   does, what a library call can do) must either show a small probe on the
   test host or mark the fact as unverified. Before approving, probe the
