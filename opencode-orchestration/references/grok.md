@@ -13,6 +13,7 @@ them when the version changes.
 ## Contents
 
 - [Which models are allowed](#which-models-are-allowed)
+- [Assigning batches between models](#assigning-batches-between-models)
 - [Login and first check](#login-and-first-check)
 - [Model facts](#model-facts)
 - [Launching](#launching)
@@ -39,6 +40,35 @@ Enforce this in two places:
    `opencode models`. A provider whose other models are still needed cannot
    be disabled; rely on the launcher for it. Check the result with
    `opencode models --standalone | grep -i grok` from the project directory.
+
+## Assigning batches between models
+
+When the user lets Claude choose between a Grok model and another model
+(for example a cheap pay-per-use model), assign each batch by what it needs.
+Starting rules, from the batches observed so far (see the table); change
+them when new batches disagree, and note the evidence:
+
+- Implementation and long test cycles go to the cheaper pay-per-use model
+  by default: it is not limited by a weekly pool, and a stalled or reworked
+  batch costs little.
+- A batch that can run read-only while another batch is changing files or
+  running tests (planning, root-cause reading, measurement design) goes to
+  whichever model is idle, so the two overlap without sharing the working
+  tree. Design-heavy planning: try the reasoning variant of the newest Grok
+  model; coding: the coding-agent model.
+- When the same problem has failed twice on one model, give the next
+  attempt to the other model with the failure notes, before asking the user.
+- When the Grok pool reports a limit, move pending work to the other
+  allowed model; never to a Grok model resold by another provider.
+- Record each batch in the trial record (wall time, tool calls, rework,
+  false claims, cost estimate) so the next assignment rests on data.
+
+Times are first to last JSON event (`oc-events.py`).
+
+| Date | Model | Batch kind | Wall time | Calls | Cost estimate | Review result |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-14 | `opencode-go/deepseek-v4.1-flash#high` | measurement plan (read and measure) | 48 min, about 26 of them waiting for a test run | 127 | USD 0.13 | thorough and measured; one wrong sentence about scheduling |
+| 2026-10-14 | `xai/grok-build-0.1` | design plan with experiments on the test host | 8.5 min | 82 | USD 1.10 | experiments sound; proposed a fragile string edit that the review replaced; one attempted evidence deletion blocked by the deny list |
 
 ## Login and first check
 

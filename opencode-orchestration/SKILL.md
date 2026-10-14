@@ -18,8 +18,9 @@ teaches something new: add the observation to [Known pitfalls](#known-pitfalls)
 with its date and evidence, and change the procedure when the pitfall shows
 the procedure was wrong.
 
-When the delegated model is a Grok model, read
-[references/grok.md](references/grok.md) before launching; skip it otherwise.
+When the delegated model is a Grok model, or Claude chooses between a Grok
+model and another one, read [references/grok.md](references/grok.md) first;
+skip it otherwise.
 
 ## Contents
 
