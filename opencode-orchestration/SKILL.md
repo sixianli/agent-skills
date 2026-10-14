@@ -151,6 +151,12 @@ test steps of different batches on different hosts, or tell each batch to
 check for the other's test processes before a heavy step and to poll
 rather than end its turn while it waits (2026-10-14: a Grok run ended its
 turn to wait for a busy host and wrote no stop file).
+Check the local machine's free space before adding a worktree or a source
+bundle for a parallel batch, and tell each batch to delete its local bundle
+once the test host has cloned it. On 2026-10-14 two worktrees and two
+92 MB bundles took a nearly full laptop disk to zero; an opencode run died
+without writing its exit code and every local command failed until old
+build packages were deleted.
 
 ## Waiting and liveness
 
