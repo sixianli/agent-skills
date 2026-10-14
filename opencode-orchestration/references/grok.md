@@ -69,6 +69,7 @@ Times are first to last JSON event (`oc-events.py`).
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-14 | `opencode-go/deepseek-v4.1-flash#high` | measurement plan (read and measure) | 48 min, about 26 of them waiting for a test run | 127 | USD 0.13 | thorough and measured; one wrong sentence about scheduling |
 | 2026-10-14 | `xai/grok-build-0.1` | design plan with experiments on the test host | 8.5 min | 82 | USD 1.10 | experiments sound; proposed a fragile string edit that the review replaced; one attempted evidence deletion blocked by the deny list |
+| 2026-10-14 | `xai/grok-4.7#high` | read-only design plan, no test host | 17.5 min | 187 | USD 7.07 | every checked line reference correct; one wrong kernel fact (`O_EMPTY_PATH`) and missed a simpler Node-only option that the review found with a 5-minute probe |
 
 ## Login and first check
 

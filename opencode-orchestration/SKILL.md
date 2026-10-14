@@ -284,6 +284,13 @@ In the brief:
   rejected and why, and the test list with each expected value and its
   source. Reviewing a plan takes minutes; a wrong direction costs a full
   test cycle on the test host. Skip this step for mechanical edits.
+- A plan that rests on an operating-system or runtime fact (what a flag
+  does, what a library call can do) must either show a small probe on the
+  test host or mark the fact as unverified. Before approving, probe the
+  facts the design depends on yourself. 2026-10-14: a read-only plan
+  asserted a Linux flag that does not exist and proposed a new native
+  helper; a 5-minute probe on the test host showed plain Node could do the
+  same job, which removed the helper and a packaging change.
 - Require an expected-value source table in the final stop file (each new
   assertion, its expected value, and where that value comes from: a
   decision record, a spec paragraph, another component's `file:line`, a
