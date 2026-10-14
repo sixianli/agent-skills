@@ -137,6 +137,12 @@ opencode run --standalone --auto --format json -m <provider/model> -s <sessionID
 Run launches as a background Bash task (sandbox disabled, `timeout` at the
 2-hour maximum) so Claude keeps working and is notified when the run exits.
 
+Two batches may overlap only while at most one of them changes files or
+runs tests: they share the working tree's index and the test host's
+checkout and CPUs, so one can commit the other's files or skew its timings.
+Let the second batch plan read-only, then resume it after the first one's
+final stop file (2026-10-14).
+
 ## Waiting and liveness
 
 Silence is not progress. On every wake, and at least every 20 minutes:

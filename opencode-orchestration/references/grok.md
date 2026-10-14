@@ -95,10 +95,12 @@ brief's header line so the stop file and the review name the same model.
 
 ## Usage limits
 
-Subscription calls report no cost or token counts in the JSON events (no
-`cost` or `tokens` on the events of a successful run in opencode 2.0.27), so
-`oc-events.py` shows zero cost. Usage is visible only on the subscription's
-own dashboard; plans share a weekly pool across products.
+Step events do carry `cost` and `tokens` (a 15-minute, 82-call
+`grok-build-0.1` batch showed USD 1.10 on 2026-10-14; a one-line probe that
+ended without a `step_finish` event showed none). The figure is opencode's
+estimate at list price; whether the subscription is charged that amount or
+only draws from its weekly pool shows only on the subscription's own
+dashboard, so report it as an estimate.
 
 - Record the batch's start and end time in the stop-file review, so the user
   can match it with the dashboard.
