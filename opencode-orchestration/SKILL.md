@@ -219,6 +219,17 @@ revise them from experience):
   On 2026-10-12 opencode deleted a failed result directory, locally and on
   the test host, just to reuse its run number; back the rule with `bash`
   deny patterns for the evidence paths.
+- Say how to capture failure evidence, not only that it must be kept. Agents
+  that are told to keep a failure tend to pack the whole scratch directory:
+  on 2026-10-14 six packs held about 1.2 GiB, mostly `node_modules` and
+  source copies, and two runs each kept their own copy of the same 352 MB
+  input. Require reports, logs, state readbacks, and traces as separate
+  files; no `node_modules`, `.git`, or source identical to a commit (record
+  the commit, lockfile digest, and a path/size/SHA-256 manifest instead);
+  one stored copy of an input shared by several runs, with reference files
+  holding its path and SHA-256 elsewhere; and a stop-file note for any
+  evidence file over 50 MB or any run over 100 MB saying what it holds and
+  why it is needed.
 - Warn that name-based `bash` deny patterns also block harmless commands
   such as `ls` or `grep` on a file whose name matches, and tell it to use
   its read and edit tools for those files instead.
