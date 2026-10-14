@@ -90,3 +90,8 @@ node <bridge> stop <run id> < /dev/null
   listed neither the project `AGENTS.md` nor `.grok/config.toml`; after
   it, both loaded (54 rules). An untrusted repository runs with only the
   user-level rules.
+- 2026-10-14, plugin 0.2.1: the bridge keeps its run list per working
+  directory. A run launched from a git worktree was "not found" when
+  `runs <id>` ran from the main checkout, and the background waiter
+  exited at once as if the run had finished. Call `runs`, `show` and
+  `stop` from the directory the run was launched from.
