@@ -253,6 +253,10 @@ Before writing the brief:
   and list them all in the brief. On 2026-10-13 two identical leftover
   `db status` calls in one script were found and fixed in two separate
   rounds.
+  The same applies when a delegated plan names a defect found in passing:
+  search again before approving it. On 2026-10-14 a plan fixed a
+  probe-then-release port race in one test and missed the same helper in
+  the shared product-path harness.
 - List what differs between production and the test (accounts, umask,
   whether the service is running, separate release directories) and
   require the fixture to keep each difference. A directory created under
@@ -325,6 +329,14 @@ it. Do not delegate the review back to opencode or to the same model.
   sources. Guard the temp directory: `d=$(mktemp -d ...); [ -d "$d" ] ||
   exit 1`. The same day a failed `mktemp` left `$d` empty and turned an
   `rsync` target into `/`; only the sandbox stopped it.
+- Check that a new assertion gives the same result on every host the
+  suite runs on. On 2026-10-14 a policy-drift test compared worker counts
+  computed from the CPU count: it failed as intended on the 4-core test
+  host and would have passed silently on an 8-core machine.
+- Before approving the deletion of a test file or a registration, look
+  for a backlog item or rule that explains why such files are kept. The
+  same day a plan proposed deleting a registered child fixture that the
+  accepted CI policy still requires to exist.
 - Check that expected values were derived from requirements, that no
   assertion was weakened, and that no check was skipped to get a pass.
   A fixture that builds its "real world" input from the constants of the
