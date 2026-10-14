@@ -21,6 +21,13 @@ them when the version changes.
 - [Trial batches and comparison](#trial-batches-and-comparison)
 - [Known pitfalls](#known-pitfalls)
 
+Two routes exist. Through opencode's `xai/` provider, follow this file
+as written. Through the Claude Code Grok Build plugin, also read
+[grok-plugin.md](grok-plugin.md) for setup, launching and waiting; there
+[Login and first check](#login-and-first-check) and
+[Launching](#launching) below do not apply. Use the route the project's
+instructions name.
+
 ## Which models are allowed
 
 Use only models of the `xai/` provider, which opencode reaches through the
