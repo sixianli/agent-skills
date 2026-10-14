@@ -18,6 +18,9 @@ teaches something new: add the observation to [Known pitfalls](#known-pitfalls)
 with its date and evidence, and change the procedure when the pitfall shows
 the procedure was wrong.
 
+When the delegated model is a Grok model, read
+[references/grok.md](references/grok.md) before launching; skip it otherwise.
+
 ## Contents
 
 - [Before the first delegation in a project](#before-the-first-delegation-in-a-project)
@@ -371,5 +374,10 @@ instructions reserve for the user. Production steps are never delegated.
   no session event after the startup timeout as a stall, kill it and
   relaunch once; [scripts/oc-launch.sh](scripts/oc-launch.sh) does this
   check.
+- 2026-10-14, opencode 2.0.27: a manual `opencode run` from a shell whose
+  standard input stayed open waited for that input and printed nothing,
+  with or without `--standalone`. Close it (`< /dev/null`) on every manual
+  run. `oc-launch.sh` runs opencode in the background, which gives it an
+  empty input; a test keeps it that way.
 - Observed cost, for planning: a 14-minute batch with about 40 tool calls on
   `deepseek-v4.1-flash` cost about USD 0.10, mostly cached input.

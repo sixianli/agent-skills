@@ -105,6 +105,27 @@ class LaunchTests(Base):
         for expected in ["run", "--standalone", "--auto", "--format", "json", "provider/model", str(self.brief)]:
             self.assertIn(expected, args)
 
+    def test_run_does_not_wait_for_the_callers_open_stdin(self):
+        fake = self.fake(f"cat > /dev/null; echo '{TEXT}'")
+        read_end, write_end = os.pipe()
+        try:
+            env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6")
+            result = subprocess.run(
+                ["bash", str(SCRIPTS / "oc-launch.sh"), "new", str(self.brief), str(self.prefix), "provider/model"],
+                cwd=self.root,
+                env=env,
+                stdin=read_end,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+        finally:
+            os.close(read_end)
+            os.close(write_end)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"session={SESSION}", result.stdout)
+
     def test_refuses_to_overwrite_an_existing_run(self):
         self.prefix.parent.mkdir(parents=True)
         Path(str(self.prefix) + ".jsonl").write_text("")
