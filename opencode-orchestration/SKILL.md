@@ -157,6 +157,13 @@ once the test host has cloned it. On 2026-10-14 two worktrees and two
 92 MB bundles took a nearly full laptop disk to zero; an opencode run died
 without writing its exit code and every local command failed until old
 build packages were deleted.
+The same holds between you and an agent: while an agent works in the
+checkout you commit from, it may have staged files. Before each of your
+commits there, list `git diff --cached --name-only` and unstage what is
+not yours. On 2026-10-14 a commit meant for one instruction file also
+carried a documentation file the agent had staged, including two entries
+not yet reviewed; it was pushed, so only a later commit message could
+correct the record.
 
 ## Waiting and liveness
 
