@@ -186,6 +186,22 @@ Silence is not progress. On every wake, and at least every 20 minutes:
 Never stop opencode while a test command it started is still running unless
 continuing would cause damage; partial reports force a full rerun.
 
+Every wake also runs the evidence gate (`scripts/evidence-gate.sh`, called
+by `oc-wait.sh` and `grok-wait.sh`). It checks what arrived since the run
+started in the handoff directory and in each root listed in
+`<handoff dir>/evidence-roots.txt`: one root per line, either a local path
+or `<command>|<remote path>`, where the command runs
+`python3 - --since <epoch> '<path>'` with the checker on standard input
+(for example `ssh -o BatchMode=yes testhost|/data/evidence`). New
+`node_modules` or `.git` directories, archives holding them, and files over
+50 MB fail the gate unless an `EVIDENCE-REASONS.txt` beside them names them
+as `<name>: <reason>`; an unreachable root fails it too. A failed gate makes
+the waiter exit 3 and print each `EVIDENCE_VIOLATION`: do not accept the
+batch until the evidence is fixed or the reason is written. Added on
+2026-10-14 after agents and Claude packed dependency trees, source copies
+and rebuildable packages into evidence more than three times. Tell the
+agent about the gate and the reasons file in the brief.
+
 A shell call emits no JSON event until it returns, so a long remote command
 looks exactly like a hang. On 2026-10-13 a wait-and-retry loop script ran for
 over 50 minutes with no new event while working normally. Before calling a

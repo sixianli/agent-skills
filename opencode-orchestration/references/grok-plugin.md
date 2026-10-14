@@ -75,9 +75,12 @@ node <bridge> stop <run id> < /dev/null
 - Use the brief as the prompt file, or a one-line prompt that names the
   brief's path. Grok writes the stop file the brief names; the review
   reads that file, not only the final text.
-- Wait with `runs <id> --wait` from a background Bash command, or with
-  `oc-wait.sh`-style polling of the stop file. Completion shows
-  `completed`, the duration and the Grok session ID.
+- Wait with `scripts/grok-wait.sh <run id> <stop file> <handoff dir>
+  <launch epoch>` from a background Bash command started in the directory
+  the run was launched from. It wakes on a new stop file or a finished
+  run phase, exits 2 when the bridge does not know the run, and runs the
+  same evidence gate as `oc-wait.sh` (exit 3 on a violation). Completion
+  shows `completed`, the duration and the Grok session ID in `runs`.
 - The run log (path printed by `runs`) records only start, finish and the
   final text, not each tool call, so it cannot show liveness during a long
   batch. Check the test host and the stop file instead.

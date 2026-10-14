@@ -179,6 +179,42 @@ class WaitTests(Base):
         result = self.wait(self.root / "never.md")
         self.assertIn("WAKE error-event", result.stdout)
 
+    def test_clean_evidence_keeps_exit_0(self):
+        stop = self.root / "stop.md"
+        self.start(f"echo '{TEXT}'; sleep 2; echo stop > {stop}; sleep 30")
+        result = self.wait(stop)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("EVIDENCE_OK", result.stdout)
+
+    def test_new_dependency_copy_in_handoff_directory_exits_3(self):
+        stop = self.root / "stop.md"
+        bad = self.prefix.parent / "run-09" / "node_modules" / "pkg"
+        self.start(f"echo '{TEXT}'; sleep 2; mkdir -p {bad}; echo x > {bad}/index.js; echo stop > {stop}; sleep 30")
+        result = self.wait(stop)
+        self.assertEqual(result.returncode, 3, result.stdout)
+        self.assertIn("WAKE stop-file", result.stdout)
+        self.assertIn("EVIDENCE_VIOLATION", result.stdout)
+
+    def test_listed_remote_root_is_checked_through_its_command(self):
+        stop = self.root / "stop.md"
+        remote = self.root / "remote-evidence"
+        (remote / "run-01" / ".git").mkdir(parents=True)
+        (remote / "run-01" / ".git" / "HEAD").write_text("x")
+        self.prefix.parent.mkdir(parents=True, exist_ok=True)
+        (self.prefix.parent / "evidence-roots.txt").write_text(f"# remote roots\nsh -c|{remote}\n")
+        self.start(f"echo '{TEXT}'; sleep 2; echo stop > {stop}; sleep 30")
+        result = self.wait(stop)
+        self.assertEqual(result.returncode, 3, result.stdout)
+        self.assertIn(str(remote), result.stdout)
+
+    def test_unreachable_remote_root_fails_the_check(self):
+        stop = self.root / "stop.md"
+        self.prefix.parent.mkdir(parents=True, exist_ok=True)
+        (self.prefix.parent / "evidence-roots.txt").write_text(f"sh -c|{self.root / 'absent'}\n")
+        self.start(f"echo '{TEXT}'; sleep 2; echo stop > {stop}; sleep 30")
+        result = self.wait(stop)
+        self.assertEqual(result.returncode, 3, result.stdout)
+
 
 class EventsTests(unittest.TestCase):
     def run_events(self, lines, *args):

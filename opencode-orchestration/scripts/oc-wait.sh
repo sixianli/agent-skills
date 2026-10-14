@@ -23,30 +23,36 @@ mtime() {
   stat -f %m "$1" 2>/dev/null || stat -c %Y "$1"
 }
 
+gate="$(cd "$(dirname "$0")" && pwd)/evidence-gate.sh"
+handoff_dir=$(dirname "$prefix")
+since=$(mtime "$pid_file")
+
+wake() {
+  echo "WAKE $1"
+  bash "$gate" "$handoff_dir" "$since"
+  exit $?
+}
+
 while true; do
   if [ -e "$stop_file" ]; then
     current=$(mtime "$stop_file")
     if [ "$current" != "$start_stop_mtime" ]; then
-      echo "WAKE stop-file $stop_file"
-      exit 0
+      wake "stop-file $stop_file"
     fi
   fi
   errors=$(grep -c -E '"type": ?"error"' "$log" 2>/dev/null || true)
   if [ "${errors:-0}" -gt "${start_errors:-0}" ]; then
-    echo "WAKE error-event $(grep -E '"type": ?"error"' "$log" | tail -1 | cut -c1-400)"
-    exit 0
+    wake "error-event $(grep -E '"type": ?"error"' "$log" | tail -1 | cut -c1-400)"
   fi
   if ! kill -0 "$pid" 2>/dev/null; then
     rc="unknown"
     [ -f "$rc_file" ] && rc=$(cat "$rc_file")
-    echo "WAKE exited rc=$rc"
-    exit 0
+    wake "exited rc=$rc"
   fi
   if [ -f "$log" ]; then
     age=$(( $(date +%s) - $(mtime "$log") ))
     if [ "$age" -ge $(( quiet_minutes * 60 )) ]; then
-      echo "WAKE quiet ${age}s without new events (pid $pid still alive)"
-      exit 0
+      wake "quiet ${age}s without new events (pid $pid still alive)"
     fi
   fi
   sleep 15
