@@ -138,11 +138,19 @@ opencode run --standalone --auto --format json -m <provider/model> -s <sessionID
 Run launches as a background Bash task (sandbox disabled, `timeout` at the
 2-hour maximum) so Claude keeps working and is notified when the run exits.
 
-Two batches may overlap only while at most one of them changes files or
-runs tests: they share the working tree's index and the test host's
-checkout and CPUs, so one can commit the other's files or skew its timings.
-Let the second batch plan read-only, then resume it after the first one's
-final stop file (2026-10-14).
+Two batches that share a working tree may overlap only while at most one
+of them changes files or runs tests: they share the index and the test
+host's checkout and CPUs, so one can commit the other's files or skew its
+timings. To run batches in parallel, give each its own `git worktree`
+(detached, no commits until its turn on the branch), its own checkout on
+the test host, and its own deny-list copy: the agents' project config
+files are untracked, so a new worktree has none until you copy them in
+and, for Grok, trust the worktree path. Let only one batch commit to the
+shared branch at a time; the others hand over patches or wait. Put heavy
+test steps of different batches on different hosts, or tell each batch to
+check for the other's test processes before a heavy step and to poll
+rather than end its turn while it waits (2026-10-14: a Grok run ended its
+turn to wait for a busy host and wrote no stop file).
 
 ## Waiting and liveness
 
