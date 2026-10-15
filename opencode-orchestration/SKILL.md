@@ -222,6 +222,18 @@ asked for two back-to-back full test runs (about an hour) without saying
 to start them detached, and the session was interrupted the same way. The
 brief template now carries the rule, so keep that line when filling it.
 
+A written rule was not enough: on 2026-10-15 an agent followed the brief,
+started the run detached, and then waited for it inside one shell call with
+a 400 x 10-second loop and a 70-minute tool timeout; the session was
+interrupted a third time. Enforce the limit where the agent cannot skip it:
+every wrapper the agent may use to reach a test host runs each remote
+command under a fixed `timeout 300` (no override) and prints how to start
+long work detached instead; the agent's local deny rules block direct
+`ssh`, `scp` and `rsync` to the host and its address, so the wrappers are
+the only way in. Prove both sides when adding such a wrapper: a long loop
+through it ends at the limit, a detached job started through it returns at
+once and keeps running, and a direct `ssh` from the agent is refused.
+
 Two sessions can share one test host when each brief names its own result
 directories and scratch prefix and forbids touching the other session's
 directories, processes and shared inputs. Name any shared read-only input
