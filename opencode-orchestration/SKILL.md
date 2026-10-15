@@ -1,6 +1,6 @@
 ---
 name: opencode-orchestration
-description: Let Claude Code delegate coding and testing to the local opencode CLI and stay the planner and strict reviewer - setting a deny-list safety net, writing briefs, launching and resuming sessions, detecting silent failures, reviewing every change, and answering stop files. Use whenever Claude hands work to opencode, reviews opencode output, or resumes an opencode session, in any project.
+description: Let Claude Code delegate coding and testing to the local opencode CLI and stay the planner and strict reviewer - setting a deny-list safety net, writing briefs, launching and resuming sessions, detecting silent failures, reviewing every change, and answering stop files; also asking opencode for an independent design proposal and for a review of code Claude wrote. Use whenever Claude hands work to opencode, reviews opencode output, or resumes an opencode session, in any project.
 ---
 
 # opencode Orchestration
@@ -28,6 +28,10 @@ blocking a reproduction of the mistake before resuming.
 When the delegated model is a Grok model, or Claude chooses between a Grok
 model and another one, read [references/grok.md](references/grok.md) first;
 skip it otherwise.
+
+When the user lets Claude write code too and wants opencode's view, read
+[references/consult-and-cross-review.md](references/consult-and-cross-review.md)
+before settling a design or fix and before committing Claude's own code.
 
 ## Contents
 
