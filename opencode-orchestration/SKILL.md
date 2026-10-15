@@ -372,6 +372,14 @@ on `PATH` that only prints a marker, so the check never reaches a host
 that may be busy with a measured run; include allowed look-alikes such as
 `a && tail log`, `cmd > log 2>&1` and `cd <dir>; setsid nohup … &`.
 
+Poll a detached job through its result file: have the script write a
+final line (an exit code or a marker such as `CAND_OK`) and test for that
+line. Do not poll with `pgrep -f '<pattern>'` sent through the wrapper:
+the wrapper runs the remote command as `bash -c '… pgrep -f <pattern> …'`,
+so that command line contains the pattern and `pgrep` finds itself. On
+2026-10-16 a candidate build finished in two minutes while such a loop
+kept reporting it as running until it was stopped seven minutes later.
+
 Two sessions can share one test host when each brief names its own result
 directories and scratch prefix and forbids touching the other session's
 directories, processes and shared inputs. Name any shared read-only input
