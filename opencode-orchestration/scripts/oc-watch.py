@@ -1,7 +1,10 @@
 """Follow an opencode run and print one line per event a reviewer acts on.
 
 Meant as the command of a background monitor: every printed line is a
-notification. It prints what the agent says (with CHECKPOINT and QUESTION lines
+notification. Its first line names the watched file and where reading starts;
+a prefix or stop file in a missing directory ends it with WATCH_ERROR. A
+re-armed watch continues from the byte where the last one stopped, kept in
+<prefix>.watchpos. It prints what the agent says (with CHECKPOINT and QUESTION lines
 on their own), every file it edits or writes, failed tool calls, error events,
 lines matching the default or --signal patterns, one STALL after a quiet period,
 and ends with STOP_FILE or EXITED.
@@ -59,9 +62,10 @@ def describe(event, signals):
     if state.get("status") == "error":
         lines.append(f"TOOL_ERROR: {name} {one_line(state.get('error'), 300)}")
     output = str(state.get("output") or "")
+    source = one_line(data.get("command") or data.get("path") or data.get("filePath") or "", 120)
     for pattern in signals:
         for match in pattern.finditer(output):
-            lines.append(f"SIGNAL: {one_line(match.group(0), 200)}")
+            lines.append(f"SIGNAL: {one_line(match.group(0), 200)} ({name}: {source})")
     return lines
 
 
@@ -70,6 +74,19 @@ def mtime(path):
         return os.stat(path).st_mtime
     except FileNotFoundError:
         return None
+
+
+def start_position(log, saved, from_start):
+    if from_start or not log.exists():
+        return 0, "from start" if log.exists() else "not written yet"
+    size = log.stat().st_size
+    try:
+        position = int(saved.read_text().strip())
+    except (FileNotFoundError, ValueError):
+        return size, f"from byte {size}"
+    if position > size:
+        return 0, f"resuming from start (log shorter than saved byte {position})"
+    return position, f"resuming at byte {position} of {size}"
 
 
 def main():
@@ -84,22 +101,29 @@ def main():
 
     log = Path(args.prefix + ".jsonl")
     rc_file = Path(args.prefix + ".rc")
+    saved = Path(args.prefix + ".watchpos")
+    for path in [log, *map(Path, args.stop_file)]:
+        if not path.parent.is_dir():
+            print(f"WATCH_ERROR: no directory {path.parent}", flush=True)
+            return 2
     signals = [re.compile(p, re.IGNORECASE) for p in DEFAULT_SIGNALS] + [re.compile(p) for p in args.signal]
     stop_marks = {path: mtime(path) for path in args.stop_file}
-    position = 0 if args.from_start or not log.exists() else log.stat().st_size
-    pending = ""
+    position, where = start_position(log, saved, args.from_start)
+    print(f"WATCHING {log} {where}", flush=True)
+    saved.write_text(f"{position}\n")
     last_event = time.time()
     stalled = False
 
     while True:
         if log.exists():
-            with log.open(errors="replace") as handle:
+            with log.open("rb") as handle:
                 handle.seek(position)
                 chunk = handle.read()
-                position = handle.tell()
-            pending += chunk
-            *complete, pending = pending.split("\n")
-            for line in complete:
+            end = chunk.rfind(b"\n") + 1
+            if end:
+                position += end
+                saved.write_text(f"{position}\n")
+            for line in chunk[:end].decode(errors="replace").split("\n"):
                 if not line.strip():
                     continue
                 try:

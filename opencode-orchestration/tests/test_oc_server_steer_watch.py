@@ -319,6 +319,7 @@ class WatchTests(unittest.TestCase):
         self.assertNotIn("0 failed", out)
         self.assertNotIn("failed 0", out)
         self.assertIn("SIGNAL: prod=failed", out)
+        self.assertIn("SIGNAL: 3 failed (shell: npm test)", out)
         self.assertIn("RUN_ERROR: provider.no-route Model unavailable", out)
         self.assertTrue(out.rstrip().endswith("EXITED rc=1"))
 
@@ -366,6 +367,76 @@ class WatchTests(unittest.TestCase):
         out, _ = proc.communicate(timeout=10)
         self.assertEqual(out.count("STALL"), 1)
         self.assertIn("EXITED rc=0", out)
+
+    def test_first_line_names_the_watched_file(self):
+        self.jsonl.write_text(text("CHECKPOINT: old") + "\n")
+        Path(str(self.prefix) + ".rc").write_text("0\n")
+        out = self.watch().stdout
+        size = self.jsonl.stat().st_size
+        self.assertTrue(out.startswith(f"WATCHING {self.jsonl} from byte {size}\n"), out)
+
+    def test_first_line_says_when_the_run_has_not_written_yet(self):
+        Path(str(self.prefix) + ".rc").write_text("0\n")
+        out = self.watch().stdout
+        self.assertTrue(out.startswith(f"WATCHING {self.jsonl} not written yet\n"), out)
+
+    def test_refuses_a_prefix_in_a_missing_directory(self):
+        self.prefix = self.root / "missing" / "run-01"
+        result = self.watch(timeout=10)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(f"WATCH_ERROR: no directory {self.root / 'missing'}", result.stdout)
+
+    def test_refuses_a_stop_file_in_a_missing_directory(self):
+        self.jsonl.write_text("")
+        self.stop = self.root / "missing" / "stop-01.md"
+        result = self.watch(timeout=10)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(f"WATCH_ERROR: no directory {self.root / 'missing'}", result.stdout)
+
+    def test_a_rearmed_watch_continues_where_the_last_one_stopped(self):
+        self.jsonl.write_text(text("CHECKPOINT: seen by the first watch") + "\n")
+        first = self.start_watch("--from-start")
+        time.sleep(1)
+        first.terminate()
+        first_out, _ = first.communicate(timeout=10)
+        self.assertIn("CHECKPOINT: seen by the first watch", first_out)
+        with self.jsonl.open("a") as handle:
+            handle.write(text("CHECKPOINT: written between the watches") + "\n")
+        second = self.start_watch()
+        time.sleep(1)
+        self.stop.write_text("done\n")
+        out, _ = second.communicate(timeout=10)
+        self.assertIn("resuming", out.splitlines()[0])
+        self.assertIn("CHECKPOINT: written between the watches", out)
+        self.assertNotIn("seen by the first watch", out)
+
+    def test_a_shorter_log_than_the_saved_position_is_read_from_the_start(self):
+        self.jsonl.write_text(text("CHECKPOINT: a long earlier line that is long") + "\n")
+        first = self.start_watch("--from-start")
+        time.sleep(1)
+        first.terminate()
+        first.communicate(timeout=10)
+        self.jsonl.write_text(text("CHECKPOINT: new") + "\n")
+        second = self.start_watch()
+        time.sleep(1)
+        self.stop.write_text("done\n")
+        out, _ = second.communicate(timeout=10)
+        self.assertIn("CHECKPOINT: new", out)
+
+    def test_a_line_half_written_when_the_watch_stops_is_reported_after_rearming(self):
+        line = text("CHECKPOINT: written in two parts")
+        self.jsonl.write_text(line[:20])
+        first = self.start_watch("--from-start")
+        time.sleep(1)
+        first.terminate()
+        first.communicate(timeout=10)
+        with self.jsonl.open("a") as handle:
+            handle.write(line[20:] + "\n")
+        second = self.start_watch()
+        time.sleep(1)
+        self.stop.write_text("done\n")
+        out, _ = second.communicate(timeout=10)
+        self.assertIn("CHECKPOINT: written in two parts", out)
 
 
 if __name__ == "__main__":

@@ -198,9 +198,20 @@ Watch every run with a monitor (the Monitor tool, 30-minute expiry, re-armed
 until the run ends) running [scripts/oc-watch.py](scripts/oc-watch.py):
 
 ```bash
-python3 -u <skill>/scripts/oc-watch.py <run prefix> --stop-file <stop file> \
+H=<handoff dir>; python3 -u <skill>/scripts/oc-watch.py $H/<run prefix> \
+  --stop-file $H/<stop file> \
   [--signal '<regex for a project-specific alarm>'] [--quiet-seconds 900]
 ```
+
+Set variables with `;` before the command. `H=<dir> python3 ... $H/...`
+expands `$H` before the assignment: on 2026-10-15 a re-armed watch
+followed `/<run prefix>` and would have stayed silent for the rest of the
+batch. Read the first line after every arm: `WATCHING <file> ...` names the
+file and where reading starts, and a prefix or stop file in a missing
+directory ends the watch with `WATCH_ERROR`. A re-armed watch resumes from
+the byte the last one reached (kept in `<prefix>.watchpos`), so events
+written while it was down still arrive; `--from-start` reads the whole log
+again.
 
 Each printed line is a notification:
 
@@ -210,7 +221,7 @@ Each printed line is a notification:
 | `QUESTION: ...` | answer with a steer message; the agent goes on with its stated default meanwhile |
 | `EDIT: <tool> <path>` | read the diff of that file now, not at the stop file |
 | `SAYS: ...` | check the direction |
-| `SIGNAL:`, `TOOL_ERROR:`, `RUN_ERROR:` | look at once |
+| `SIGNAL: <match> (<tool>: <command>)`, `TOOL_ERROR:`, `RUN_ERROR:` | look at once; the command in brackets tells which run the match came from |
 | `STALL:` | check the test host before calling it stuck (see [Waiting and liveness](#waiting-and-liveness)) |
 | `STOP_FILE` / `EXITED` | handle the stop file or the exit |
 
@@ -241,7 +252,20 @@ decisions outside the brief's defaults.
   sends the message only through the resume.
 
 Interrupting opencode does not stop jobs it started detached on a test host;
-say in the message whether to stop them and how.
+say in the message whether to stop them and how. A message that changes the
+code makes every detached run on the old code worthless: say so, and have
+it stopped. A queued message arrives only after the current step, so the
+agent may start such a run in between; on 2026-10-15 a Layer 2 run started a
+minute before a correction arrived. If the run has already reported
+failures, have its logs copied to the evidence directory before its output
+is deleted, so the failures can still be named.
+
+Before an interrupt, look at what is running on the test host and decide
+once what should happen to it. On 2026-10-15 Claude interrupted a run to
+stop a rerun that was meant to paper over a failure, then saw that the
+rerun was a useful second sample and its follow-up Layer 2 still valid,
+and sent a contrary message a minute later; the two messages raced, and
+only luck kept the agent from killing the run first.
 
 ## Waiting and liveness
 
@@ -414,6 +438,15 @@ Before writing the brief:
 - Look for an existing precedent in the codebase that already solves the
   same shape of problem, and point the brief at it rather than inventing a
   new mechanism.
+- Before ruling a product fix in a reply or a steer, follow the new value
+  through every check and consumer: search the tree for the field or
+  reason code and read each validator that sees it. On 2026-10-15 Claude
+  ruled that a command whose host reported contradictory exit codes should
+  record its effect as `not_asserted`; the facts contract accepts that
+  effect only after a normal exit, so the Worker threw, and a recovery path
+  rebuilt the call as a success. Two product-path rounds went to a fix
+  that could not work; reading the contract's effect checks, and the
+  deadline failure that already solved the same shape, took ten minutes.
 - Check that every instruction can run under the deny list. A brief told
   opencode to `git commit --amend` while the deny list blocked it.
 - Before writing a stop condition ("if X, stop and ask"), look for a
@@ -499,6 +532,16 @@ it. Do not delegate the review back to opencode or to the same model.
   component and fails when the two drift. On 2026-10-13 a publisher's
   expected failure code had an extra word, and its fixture, which reused
   that constant, still passed; only line-by-line review caught it.
+- A failure the agent calls pre-existing or environmental counts as such
+  only when the same test files fail the same way on the base revision.
+  Ask for that run and for both logs in the evidence directory. On
+  2026-10-15 opencode called five unit failures pre-existing after their
+  log had been deleted. A timeout is a defect to diagnose, not environment.
+- Check that a test's input is a record the product can actually write.
+  On 2026-10-15 a projection test gave a fixed read an `unknown` effect,
+  which the Worker never records for fixed reads. When a parametrized test
+  already covers the same rule, add a case to it instead of a parallel
+  block; the existing negative cases then cover the new case too.
 - Diff the touched tree against a baseline copy you took before launch
   (for files outside version control), not only against git.
 - Record the outcome: `longtask.py record --review --items <ids> --verdict
