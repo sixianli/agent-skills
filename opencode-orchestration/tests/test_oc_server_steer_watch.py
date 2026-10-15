@@ -335,15 +335,15 @@ class WatchTests(unittest.TestCase):
         self.assertEqual(signal_lines, ["SIGNAL: 2 failed; timed out x4 (shell: ./ci-ssh.sh 'grep -c timed out run.log')"])
 
     def test_the_timeout_command_in_tool_output_is_not_a_signal(self):
-        listing = "\n".join([
-            "41870 timeout -k 10 300 bash -c pgrep -u ci -af vitest",
-            "+  timeout --kill-after=10 300 \"$@\"",
-            "exec timeout 300 ./run.sh",
-        ])
-        messages = "\n".join([
-            "Error: Hook timed out in 10000ms.",
-            "request timeout after 30s",
-        ])
+        listing = (
+            "41870 timeout -k 10 300 bash -c pgrep -u ci -af vitest\n"
+            "+  timeout --kill-after=10 300 \"$@\"\n"
+            "exec timeout 300 ./run.sh"
+        )
+        messages = (
+            "Error: Hook timed out in 10000ms.\n"
+            "request timeout after 30s"
+        )
         lines = [
             tool("shell", "completed", {"command": "./ci-ssh.sh 'pgrep -af vitest'"}, output=listing),
             tool("shell", "completed", {"command": "./ci-ssh.sh 'tail run.log'"}, output=messages),
