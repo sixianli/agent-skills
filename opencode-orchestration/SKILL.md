@@ -537,6 +537,18 @@ it. Do not delegate the review back to opencode or to the same model.
   Ask for that run and for both logs in the evidence directory. On
   2026-10-15 opencode called five unit failures pre-existing after their
   log had been deleted. A timeout is a defect to diagnose, not environment.
+- A test that passes alone and fails in a group is not a flake to rerun.
+  Name the timing it depends on, then reproduce deterministically by
+  pushing that timing past its threshold once. On 2026-10-15 a
+  contradiction case passed three times alone and failed once in a group;
+  a fixture held the host's final message about 3.7 seconds there against
+  0.6 alone, and the product ends a host 5 seconds after its early
+  completion report. One run with a 7-second hold reproduced the failure
+  and showed the held message was never sent: the fixture had turned the
+  case into the host-crash case, which the product handled as designed.
+- A fixture that delays or holds a message must stay inside the product's
+  own timers (cleanup, force-kill, deadlines); find them before accepting
+  the hold, or the test checks a different scenario than its name.
 - Check that a test's input is a record the product can actually write.
   On 2026-10-15 a projection test gave a fixed read an `unknown` effect,
   which the Worker never records for fixed reads. When a parametrized test
