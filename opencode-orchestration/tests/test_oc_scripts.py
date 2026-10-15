@@ -157,6 +157,74 @@ class LaunchTests(Base):
         self.assertIn("region not allowed", result.stderr)
 
 
+class ModelAllowlistTests(Base):
+    def setUp(self):
+        super().setUp()
+        (self.root / ".opencode").mkdir()
+        self.allowed = self.root / ".opencode" / "allowed-models.txt"
+        self.allowed.write_text("# models this project may use\nopencode/deepseek-v4.1-flash-free\nopencode-go/deepseek-v4.1-flash\n\n")
+        self.called = self.root / "called"
+
+    def run_launch(self, *args, env_extra=None):
+        fake = self.fake(f"touch {self.called}; echo '{TEXT}'")
+        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_SERVER_DIR=str(self.server_dir), **(env_extra or {}))
+        return subprocess.run(
+            ["bash", str(SCRIPTS / "oc-launch.sh"), *args],
+            cwd=self.root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+
+    def new(self, model, **kw):
+        return self.run_launch("new", str(self.brief), str(self.prefix), model, **kw)
+
+    def assert_refused(self, result, model):
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn(f"MODEL_NOT_ALLOWED: {model} is not listed in", result.stderr)
+        self.assertFalse(self.called.exists())
+        self.assertFalse(Path(str(self.prefix) + ".pid").exists())
+        self.assertFalse((self.server_dir / "pid").exists())
+
+    def test_refuses_a_model_missing_from_the_project_list(self):
+        self.assert_refused(self.new("opencode/glm-5.3"), "opencode/glm-5.3")
+
+    def test_a_listed_id_must_match_exactly_not_as_a_prefix(self):
+        self.assert_refused(self.new("opencode/deepseek-v4.1-flash"), "opencode/deepseek-v4.1-flash")
+
+    def test_accepts_a_listed_model_with_a_reasoning_variant(self):
+        result = self.new("opencode-go/deepseek-v4.1-flash#high")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.called.exists())
+        self.assertIn("model=opencode-go/deepseek-v4.1-flash#high", result.stdout)
+
+    def test_resume_is_checked_too(self):
+        reply = self.root / "reply.md"
+        reply.write_text("go on\n")
+        result = self.run_launch("resume", "ses_x", str(reply), str(self.root / "stop.md"), str(self.prefix), "opencode-go/glm-5.3")
+        self.assert_refused(result, "opencode-go/glm-5.3")
+
+    def test_a_list_named_by_the_environment_replaces_the_project_list(self):
+        other = self.root / "other.txt"
+        other.write_text("opencode-go/glm-5.3-flash\n")
+        self.assert_refused(
+            self.new("opencode/deepseek-v4.1-flash-free", env_extra={"OC_ALLOWED_MODELS": str(other)}),
+            "opencode/deepseek-v4.1-flash-free",
+        )
+
+    def test_the_model_is_checked_before_the_brief(self):
+        (self.root / ".agents" / "tasks").mkdir(parents=True)
+        self.assert_refused(self.new("opencode/glm-5.3"), "opencode/glm-5.3")
+
+    def test_a_missing_list_named_by_the_environment_refuses_every_model(self):
+        result = self.new("opencode/deepseek-v4.1-flash-free", env_extra={"OC_ALLOWED_MODELS": str(self.root / "nope.txt")})
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("MODEL_LIST_MISSING", result.stderr)
+        self.assertFalse(self.called.exists())
+
+
 class WaitTests(Base):
     def start(self, body):
         result = self.launch(self.fake(body))

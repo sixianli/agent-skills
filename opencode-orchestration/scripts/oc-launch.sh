@@ -11,6 +11,10 @@ Starts opencode detached (it outlives the calling shell), writes <prefix>.jsonl,
 for the first event and prints its session id. The run connects to the task's
 own server (oc-server.sh, state in OC_SERVER_DIR, default <prefix dir>/oc-server),
 started here when it is not running, so oc-steer.sh can reach the session.
+When OC_ALLOWED_MODELS names a file, or .opencode/allowed-models.txt exists in
+the current directory, the model (without its #variant) must equal one of its
+lines (blank lines and lines starting with # are ignored); otherwise nothing
+starts and the exit code is 2.
 EOF
   exit 2
 }
@@ -28,9 +32,6 @@ case "$mode" in
     [ $# -ge 3 ] || usage
     brief=$1 prefix=$2 model=$3 title=${4:-$(basename "$1" .md)}
     [ -f "$brief" ] || { echo "brief not found: $brief" >&2; exit 2; }
-    if [ -d .agents/tasks ] && [ -f "$longtask" ]; then
-      python3 "$longtask" check-brief "$brief" || { echo "check-brief refused the brief" >&2; exit 2; }
-    fi
     message="Read the attached brief fully, then do the work it describes. Write the stop file it names when it tells you to stop."
     set -- run --auto --format json -m "$model" --title "$title" -f "$brief" "$message"
     ;;
@@ -45,6 +46,21 @@ case "$mode" in
     usage
     ;;
 esac
+
+allowed_list=${OC_ALLOWED_MODELS:-}
+if [ -n "$allowed_list" ] && [ ! -f "$allowed_list" ]; then
+  echo "MODEL_LIST_MISSING: OC_ALLOWED_MODELS names $allowed_list, which does not exist" >&2
+  exit 2
+fi
+[ -n "$allowed_list" ] || [ ! -f .opencode/allowed-models.txt ] || allowed_list=.opencode/allowed-models.txt
+if [ -n "$allowed_list" ] &&
+  ! grep -v -E '^[[:space:]]*(#|$)' "$allowed_list" | sed 's/[[:space:]]*$//' | grep -q -x -F -- "${model%%#*}"; then
+  echo "MODEL_NOT_ALLOWED: $model is not listed in $allowed_list" >&2
+  exit 2
+fi
+if [ "$mode" = new ] && [ -d .agents/tasks ] && [ -f "$longtask" ]; then
+  python3 "$longtask" check-brief "$brief" || { echo "check-brief refused the brief" >&2; exit 2; }
+fi
 
 for suffix in jsonl err pid rc; do
   if [ -e "$prefix.$suffix" ]; then
@@ -71,7 +87,7 @@ elapsed=0
 while [ "$elapsed" -lt "$startup" ]; do
   if [ -s "$prefix.jsonl" ]; then
     session_id=$(head -1 "$prefix.jsonl" | python3 -c 'import json,sys; print(json.loads(sys.stdin.readline()).get("sessionID",""))' 2>/dev/null)
-    echo "started pid=$pid session=$session_id"
+    echo "started pid=$pid session=$session_id model=$model"
     if grep -q -E '"type": ?"error"' "$prefix.jsonl"; then
       echo "first events contain an error:" >&2
       grep -E '"type": ?"error"' "$prefix.jsonl" | head -1 | cut -c1-400 >&2

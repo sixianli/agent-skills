@@ -126,6 +126,19 @@ swallowed and the run printed nothing until an outer timeout killed it after
 directory's deny rule, and ran the control command. Stop the server when the
 task ends: `oc-server.sh stop <handoff>/oc-server`.
 
+When the user sets which models may be used, put the IDs in
+`.opencode/allowed-models.txt` in the directory you launch from, one per
+line (`#` lines are comments), or name another file in `OC_ALLOWED_MODELS`.
+`oc-launch.sh` then refuses any other model, compared without its
+`#variant` and as a whole line, with `MODEL_NOT_ALLOWED` before it checks
+the brief or starts anything; that covers `oc-steer.sh --interrupt` too,
+which resumes through it. opencode's own per-provider `whitelist` did not
+narrow the model list in v2.0.27, so the launcher is the gate. A paid model
+whose ID is the start of a free one's (`opencode/deepseek-v4.1-flash`
+against `opencode/deepseek-v4.1-flash-free`) is exactly what the
+whole-line match stops. The started line ends with `model=<id>`; report
+the model, the time, and why it was chosen when the project asks for it.
+
 New session (one batch = one session):
 
 ```bash
