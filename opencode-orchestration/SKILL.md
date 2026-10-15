@@ -35,6 +35,7 @@ skip it otherwise.
 - [Files](#files)
 - [Goal, plan and progress](#goal-plan-and-progress)
 - [Launching and resuming](#launching-and-resuming)
+- [Watching and steering](#watching-and-steering)
 - [Waiting and liveness](#waiting-and-liveness)
 - [Writing briefs](#writing-briefs)
 - [Preventing rework](#preventing-rework)
@@ -81,8 +82,10 @@ skip it otherwise.
 
 ## Files
 
-All communication goes through Markdown files in the project's handoff
-directory:
+Every message is a Markdown file in the project's handoff directory, kept as
+the record. Claude also delivers its messages to a running session (see
+[Watching and steering](#watching-and-steering)), so files no longer mean
+waiting for the agent to stop:
 
 | File | Written by | Purpose |
 | --- | --- | --- |
@@ -90,6 +93,9 @@ directory:
 | `<date>-<task>-oc-stop-<N>.md` | opencode | Why it stopped; starts with [templates/stop-summary.md](templates/stop-summary.md) |
 | `<date>-<task>-oc-reply-<N>.md` | Claude | Ruling on a stop file, from [templates/reply.md](templates/reply.md) |
 | `<date>-<task>-oc-<N>.jsonl` | launcher | The run's JSON event stream, kept as review evidence |
+| `<date>-<task>-oc-steer-<N>.md` | Claude | A correction or answer sent to a running session with `oc-steer.sh` |
+| `<date>-<task>-oc-<N>.steer.log` | `oc-steer.sh` | When each message was sent, how, and to which session |
+| `oc-server/` | `oc-server.sh` | The task server's address, password (mode 600), pid and log; never commit or print the password |
 
 ## Goal, plan and progress
 
@@ -105,18 +111,25 @@ evidence with `longtask.py record --by opencode` and never edits `goal.md`,
 
 ## Launching and resuming
 
-Use `--standalone`. Through the shared background service, a provider error
-was swallowed: the run printed nothing until an outer timeout killed it after
-240 seconds. The same prompt with `--standalone` returned the error event in
-two seconds (2026-10-12).
+Launch and resume with [scripts/oc-launch.sh](scripts/oc-launch.sh). It
+starts, or reuses, the task's own opencode server through
+[scripts/oc-server.sh](scripts/oc-server.sh) (127.0.0.1 only, a random
+password in a mode-600 file, state in `<handoff>/oc-server/`) and runs
+`opencode run --server <url>`, so Claude can message a running session (see
+[Watching and steering](#watching-and-steering)). Do not use `--standalone`:
+it gives each run a private server that takes no messages from outside, so a
+run going the wrong way could be corrected only after it stopped. Do not use
+the shared background service either: through it a provider error was
+swallowed and the run printed nothing until an outer timeout killed it after
+240 seconds (2026-10-12). On 2026-10-15 the task server returned a
+`provider.no-route` error in one second, refused a command matching the
+directory's deny rule, and ran the control command. Stop the server when the
+task ends: `oc-server.sh stop <handoff>/oc-server`.
 
 New session (one batch = one session):
 
 ```bash
-opencode run --standalone --auto --format json -m <provider/model> \
-  --title "<task>-<batch>" -f <brief path> \
-  "Read the attached brief fully, then do the work it describes. Write the stop file it names when it tells you to stop." \
-  > <handoff>/<date>-<task>-oc-<N>.jsonl 2> <handoff>/<date>-<task>-oc-<N>.err
+<skill>/scripts/oc-launch.sh new <brief path> <handoff>/<date>-<task>-oc-<N> '<provider/model>#<variant>' "<task>-<batch>"
 ```
 
 Pick a reasoning level with a variant suffix, `-m '<provider/model>#<variant>'`
@@ -134,13 +147,15 @@ Find it with `pgrep -af "opencode run.*<sessionID>"`, kill it, and confirm
 with `ps -p <pid>` before resuming the session.
 
 Every JSON event carries `sessionID`; take it from the first line. Resume
-within the same batch:
+within the same batch, with a new run prefix:
 
 ```bash
-opencode run --standalone --auto --format json -m <provider/model> -s <sessionID> \
-  "Read <reply path> fully, then continue per its ruling. The next stop file is <path>." \
-  >> <same jsonl> 2>> <same err>
+<skill>/scripts/oc-launch.sh resume <sessionID> <reply path> <next stop file> <new run prefix> '<provider/model>#<variant>'
 ```
+
+A manual `opencode run` needs `--server "$(cat <handoff>/oc-server/url)"`,
+`OPENCODE_PASSWORD` read from `<handoff>/oc-server/password`, and closed
+standard input (`< /dev/null`).
 
 Run launches as a background Bash task (sandbox disabled, `timeout` at the
 2-hour maximum) so Claude keeps working and is notified when the run exits.
@@ -171,6 +186,62 @@ not yours. On 2026-10-14 a commit meant for one instruction file also
 carried a documentation file the agent had staged, including two entries
 not yet reviewed; it was pushed, so only a later commit message could
 correct the record.
+
+## Watching and steering
+
+Read the run while it works instead of only at its stop file. On 2026-10-15
+a batch reported six fixture defects only after its long test runs had
+finished; an early look would have redirected it an hour sooner and saved
+the tokens it spent going the wrong way.
+
+Watch every run with a monitor (the Monitor tool, 30-minute expiry, re-armed
+until the run ends) running [scripts/oc-watch.py](scripts/oc-watch.py):
+
+```bash
+python3 -u <skill>/scripts/oc-watch.py <run prefix> --stop-file <stop file> \
+  [--signal '<regex for a project-specific alarm>'] [--quiet-seconds 900]
+```
+
+Each printed line is a notification:
+
+| Line | Act |
+| --- | --- |
+| `CHECKPOINT: ...` | judge the plan before the long step starts; steer at once if it is wrong |
+| `QUESTION: ...` | answer with a steer message; the agent goes on with its stated default meanwhile |
+| `EDIT: <tool> <path>` | read the diff of that file now, not at the stop file |
+| `SAYS: ...` | check the direction |
+| `SIGNAL:`, `TOOL_ERROR:`, `RUN_ERROR:` | look at once |
+| `STALL:` | check the test host before calling it stuck (see [Waiting and liveness](#waiting-and-liveness)) |
+| `STOP_FILE` / `EXITED` | handle the stop file or the exit |
+
+A tool call emits its event only when it returns, so the start of a long
+command is invisible; the `CHECKPOINT:` line the brief demands before every
+step expected to take over five minutes is the only chance to stop a wrong
+long step before it runs. On 2026-10-15 the default failure-count pattern
+first read `passed 34 failed 2` as 34 failures; the patterns now skip a count
+that follows `passed` and catch `failed <n>`.
+
+Correct a run with [scripts/oc-steer.sh](scripts/oc-steer.sh). Write the
+message to a file first; the file is the record, and each send is logged in
+`<prefix>.steer.log`. Stop files stay for the end of a batch and for
+decisions outside the brief's defaults.
+
+- `oc-steer.sh <prefix> <message file>` delivers the message after the
+  current step, and the run continues without restarting. A step that is
+  one long command finishes first: on 2026-10-15 a message sent during a
+  45-second `sleep` was followed when the sleep ended.
+- `oc-steer.sh <prefix> <message file> --interrupt <next stop> <next prefix> <model>`
+  stops the current step at once and resumes the same session with the
+  message. Use it when the running step itself is the waste. On 2026-10-15
+  an interrupt stopped a `sleep 40` within a second, the run ended with exit
+  code 1 and an `aborted` "Step interrupted" event, and the resumed session
+  followed the correction eight seconds later without rerunning the sleep.
+  A steer message sent before the interrupt, even with `resume=true` on the
+  interrupt call, stayed undelivered in the session inbox, so the script
+  sends the message only through the resume.
+
+Interrupting opencode does not stop jobs it started detached on a test host;
+say in the message whether to stop them and how.
 
 ## Waiting and liveness
 
@@ -470,8 +541,9 @@ instructions reserve for the user. Production steps are never delegated.
   user's workspace privacy setting must allow Global regions. This is an
   account setting: ask the user to change it, do not try another model
   without asking.
-- 2026-10-12: without `--standalone` the same failure produced no output at
-  all (see [Launching and resuming](#launching-and-resuming)).
+- 2026-10-12: through the shared background service the same failure
+  produced no output at all; the task server used since 2026-10-15 reports
+  it at once (see [Launching and resuming](#launching-and-resuming)).
 - 2026-10-12: `OPENCODE_CONFIG` and `OPENCODE_CONFIG_CONTENT` were ignored;
   only the project file plus `opencode reload` showed up in
   `opencode debug config`.

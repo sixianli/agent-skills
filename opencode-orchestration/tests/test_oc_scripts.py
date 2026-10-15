@@ -51,8 +51,12 @@ class Base(unittest.TestCase):
         self.prefix = self.root / "runs" / "run-01"
         self.brief = self.root / "brief.md"
         self.brief.write_text("# brief\n")
+        self.server_dir = self.root / "oc-server"
 
     def tearDown(self):
+        server_pid = self.server_dir / "pid"
+        if server_pid.exists():
+            subprocess.run(["kill", server_pid.read_text().strip()], capture_output=True, check=False)
         pid_file = Path(str(self.prefix) + ".pid")
         if pid_file.exists():
             pid = int(pid_file.read_text())
@@ -62,12 +66,15 @@ class Base(unittest.TestCase):
 
     def fake(self, body):
         path = self.root / "fake-opencode"
-        path.write_text("#!/bin/sh\n" + body + "\n")
+        path.write_text(
+            "#!/bin/sh\n"
+            'case "$1" in serve) exec sleep 300 ;; api) exit 0 ;; esac\n' + body + "\n"
+        )
         path.chmod(0o755)
         return path
 
     def launch(self, fake, startup="6", *extra):
-        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS=startup)
+        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS=startup, OC_SERVER_DIR=str(self.server_dir))
         return subprocess.run(
             ["bash", str(SCRIPTS / "oc-launch.sh"), "new", str(self.brief), str(self.prefix), "provider/model", *extra],
             cwd=self.root,
@@ -96,20 +103,21 @@ class LaunchTests(Base):
         self.wait_for(str(self.prefix) + ".rc")
         self.assertEqual(Path(str(self.prefix) + ".rc").read_text().strip(), "0")
 
-    def test_passes_standalone_auto_json_model_and_brief(self):
+    def test_passes_server_auto_json_model_and_brief(self):
         args_file = self.root / "args.txt"
         fake = self.fake(f'printf "%s\\n" "$@" > {args_file}; echo \'{TEXT}\'')
         self.assertEqual(self.launch(fake).returncode, 0)
         self.wait_for(args_file)
         args = args_file.read_text().splitlines()
-        for expected in ["run", "--standalone", "--auto", "--format", "json", "provider/model", str(self.brief)]:
+        for expected in ["run", "--server", "--auto", "--format", "json", "provider/model", str(self.brief)]:
             self.assertIn(expected, args)
+        self.assertNotIn("--standalone", args)
 
     def test_run_does_not_wait_for_the_callers_open_stdin(self):
         fake = self.fake(f"cat > /dev/null; echo '{TEXT}'")
         read_end, write_end = os.pipe()
         try:
-            env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6")
+            env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_SERVER_DIR=str(self.server_dir))
             result = subprocess.run(
                 ["bash", str(SCRIPTS / "oc-launch.sh"), "new", str(self.brief), str(self.prefix), "provider/model"],
                 cwd=self.root,
@@ -165,23 +173,23 @@ class WaitTests(Base):
 
     def test_wakes_on_new_stop_file(self):
         stop = self.root / "stop.md"
-        self.start(f"echo '{TEXT}'; sleep 3; echo stop > {stop}; sleep 30")
+        self.start(f"echo '{TEXT}'; sleep 4; echo stop > {stop}; sleep 30")
         result = self.wait(stop)
         self.assertIn("WAKE stop-file", result.stdout)
 
     def test_wakes_on_exit_with_rc(self):
-        self.start(f"echo '{TEXT}'; sleep 2; exit 5")
+        self.start(f"echo '{TEXT}'; sleep 4; exit 5")
         result = self.wait(self.root / "never.md")
         self.assertIn("WAKE exited rc=5", result.stdout)
 
     def test_wakes_on_error_event(self):
-        self.start(f"echo '{TEXT}'; sleep 2; echo '{ERROR}'; sleep 30")
+        self.start(f"echo '{TEXT}'; sleep 4; echo '{ERROR}'; sleep 30")
         result = self.wait(self.root / "never.md")
         self.assertIn("WAKE error-event", result.stdout)
 
     def test_clean_evidence_keeps_exit_0(self):
         stop = self.root / "stop.md"
-        self.start(f"echo '{TEXT}'; sleep 2; echo stop > {stop}; sleep 30")
+        self.start(f"echo '{TEXT}'; sleep 4; echo stop > {stop}; sleep 30")
         result = self.wait(stop)
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn("EVIDENCE_OK", result.stdout)
@@ -189,7 +197,7 @@ class WaitTests(Base):
     def test_new_dependency_copy_in_handoff_directory_exits_3(self):
         stop = self.root / "stop.md"
         bad = self.prefix.parent / "run-09" / "node_modules" / "pkg"
-        self.start(f"echo '{TEXT}'; sleep 2; mkdir -p {bad}; echo x > {bad}/index.js; echo stop > {stop}; sleep 30")
+        self.start(f"echo '{TEXT}'; sleep 4; mkdir -p {bad}; echo x > {bad}/index.js; echo stop > {stop}; sleep 30")
         result = self.wait(stop)
         self.assertEqual(result.returncode, 3, result.stdout)
         self.assertIn("WAKE stop-file", result.stdout)
@@ -198,11 +206,11 @@ class WaitTests(Base):
     def test_listed_remote_root_is_checked_through_its_command(self):
         stop = self.root / "stop.md"
         remote = self.root / "remote-evidence"
-        (remote / "run-01" / ".git").mkdir(parents=True)
-        (remote / "run-01" / ".git" / "HEAD").write_text("x")
+        remote.mkdir()
+        git_dir = remote / "run-01" / ".git"
         self.prefix.parent.mkdir(parents=True, exist_ok=True)
         (self.prefix.parent / "evidence-roots.txt").write_text(f"# remote roots\nsh -c|{remote}\n")
-        self.start(f"echo '{TEXT}'; sleep 2; echo stop > {stop}; sleep 30")
+        self.start(f"echo '{TEXT}'; sleep 4; mkdir -p {git_dir}; echo x > {git_dir}/HEAD; echo stop > {stop}; sleep 30")
         result = self.wait(stop)
         self.assertEqual(result.returncode, 3, result.stdout)
         self.assertIn(str(remote), result.stdout)
@@ -211,7 +219,7 @@ class WaitTests(Base):
         stop = self.root / "stop.md"
         self.prefix.parent.mkdir(parents=True, exist_ok=True)
         (self.prefix.parent / "evidence-roots.txt").write_text(f"sh -c|{self.root / 'absent'}\n")
-        self.start(f"echo '{TEXT}'; sleep 2; echo stop > {stop}; sleep 30")
+        self.start(f"echo '{TEXT}'; sleep 4; echo stop > {stop}; sleep 30")
         result = self.wait(stop)
         self.assertEqual(result.returncode, 3, result.stdout)
 

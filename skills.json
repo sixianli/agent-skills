@@ -594,7 +594,9 @@
             "-m",
             "py_compile",
             "opencode-orchestration/scripts/oc-events.py",
+            "opencode-orchestration/scripts/oc-watch.py",
             "opencode-orchestration/tests/test_oc_scripts.py",
+            "opencode-orchestration/tests/test_oc_server_steer_watch.py",
             "opencode-orchestration/tests/test_grok_launch.py"
           ]
         },

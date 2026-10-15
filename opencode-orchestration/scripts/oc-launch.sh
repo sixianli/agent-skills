@@ -8,7 +8,9 @@ usage:
   oc-launch.sh resume <session id> <reply> <next stop file> <run prefix> <provider/model>
 Starts opencode detached (it outlives the calling shell), writes <prefix>.jsonl,
 .err, .pid and, when it ends, .rc. Waits up to OC_STARTUP_SECONDS (default 180)
-for the first event and prints its session id.
+for the first event and prints its session id. The run connects to the task's
+own server (oc-server.sh, state in OC_SERVER_DIR, default <prefix dir>/oc-server),
+started here when it is not running, so oc-steer.sh can reach the session.
 EOF
   exit 2
 }
@@ -30,14 +32,14 @@ case "$mode" in
       python3 "$longtask" check-brief "$brief" || { echo "check-brief refused the brief" >&2; exit 2; }
     fi
     message="Read the attached brief fully, then do the work it describes. Write the stop file it names when it tells you to stop."
-    set -- run --standalone --auto --format json -m "$model" --title "$title" -f "$brief" "$message"
+    set -- run --auto --format json -m "$model" --title "$title" -f "$brief" "$message"
     ;;
   resume)
     [ $# -ge 5 ] || usage
     session=$1 reply=$2 stop=$3 prefix=$4 model=$5
     [ -f "$reply" ] || { echo "reply not found: $reply" >&2; exit 2; }
     message="Read $reply fully, then continue per its ruling. The next stop file is $stop."
-    set -- run --standalone --auto --format json -m "$model" -s "$session" "$message"
+    set -- run --auto --format json -m "$model" -s "$session" "$message"
     ;;
   *)
     usage
@@ -51,12 +53,17 @@ for suffix in jsonl err pid rc; do
   fi
 done
 mkdir -p "$(dirname "$prefix")"
+server_dir=${OC_SERVER_DIR:-$(dirname "$prefix")/oc-server}
+bash "$script_dir/oc-server.sh" start "$server_dir" >&2 || { echo "the task's opencode server is not available" >&2; exit 3; }
+server_url=$(cat "$server_dir/url")
+OPENCODE_PASSWORD=$(cat "$server_dir/password")
+export OPENCODE_PASSWORD
 
 nohup sh -c '
   prefix=$1; shift
   "$@" > "$prefix.jsonl" 2> "$prefix.err"
   echo $? > "$prefix.rc"
-' oc-launch "$prefix" "$opencode_bin" "$@" > /dev/null 2>&1 &
+' oc-launch "$prefix" "$opencode_bin" "$1" --server "$server_url" "${@:2}" > /dev/null 2>&1 &
 echo $! > "$prefix.pid"
 pid=$(cat "$prefix.pid")
 
