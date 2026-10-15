@@ -21,7 +21,7 @@ from pathlib import Path
 DEFAULT_SIGNALS = [
     r"(?<!passed )\b[1-9]\d* failed\b",
     r"\bfailed[ :=]+[1-9]\d*",
-    r"\bTimed? ?out\b",
+    r"\btimed ?out\b|\btime out\b|\btimeout\b(?!\s+(?:-{1,2}[a-z]|\d))",
     r"\bout of memory\b",
     r"\boom_kill=[1-9]\d*",
 ]

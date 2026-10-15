@@ -353,6 +353,14 @@ the only way in. Prove both sides when adding such a wrapper: a long loop
 through it ends at the limit, a detached job started through it returns at
 once and keeps running, and a direct `ssh` from the agent is refused.
 
+Give the detached form exactly: `setsid -f bash <script> > <log> 2>&1 <
+/dev/null`, with any `cd` inside the script. The tempting one-liner
+`cd <dir> && setsid nohup <command> > <log> 2>&1 &` blocks the wrapper
+until the command ends, because the shell backgrounds the whole `&&` list
+as a subshell whose own output is still the SSH channel. It was written
+that way twice by 2026-10-16; reproduced the same day, `cd <dir>;
+setsid nohup …` and `setsid -f` both returned within a second.
+
 Two sessions can share one test host when each brief names its own result
 directories and scratch prefix and forbids touching the other session's
 directories, processes and shared inputs. Name any shared read-only input
@@ -423,6 +431,12 @@ revise them from experience):
   cleanup of each failed run's scratch before the next one. On 2026-10-13
   opencode reran a flaky-network rehearsal five times back to back and left
   about 4 GiB of failure scratch on a shared host's root disk.
+- Copy the environment of the last passing run of the same test kind into
+  the brief, variable by variable, from that run's script rather than from
+  memory. On 2026-10-15 a brief for one integration test file gave the
+  scratch variables but not the two that point the tests at a prepared
+  runtime package; every run on the test host failed before reaching the
+  test, and the batch had to move hosts.
 - When the work is a bug fix, order the steps as: change the test, run it
   and keep the failing output, change production code, rerun.
 - Never let two batches that run at the same time edit or test the same

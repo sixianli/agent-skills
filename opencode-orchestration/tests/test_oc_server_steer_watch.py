@@ -334,6 +334,26 @@ class WatchTests(unittest.TestCase):
         signal_lines = [line for line in out.splitlines() if line.startswith("SIGNAL:")]
         self.assertEqual(signal_lines, ["SIGNAL: 2 failed; timed out x4 (shell: ./ci-ssh.sh 'grep -c timed out run.log')"])
 
+    def test_the_timeout_command_in_tool_output_is_not_a_signal(self):
+        listing = "\n".join([
+            "41870 timeout -k 10 300 bash -c pgrep -u ci -af vitest",
+            "+  timeout --kill-after=10 300 \"$@\"",
+            "exec timeout 300 ./run.sh",
+        ])
+        messages = "\n".join([
+            "Error: Hook timed out in 10000ms.",
+            "request timeout after 30s",
+        ])
+        lines = [
+            tool("shell", "completed", {"command": "./ci-ssh.sh 'pgrep -af vitest'"}, output=listing),
+            tool("shell", "completed", {"command": "./ci-ssh.sh 'tail run.log'"}, output=messages),
+        ]
+        self.jsonl.write_text("\n".join(lines) + "\n")
+        Path(str(self.prefix) + ".rc").write_text("0\n")
+        out = self.watch("--from-start").stdout
+        signal_lines = [line for line in out.splitlines() if line.startswith("SIGNAL:")]
+        self.assertEqual(signal_lines, ["SIGNAL: timed out; timeout (shell: ./ci-ssh.sh 'tail run.log')"])
+
     def start_watch(self, *extra):
         return subprocess.Popen(
             ["python3", str(SCRIPTS / "oc-watch.py"), str(self.prefix), "--stop-file", str(self.stop), "--poll", "0.1", *extra],
