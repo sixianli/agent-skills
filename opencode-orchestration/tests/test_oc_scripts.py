@@ -329,5 +329,15 @@ class EventsTests(unittest.TestCase):
         self.assertEqual(len(grepped), 1)
 
 
+class ScriptModeTests(unittest.TestCase):
+    def test_every_script_with_a_shebang_runs_directly(self):
+        not_executable = [
+            path.name
+            for path in sorted(SCRIPTS.iterdir())
+            if path.is_file() and path.read_bytes().startswith(b"#!") and not os.access(path, os.X_OK)
+        ]
+        self.assertEqual(not_executable, [])
+
+
 if __name__ == "__main__":
     unittest.main()

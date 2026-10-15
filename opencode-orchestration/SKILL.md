@@ -245,7 +245,7 @@ Each printed line is a notification:
 | `QUESTION: ...` | answer with a steer message; the agent goes on with its stated default meanwhile |
 | `EDIT: <tool> <path>` | read the diff of that file now, not at the stop file |
 | `SAYS: ...` | check the direction |
-| `SIGNAL: <match> (<tool>: <command>)`, `TOOL_ERROR:`, `RUN_ERROR:` | look at once; the command in brackets tells which run the match came from |
+| `SIGNAL: <match>; <match> xN (<tool>: <command>)`, `TOOL_ERROR:`, `RUN_ERROR:` | look at once; one line per tool call with repeated matches counted, and the command shown without its leading `cd <dir> &&`, so it tells which run the match came from; a match in a log the agent is only reading back is not a new failure |
 | `STALL:` | check the test host before calling it stuck (see [Waiting and liveness](#waiting-and-liveness)) |
 | `STOP_FILE` / `EXITED` | handle the stop file or the exit |
 

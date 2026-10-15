@@ -62,10 +62,16 @@ def describe(event, signals):
     if state.get("status") == "error":
         lines.append(f"TOOL_ERROR: {name} {one_line(state.get('error'), 300)}")
     output = str(state.get("output") or "")
-    source = one_line(data.get("command") or data.get("path") or data.get("filePath") or "", 120)
+    command = re.sub(r"^(?:\s*cd\s+\S+\s*&&\s*)+", "", data.get("command") or "")
+    source = one_line(command or data.get("path") or data.get("filePath") or "", 160)
+    counts = {}
     for pattern in signals:
         for match in pattern.finditer(output):
-            lines.append(f"SIGNAL: {one_line(match.group(0), 200)} ({name}: {source})")
+            found = one_line(match.group(0), 200)
+            counts[found] = counts.get(found, 0) + 1
+    if counts:
+        found = "; ".join(text if count == 1 else f"{text} x{count}" for text, count in counts.items())
+        lines.append(f"SIGNAL: {found} ({name}: {source})")
     return lines
 
 

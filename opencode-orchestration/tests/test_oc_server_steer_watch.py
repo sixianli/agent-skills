@@ -323,6 +323,17 @@ class WatchTests(unittest.TestCase):
         self.assertIn("RUN_ERROR: provider.no-route Model unavailable", out)
         self.assertTrue(out.rstrip().endswith("EXITED rc=1"))
 
+    def test_one_tool_call_gives_one_signal_line_with_counts_and_the_real_command(self):
+        log = "\n".join(["Error: Test timed out in 5000ms."] * 4 + ["Tests  2 failed | 9 passed"])
+        lines = [
+            tool("shell", "completed", {"command": "cd /very/long/repository/path/that/hides/the/command && ./ci-ssh.sh 'grep -c timed out run.log'"}, output=log),
+        ]
+        self.jsonl.write_text("\n".join(lines) + "\n")
+        Path(str(self.prefix) + ".rc").write_text("0\n")
+        out = self.watch("--from-start").stdout
+        signal_lines = [line for line in out.splitlines() if line.startswith("SIGNAL:")]
+        self.assertEqual(signal_lines, ["SIGNAL: 2 failed; timed out x4 (shell: ./ci-ssh.sh 'grep -c timed out run.log')"])
+
     def start_watch(self, *extra):
         return subprocess.Popen(
             ["python3", str(SCRIPTS / "oc-watch.py"), str(self.prefix), "--stop-file", str(self.stop), "--poll", "0.1", *extra],
