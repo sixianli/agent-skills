@@ -354,6 +354,25 @@ class WatchTests(unittest.TestCase):
         signal_lines = [line for line in out.splitlines() if line.startswith("SIGNAL:")]
         self.assertEqual(signal_lines, ["SIGNAL: timed out; timeout (shell: ./ci-ssh.sh 'tail run.log')"])
 
+    def test_timeout_as_a_setting_in_source_code_is_not_a_signal(self):
+        source = (
+            "await expect(button).toBeDisabled({ timeout: 20_000 });\n"
+            "+    run_script(self, *args, env=None, timeout=60):\n"
+            "  const { signal, timeout } = options;\n"
+            "  \"timeout\": 30,\n"
+            "setTimeout(done, 10); clearTimeout(timer);"
+        )
+        lines = [
+            tool("read", "completed", {"path": "/repo/test/browser.test.ts"}, output=source),
+            tool("shell", "completed", {"command": "git diff"}, output=source),
+            tool("shell", "completed", {"command": "./ci-ssh.sh 'tail run.log'"}, output="request timeout after 30s"),
+        ]
+        self.jsonl.write_text("\n".join(lines) + "\n")
+        Path(str(self.prefix) + ".rc").write_text("0\n")
+        out = self.watch("--from-start").stdout
+        signal_lines = [line for line in out.splitlines() if line.startswith("SIGNAL:")]
+        self.assertEqual(signal_lines, ["SIGNAL: timeout (shell: ./ci-ssh.sh 'tail run.log')"])
+
     def start_watch(self, *extra):
         return subprocess.Popen(
             ["python3", str(SCRIPTS / "oc-watch.py"), str(self.prefix), "--stop-file", str(self.stop), "--poll", "0.1", *extra],
