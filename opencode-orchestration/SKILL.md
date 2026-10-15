@@ -149,9 +149,20 @@ Pick a reasoning level with a variant suffix, `-m '<provider/model>#<variant>'`
 (for example `#high`), quoted so the shell leaves `#` alone. An unknown
 variant fails at once with a `provider.no-route` error "Variant unavailable",
 so a one-line test prompt confirms a variant exists before a batch uses it.
-To change the variant of a running batch, stop opencode between two tool
-calls (no test command running), then resume the same session with the new
-`-m`; the session keeps its work.
+Choose the variant per batch when its session starts, by difficulty: the
+higher level for causes that are unknown or may span layers, security,
+sandbox, storage or protocol code, unexplained or intermittent failures,
+plan-first batches, and tasks that already failed once on the lower level;
+the lower level for edits the brief spells out, verification runs and
+evidence collection, documentation, cleanup and small test fixes whose
+approach the brief gives. Do not assume a middle level exists: on
+2026-10-15 neither DeepSeek V4.1 Flash model offered `#medium` (the Go one
+had `#low`, `#high`, `#max`; the free one `#low`, `#high`). A paid model
+may also charge for the probe prompt, so probe once and record the result.
+Keep the variant for the whole session unless the project allows changing
+it; to change it anyway, stop opencode between two tool calls (no test
+command running), then resume the same session with the new `-m`; the
+session keeps its work.
 
 To stop a run, kill the `opencode run` process itself, not only the
 launcher's wrapper: the `<prefix>.pid` file holds the wrapper shell, and on
@@ -550,6 +561,12 @@ it. Do not delegate the review back to opencode or to the same model.
   Ask for that run and for both logs in the evidence directory. On
   2026-10-15 opencode called five unit failures pre-existing after their
   log had been deleted. A timeout is a defect to diagnose, not environment.
+- A base-revision comparison counts only when both sides run the same way:
+  dependencies installed from the base revision's own lockfile (compare the
+  lockfile digests), the same command and environment, and each side run
+  alone. On 2026-10-15 a base checkout borrowed `node_modules` from another
+  checkout whose lockfile differed, while the failing cases exercised one
+  of the packages that differ.
 - A test that passes alone and fails in a group is not a flake to rerun.
   Name the timing it depends on, then reproduce deterministically by
   pushing that timing past its threshold once. On 2026-10-15 a
