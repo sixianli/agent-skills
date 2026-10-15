@@ -359,7 +359,14 @@ Give the detached form exactly: `setsid -f bash <script> > <log> 2>&1 <
 until the command ends, because the shell backgrounds the whole `&&` list
 as a subshell whose own output is still the SSH channel. It was written
 that way twice by 2026-10-16; reproduced the same day, `cd <dir>;
-setsid nohup …` and `setsid -f` both returned within a second.
+setsid nohup …` and `setsid -f` both returned within a second. Make the
+wrappers refuse it before connecting rather than waiting for a third time:
+reject a remote command whose part after the last `;` contains `&&` and
+ends in a single `&`, name `setsid -f` in the refusal, and name `setsid -f`
+in the time-limit hint too. Test the refusal with a stand-in `ssh` first
+on `PATH` that only prints a marker, so the check never reaches a host
+that may be busy with a measured run; include allowed look-alikes such as
+`a && tail log`, `cmd > log 2>&1` and `cd <dir>; setsid nohup … &`.
 
 Two sessions can share one test host when each brief names its own result
 directories and scratch prefix and forbids touching the other session's
