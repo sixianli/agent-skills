@@ -325,6 +325,16 @@ batch until the evidence is fixed or the reason is written. Added on
 and rebuildable packages into evidence more than three times. Tell the
 agent about the gate and the reasons file in the brief.
 
+A remote root is not checked while a guarded test run is in progress on
+that host: when `$HOME/.agent-quiet-run` there names a live process
+(`<pid> <label>`), the gate prints `EVIDENCE_REMOTE_DEFERRED` and fails
+instead of starting `python3`. Wrappers that start whole-suite or timing
+runs and watch the host for foreign processes should write that file at
+start and remove it on exit, so that a waiter waking mid-run cannot void
+the run. Rerun `evidence-gate.sh <handoff dir> <since>` after the run ends.
+Added on 2026-10-16 after the gate's remote `python3` landed inside a
+95-minute guarded run and the run had to be thrown away.
+
 A shell call emits no JSON event until it returns, so a long remote command
 looks exactly like a hang. On 2026-10-13 a wait-and-retry loop script ran for
 over 50 minutes with no new event while working normally. Before calling a
