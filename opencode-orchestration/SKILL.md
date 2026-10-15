@@ -375,6 +375,15 @@ revise them from experience):
 - Give a time budget and require a stop file when it is exceeded.
 - Paste [templates/stop-summary.md](templates/stop-summary.md) into the
   appendix.
+- Name every cleanup target by exact path, never by kind ("superseded
+  builds under `.ci-output/`"), and require each run's logs, the red run
+  of a fix included, to be copied to the evidence directory before its
+  output directory goes; the stop file lists each deleted path as
+  "copied to <evidence path>" or "rebuildable from <commit>". On
+  2026-10-15 a cleanup message named a kind, and opencode deleted the red
+  run of a product fix, leaving only the failure counts it had written
+  down; the same day it had deleted a Layer 2 log before naming its
+  failures.
 - Forbid deleting evidence or result directories explicitly, including its
   own earlier failed results, and require a new run number for every rerun.
   On 2026-10-12 opencode deleted a failed result directory, locally and on
