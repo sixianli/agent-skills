@@ -149,6 +149,15 @@ New session (one batch = one session):
 <skill>/scripts/oc-launch.sh new <brief path> <handoff>/<date>-<task>-oc-<N> '<provider/model>#<variant>' "<task>-<batch>"
 ```
 
+The run prefix always starts with the handoff directory. The task server's
+state goes next to the prefix (`<prefix dir>/oc-server/`), so on 2026-10-16
+a prefix without a directory started a second server in the repository root,
+beside the task's real one, and left the run files there. `oc-launch.sh`
+now refuses a prefix whose directory is the current one (`run-01`,
+`./run-01`, the same directory as an absolute path, or through `..`) with
+`PREFIX_WITHOUT_DIRECTORY` before it starts anything, even when
+`OC_SERVER_DIR` points elsewhere.
+
 Pick a reasoning level with a variant suffix, `-m '<provider/model>#<variant>'`
 (for example `#high`), quoted so the shell leaves `#` alone. An unknown
 variant fails at once with a `provider.no-route` error "Variant unavailable",

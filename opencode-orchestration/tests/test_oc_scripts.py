@@ -225,6 +225,50 @@ class ModelAllowlistTests(Base):
         self.assertFalse(self.called.exists())
 
 
+class PrefixDirectoryTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.called = self.root / "called"
+
+    def launch_with(self, prefix, server_dir=None):
+        fake = self.fake(f"touch {self.called}; echo '{TEXT}'")
+        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6")
+        env.pop("OC_SERVER_DIR", None)
+        if server_dir:
+            env["OC_SERVER_DIR"] = str(server_dir)
+        return subprocess.run(
+            ["bash", str(SCRIPTS / "oc-launch.sh"), "new", str(self.brief), prefix, "provider/model"],
+            cwd=self.root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+
+    def assert_refused(self, result, prefix):
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn(f"PREFIX_WITHOUT_DIRECTORY: run prefix {prefix} ", result.stderr)
+        self.assertFalse(self.called.exists())
+        self.assertEqual(sorted(path.name for path in self.root.iterdir()), ["brief.md", "fake-opencode"])
+
+    def test_a_prefix_without_a_directory_is_refused_before_anything_starts(self):
+        for prefix in ["run-01", "./run-01", str(self.root / "run-01"), "runs/../run-01"]:
+            with self.subTest(prefix=prefix):
+                self.assert_refused(self.launch_with(prefix), prefix)
+
+    def test_a_server_directory_from_the_environment_does_not_make_it_acceptable(self):
+        self.server_dir = self.root / "elsewhere" / "oc-server"
+        self.assert_refused(self.launch_with("run-01", server_dir=self.server_dir), "run-01")
+
+    def test_a_prefix_inside_a_task_directory_still_starts(self):
+        self.server_dir = self.root / "runs" / "oc-server"
+        result = self.launch_with("runs/run-01")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.called.exists())
+        self.assertTrue((self.server_dir / "pid").exists())
+
+
 class WaitTests(Base):
     def start(self, body):
         result = self.launch(self.fake(body))

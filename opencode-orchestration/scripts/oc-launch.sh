@@ -7,7 +7,9 @@ usage:
   oc-launch.sh new <brief> <run prefix> <provider/model> [title]
   oc-launch.sh resume <session id> <reply> <next stop file> <run prefix> <provider/model>
 Starts opencode detached (it outlives the calling shell), writes <prefix>.jsonl,
-.err, .pid and, when it ends, .rc. Waits up to OC_STARTUP_SECONDS (default 180)
+.err, .pid and, when it ends, .rc. The prefix must name a directory other than
+the current one (for example .ci-output/handoff/run-01); otherwise nothing
+starts and the exit code is 2. Waits up to OC_STARTUP_SECONDS (default 180)
 for the first event and prints its session id. The run connects to the task's
 own server (oc-server.sh, state in OC_SERVER_DIR, default <prefix dir>/oc-server),
 started here when it is not running, so oc-steer.sh can reach the session.
@@ -46,6 +48,11 @@ case "$mode" in
     usage
     ;;
 esac
+
+if python3 -c 'import os, sys; sys.exit(os.path.realpath(os.path.dirname(sys.argv[1]) or ".") != os.path.realpath("."))' "$prefix"; then
+  echo "PREFIX_WITHOUT_DIRECTORY: run prefix $prefix puts its run files and the task's server state (oc-server) in the current directory; name a task directory, for example .ci-output/handoff/run-01" >&2
+  exit 2
+fi
 
 allowed_list=${OC_ALLOWED_MODELS:-}
 if [ -n "$allowed_list" ] && [ ! -f "$allowed_list" ]; then
