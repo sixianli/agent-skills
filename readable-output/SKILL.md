@@ -77,3 +77,20 @@ Drawing rules:
 3. Publish it with the Artifact tool. In the response, give the returned URL as a Markdown link with one sentence on what the page shows, for example `[登录流程排查](https://claude.ai/...)：每一步请求和失败点`. The response still states the conclusion in text.
 4. The page is disposable. Do not commit it to a repository unless the user asks. To update it, edit the same file and publish again; the URL stays the same.
 5. When no Artifact tool is available, for example in Codex, write the file, give its absolute path, and say that no link could be made.
+
+## 5. Check that replies are in Chinese
+
+When the user requires every reply in Chinese, a written rule is not enough: replies drift into English after long stretches of English tool work, briefs, or documents. `scripts/check_chinese_reply.py` finds English prose in replies and runs as Claude Code hooks:
+
+| Hook event | Command | Effect |
+| --- | --- | --- |
+| `MessageDisplay` | `record` | Keeps the text shown to the user in `~/.claude/reply-language/<session>.txt` until the next check. |
+| `PostToolBatch` | `batch` | Checks the kept text after each batch of tool calls. English adds a request to restate it in Chinese before the next model call, and a notice for the user. |
+| `Stop` | `stop` | Checks the kept text and the final message. English blocks the stop until Claude restates it in Chinese. |
+| `PreToolUse`, matcher `AskUserQuestion` | `ask` | Denies a question whose text or options are in English, before the user sees it. |
+
+Each entry in `~/.claude/settings.json` is `{"type": "command", "command": "python3 /absolute/path/to/skills/readable-output/scripts/check_chinese_reply.py <command>"}`. Hooks that run inside a subagent are skipped, because the user does not see a subagent's text.
+
+The hooks cannot take back text already shown. They make every slip visible at once and get it restated.
+
+A line counts as English when a stretch of it without Chinese characters has at least four words, two of them common English function words such as `the` or `to`, or is a sentence of at least three words with one such word. Code blocks, inline code, `>` quote lines, quoted text, Markdown links, and anything containing `/` are skipped. So put commands and identifiers in backticks, and put English that must be quoted in a code block or a `>` line. To check a draft or a document, run `python3 <skill-dir>/scripts/check_chinese_reply.py check <file>`, or pass `-` for standard input.
