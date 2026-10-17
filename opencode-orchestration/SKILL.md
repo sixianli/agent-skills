@@ -308,8 +308,11 @@ only luck kept the agent from killing the run first.
 
 Silence is not progress. On every wake, and at least every 20 minutes:
 
-- the process has exited → read the last events of the JSONL; an event with
-  `"type":"error"` ends the run whatever the exit code says;
+- the process has exited → read the last events of the JSONL; when the last
+  events are an `"type":"error"` event, the run failed whatever the exit
+  code says, but an error event followed by more steps was retried and did
+  not end the run (see [Known pitfalls](#known-pitfalls)), so judge it by the
+  stop file;
 - the stop file exists → handle it;
 - the JSONL has not grown for 20 minutes while the process lives → read the
   last events, check whether a test command is legitimately running on the
@@ -713,5 +716,12 @@ instructions reserve for the user. Production steps are never delegated.
   with or without `--standalone`. Close it (`< /dev/null`) on every manual
   run. `oc-launch.sh` runs opencode in the background, which gives it an
   empty input; a test keeps it that way.
+- 2026-10-17, opencode 2.0.32: in the middle of a review run a
+  `provider.transport` error event ("Connection lost while reading the
+  response: ECONNRESET") did not end the run. opencode retried the step,
+  went on for 24 more events, and wrote a complete stop file, yet the
+  process still exited with code 1. Neither the error event nor the exit
+  code alone decides whether a run failed; read what follows the error and
+  the stop file.
 - Observed cost, for planning: a 14-minute batch with about 40 tool calls on
   `deepseek-v4.1-flash` cost about USD 0.10, mostly cached input.
