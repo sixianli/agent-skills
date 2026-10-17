@@ -23,7 +23,15 @@ clear; the round trip costs more than it finds.
 
 1. Write Claude's own proposal to a file first, before reading anything
    opencode writes. Reading the other model's answer first anchors the
-   comparison, and the point is two independent attempts.
+   comparison, and the point is two independent attempts. Keep that file
+   where opencode cannot read it (Claude's scratchpad, not the handoff
+   directory or the repository) until its stop file arrives, then copy it
+   to the handoff directory for the record. Tests or code Claude writes
+   in the shared working tree while the consult runs are visible too, so
+   start the consult first, and say in the comparison what the agent
+   could have seen. On 2026-10-17 a proposal left in the handoff
+   directory was read by the consulted session, whose stop file said so,
+   and the agreement between the two no longer counted as independent.
 2. Start a new session with the project's model rules and the higher
    reasoning variant. The brief gives the problem, the observed evidence
    with paths, the constraints and invariants that must hold, the files
