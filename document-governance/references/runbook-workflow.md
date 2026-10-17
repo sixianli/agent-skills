@@ -130,13 +130,38 @@ must use this exact algorithm and a shared fixed test vector:
    or untracked and not ignored) or when it is a directory above such a file.
    Ignored files, ignored directories, and empty directories are skipped, so a
    work tree with local leftovers hashes exactly like a copy of the listed
-   files. Outside a Git work tree every safe descendant counts. A clean
-   checkout selects the same records under both rules, so the fixed test
-   vector and seals made from clean checkouts stay valid under version 1.
-   Git location variables inherited from a hook, such as `GIT_DIR`, are not
-   used; the project root alone decides which repository applies. In a Git
-   work tree, a selector that Git ignores, or a directory without any listed
-   file, is rejected, because a clean checkout cannot reproduce it.
+   files. Local ignore rules (`.git/info/exclude`, `core.excludesFile`) count
+   too; they decide only about untracked files, which exist in that one work
+   tree alone. Outside a Git work tree every safe descendant counts. A project
+   root that the enclosing repository ignores, such as a copy made below an
+   ignored output directory, holds nothing that repository tracks, so it is
+   treated as outside Git, also when only a local rule
+   (`.git/info/exclude`, `core.excludesFile`) ignores it; once the repository
+   tracks files below it, the Git rule applies again. A clean checkout selects the same records under both
+   rules, so the fixed test vector and seals made from clean checkouts stay
+   valid under version 1.
+   Variables inherited from a hook or a parent Git command that change where
+   Git looks, which configuration applies, or how paths match in this one
+   call are not used: `GIT_DIR` and the other location variables,
+   `GIT_CEILING_DIRECTORIES`, `GIT_CONFIG_PARAMETERS`, `GIT_CONFIG_COUNT` with
+   its `GIT_CONFIG_KEY_<n>` and `GIT_CONFIG_VALUE_<n>`, and
+   `GIT_GLOB_PATHSPECS`, `GIT_ICASE_PATHSPECS`, `GIT_LITERAL_PATHSPECS`, and
+   `GIT_NOGLOB_PATHSPECS`. The project root alone decides which repository
+   applies. In a Git work tree the contract is rejected when a clean checkout
+   could not reproduce it or the digest would silently miss files:
+   - a selector is ignored by Git, or a selected directory holds no listed
+     file in the work tree;
+   - Git lists one entry where the work tree holds a directory: a submodule
+     or nested repository below a selector, whose files Git does not list, or
+     a tracked file replaced by a directory;
+   - Git lists a path that exists on disk only under another spelling, because
+     letter case or Unicode normalization differs between the disk and the
+     index.
+   When the project root or one of its parent directories holds a `.git`
+   entry but Git is missing or cannot inspect the repository, the contract
+   fails instead of falling back to the rule for directories outside Git.
+   This includes an empty or stale `.git` entry that Git itself ignores; the
+   error names the entry so it can be repaired or removed.
 
 Selectors must be repository-relative POSIX paths. Reject absolute paths,
 Windows drive syntax, backslashes, `..`, missing paths, the repository root,

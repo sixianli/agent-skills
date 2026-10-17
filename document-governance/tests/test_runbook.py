@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -474,20 +475,32 @@ class GitWorkTreeContractTests(RunbookFixture, unittest.TestCase):
                 self.assertNotEqual(self.fingerprint(runbook=runbook), before)
 
     def test_selectors_hidden_by_git_ignore_rules_are_rejected(self) -> None:
-        project = self.root / "scratch/project"
-        (project / "docs/runbooks").mkdir(parents=True)
-        (project / "src").mkdir()
-        (project / "src/app.py").write_text("APP = 1\n", encoding="utf-8")
-        (self.root / "src/debug.log").write_text("local log\n", encoding="utf-8")
-        original_root = self.root
-        cases = ((project, ["src"]), (original_root, ["src/debug.log"]))
-        for root, contract in cases:
-            with self.subTest(root=root.name, contract=contract):
-                self.root = root
+        self.add_ignored_local_files(self.root)
+        for contract in (["src/debug.log"], ["src/generated"]):
+            with self.subTest(contract=contract):
                 runbook = self.write_runbook(contract=contract)
-                self.root = original_root
                 with self.assertRaisesRegex(RunbookContractError, "ignored by Git"):
-                    self.fingerprint(root, runbook)
+                    self.fingerprint(runbook=runbook)
+
+    def test_project_copies_in_ignored_directories_use_the_disk_rule(self) -> None:
+        expected = (FIXTURE / "expected.sha256").read_text(encoding="utf-8").strip()
+        (self.root / ".git/info/exclude").write_text("local-only/\n", encoding="utf-8")
+        for ignored_by, parent in ((".gitignore", "scratch"), (".git/info/exclude", "local-only")):
+            with self.subTest(ignored_by=ignored_by):
+                copy = self.root / parent / "vector"
+                shutil.copytree(FIXTURE / "project", copy)
+                runbook = copy / "docs/runbooks/vector-runbook.md"
+                leftover = copy / "contract/debug.log"
+
+                self.assertEqual(self.fingerprint(copy, runbook), expected)
+                leftover.write_text("local log\n", encoding="utf-8")
+                self.assertNotEqual(self.fingerprint(copy, runbook), expected)
+
+                leftover.unlink()
+                self.git("add", "--force", f"{parent}/vector")
+                self.git("commit", "-q", "-m", f"tracked below {ignored_by}")
+                leftover.write_text("local log\n", encoding="utf-8")
+                self.assertEqual(self.fingerprint(copy, runbook), expected)
 
     def test_project_root_below_the_work_tree_top_level(self) -> None:
         site = self.root / "site"
@@ -518,6 +531,199 @@ class GitWorkTreeContractTests(RunbookFixture, unittest.TestCase):
         self.add_ignored_local_files(self.root)
 
         self.assertEqual(self.fingerprint(), self.baseline)
+
+    def file_system_matches(self, created: str, looked_up: str) -> bool:
+        probe = self.sandbox / created
+        probe.write_text("", encoding="utf-8")
+        try:
+            return os.path.lexists(self.sandbox / looked_up)
+        finally:
+            probe.unlink()
+
+    def test_fixed_version_one_vector_in_a_work_tree_with_leftovers(self) -> None:
+        vector = self.sandbox / "vector"
+        shutil.copytree(FIXTURE / "project", vector)
+        self.git("init", "-q", cwd=vector)
+        self.git("add", "--all", cwd=vector)
+        self.git("commit", "-q", "-m", "vector", cwd=vector)
+        (vector / ".git/info/exclude").write_text("*.log\n", encoding="utf-8")
+        (vector / "contract/debug.log").write_text("local log\n", encoding="utf-8")
+        (vector / "contract/nested/.claude/.cc-writes").mkdir(parents=True)
+        expected = (FIXTURE / "expected.sha256").read_text(encoding="utf-8").strip()
+
+        self.assertEqual(
+            self.fingerprint(vector, vector / "docs/runbooks/vector-runbook.md"),
+            expected,
+        )
+
+    def test_nested_repositories_and_submodules_are_rejected(self) -> None:
+        nested = self.root / "src/nested-repo"
+        nested.mkdir()
+        (nested / "inner.py").write_text("INNER = 1\n", encoding="utf-8")
+        self.git("init", "-q", cwd=nested)
+        self.git("add", "--all", cwd=nested)
+        self.git("commit", "-q", "-m", "inner", cwd=nested)
+        message = "Git lists src/nested-repo as one entry, but the work tree holds a directory"
+        with self.subTest(case="untracked nested repository"), self.assertRaisesRegex(
+            RunbookContractError, message
+        ):
+            self.fingerprint()
+
+        self.git("add", "src/nested-repo")
+        self.git("commit", "-q", "-m", "gitlink")
+        with self.subTest(case="submodule entry"), self.assertRaisesRegex(
+            RunbookContractError, message
+        ):
+            self.fingerprint()
+
+    def test_tracked_files_replaced_by_directories_are_rejected(self) -> None:
+        replaced = self.root / "src/app.py"
+        replaced.unlink()
+        replaced.mkdir()
+        (replaced / "inner.py").write_text("INNER = 1\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            RunbookContractError,
+            "Git lists src/app.py as one entry, but the work tree holds a directory",
+        ):
+            self.fingerprint()
+
+    def test_names_that_differ_from_git_fail_instead_of_being_skipped(self) -> None:
+        cases = (
+            ("letter case", "CaseProbe", "caseprobe", "Mixed.py", "mixed.py", "Mixed.py"),
+            (
+                "Unicode normalization",
+                "e\u0301-probe",
+                "\u00e9-probe",
+                "cafe\u0301.py",
+                None,
+                "caf\u00e9.py",
+            ),
+        )
+        for label, created, looked_up, written, renamed_to, listed_name in cases:
+            with self.subTest(case=label):
+                if not self.file_system_matches(created, looked_up):
+                    self.skipTest(f"the file system tells names apart by {label}")
+                source = self.root / "src" / written
+                source.write_text("NAMED = 1\n", encoding="utf-8")
+                try:
+                    self.git("add", "--all")
+                    self.git("commit", "-q", "-m", label)
+                    if renamed_to is not None:
+                        os.rename(source, self.root / "src" / renamed_to)
+                    listed = self.git("ls-files", "-z", "src").split("\0")
+                    if f"src/{listed_name}" not in listed:
+                        self.skipTest(f"Git stores the {label} of the name as written on disk")
+
+                    with self.assertRaisesRegex(
+                        RunbookContractError, f"src/{listed_name}, .*different name"
+                    ):
+                        self.fingerprint()
+                finally:
+                    for name in {written, renamed_to} - {None}:
+                        if os.path.lexists(self.root / "src" / name):
+                            (self.root / "src" / name).unlink()
+                    self.git("add", "--all")
+                    self.git("commit", "-q", "--allow-empty", "-m", f"remove {label}")
+
+    def test_tracked_files_under_excluded_names_stay_out_without_errors(self) -> None:
+        (self.root / "src/build").mkdir()
+        (self.root / "src/build/out.py").write_text("OUT = 1\n", encoding="utf-8")
+        (self.root / "src/.DS_Store").write_bytes(b"\0")
+        self.git("add", "--all")
+        self.git("commit", "-q", "-m", "excluded names")
+
+        self.assertEqual(self.fingerprint(), self.baseline)
+
+    def test_inherited_discovery_config_and_pathspec_variables_are_ignored(self) -> None:
+        site = self.root / "site"
+        (site / "docs/runbooks").mkdir(parents=True)
+        (site / "src").mkdir()
+        (site / "src/app.py").write_text("SITE = 1\n", encoding="utf-8")
+        original_root = self.root
+        self.root = site
+        runbook = self.write_runbook(contract=["src"])
+        self.root = original_root
+        self.git("add", "--all")
+        self.git("commit", "-q", "-m", "site")
+        self.add_ignored_local_files(site)
+        (site / "src/new.py").write_text("NEW = 1\n", encoding="utf-8")
+        excludes = self.sandbox / "excludes"
+        excludes.write_text("new.py\n", encoding="utf-8")
+        expected = self.fingerprint(site, runbook)
+        cases = {
+            "ceiling": {"GIT_CEILING_DIRECTORIES": str(self.root)},
+            "parameters": {"GIT_CONFIG_PARAMETERS": f"'core.excludesFile={excludes}'"},
+            "count": {
+                "GIT_CONFIG_COUNT": "1",
+                "GIT_CONFIG_KEY_0": "core.excludesFile",
+                "GIT_CONFIG_VALUE_0": str(excludes),
+            },
+            "glob pathspecs": {"GIT_GLOB_PATHSPECS": "1"},
+            "case-insensitive pathspecs": {"GIT_ICASE_PATHSPECS": "1"},
+            "literal pathspecs": {"GIT_LITERAL_PATHSPECS": "1"},
+            "no-glob pathspecs": {"GIT_NOGLOB_PATHSPECS": "1"},
+        }
+        for label, variables in cases.items():
+            with self.subTest(case=label), mock.patch.dict(os.environ, variables):
+                self.assertEqual(self.fingerprint(site, runbook), expected)
+
+    def test_git_failures_inside_a_repository_are_errors(self) -> None:
+        self.add_ignored_local_files(self.root)
+        empty_path = self.sandbox / "no-git"
+        empty_path.mkdir()
+        with self.subTest(case="git missing"), mock.patch.dict(
+            os.environ, {"PATH": str(empty_path)}
+        ), self.assertRaisesRegex(
+            RunbookContractError, re.escape(f"{self.root / '.git'} exists, but Git is not available")
+        ):
+            self.fingerprint()
+
+        stray = self.sandbox / "stray"
+        (stray / ".git").mkdir(parents=True)
+        inside = self.root / ".git/project"
+        expectations = (
+            (stray / "project", re.escape(f"{stray / '.git'} exists, but Git could not inspect")),
+            (inside, "Git reports that the project root is not in a work tree"),
+        )
+        for project, message in expectations:
+            shutil.copytree(self.root / "src", project / "src")
+            shutil.copytree(self.root / "docs", project / "docs")
+            with self.subTest(root=project.relative_to(self.sandbox).as_posix()), self.assertRaisesRegex(
+                RunbookContractError, message
+            ):
+                self.fingerprint(project, project / "docs/runbooks/test-runbook.md")
+
+        config = self.root / ".git/config"
+        config.write_text(
+            config.read_text(encoding="utf-8").replace(
+                "repositoryformatversion = 0", "repositoryformatversion = 99"
+            ),
+            encoding="utf-8",
+        )
+        with self.subTest(case="repository refused"), self.assertRaisesRegex(
+            RunbookContractError, re.escape(f"{self.root / '.git'} exists, but Git could not inspect")
+        ):
+            self.fingerprint()
+
+    def test_missing_git_outside_a_repository_keeps_the_disk_rule(self) -> None:
+        plain = self.sandbox / "plain"
+        shutil.copytree(self.root / "src", plain / "src")
+        shutil.copytree(self.root / "docs", plain / "docs")
+        runbook = plain / "docs/runbooks/test-runbook.md"
+        expected = self.fingerprint(plain, runbook)
+        empty_path = self.sandbox / "no-git"
+        empty_path.mkdir()
+
+        with mock.patch.dict(os.environ, {"PATH": str(empty_path)}):
+            self.assertEqual(self.fingerprint(plain, runbook), expected)
+
+    def test_deleted_tracked_files_name_the_work_tree(self) -> None:
+        (self.root / "src/app.py").unlink()
+        (self.root / "src/nested/module.py").unlink()
+
+        with self.assertRaisesRegex(RunbookContractError, "in the work tree: src"):
+            self.fingerprint()
 
 
 if __name__ == "__main__":

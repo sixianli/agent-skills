@@ -85,11 +85,20 @@ SECRET_EXACT_NAMES = {"id_dsa", "id_ed25519", "id_ecdsa", "id_rsa"}
 ALLOWED_ENV_SUFFIXES = (".example", ".sample", ".template")
 GIT_LOCATION_VARIABLES = {
     "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_CEILING_DIRECTORIES",
     "GIT_COMMON_DIR",
     "GIT_DIR",
     "GIT_INDEX_FILE",
     "GIT_OBJECT_DIRECTORY",
     "GIT_WORK_TREE",
+}
+GIT_ONE_OFF_CONFIG_VARIABLES = {"GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS"}
+GIT_ONE_OFF_CONFIG_PREFIXES = ("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")
+GIT_PATHSPEC_VARIABLES = {
+    "GIT_GLOB_PATHSPECS",
+    "GIT_ICASE_PATHSPECS",
+    "GIT_LITERAL_PATHSPECS",
+    "GIT_NOGLOB_PATHSPECS",
 }
 
 FindingKind = Literal["migration", "error"]
@@ -459,47 +468,124 @@ def _record_for_path(root: Path, path: Path, logical: Path) -> ContractRecord:
     )
 
 
-def _git_visible_paths(
-    root: Path, selectors: list[str]
-) -> frozenset[str] | None:
+def _git_environment() -> dict[str, str]:
     environment = {
         name: value
         for name, value in os.environ.items()
         if name not in GIT_LOCATION_VARIABLES
+        and name not in GIT_ONE_OFF_CONFIG_VARIABLES
+        and name not in GIT_PATHSPEC_VARIABLES
+        and not name.startswith(GIT_ONE_OFF_CONFIG_PREFIXES)
     }
     environment["GIT_OPTIONAL_LOCKS"] = "0"
-    git = ["git", "--literal-pathspecs", "-C", str(root)]
+    return environment
+
+
+def _nearest_git_entry(root: Path) -> Path | None:
+    for directory in (root, *root.parents):
+        if os.path.lexists(directory / ".git"):
+            return directory / ".git"
+    return None
+
+
+def _first_error_line(completed: subprocess.CompletedProcess[bytes]) -> str:
+    lines = completed.stderr.decode("utf-8", "replace").strip().splitlines()
+    return lines[0] if lines else f"exit status {completed.returncode}"
+
+
+def _git_visible_paths(
+    root: Path, selectors: list[str]
+) -> tuple[frozenset[str], frozenset[str]] | None:
+    environment = _git_environment()
+    git = ["git", "-C", str(root)]
+    git_entry = _nearest_git_entry(root)
     try:
         probe = subprocess.run(
-            [*git, "rev-parse", "--is-inside-work-tree"],
+            [*git, "rev-parse", "--is-inside-work-tree", "--show-prefix"],
             capture_output=True,
             check=False,
             env=environment,
         )
-    except FileNotFoundError:
-        return None
-    if probe.returncode != 0 or probe.stdout.strip() != b"true":
-        return None
+    except FileNotFoundError as exc:
+        if git_entry is None:
+            return None
+        raise RunbookContractError(
+            f"{git_entry} exists, but Git is not available to list the work tree's files"
+        ) from exc
+    answer = probe.stdout.splitlines()
+    if probe.returncode != 0 or not answer or answer[0] != b"true":
+        if git_entry is None:
+            return None
+        if probe.returncode == 0:
+            raise RunbookContractError(
+                f"{git_entry} exists, but Git reports that the project root is not in a "
+                "work tree, for example because it lies inside a .git directory"
+            )
+        raise RunbookContractError(
+            f"{git_entry} exists, but Git could not inspect the repository: "
+            f"{_first_error_line(probe)}; repair the repository or remove a stray .git entry"
+        )
+    if len(answer) > 1 and answer[1]:
+        ignored = subprocess.run(
+            [*git, "check-ignore", "-q", "."],
+            capture_output=True,
+            check=False,
+            env=environment,
+        )
+        if ignored.returncode == 0:
+            return None
+        if ignored.returncode != 1:
+            raise RunbookContractError(
+                "Git could not tell whether the project root is ignored: "
+                + _first_error_line(ignored)
+            )
     listing = subprocess.run(
-        [*git, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *selectors],
+        [
+            *git,
+            "--literal-pathspecs",
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "--",
+            *selectors,
+        ],
         capture_output=True,
         check=False,
         env=environment,
     )
     if listing.returncode != 0:
         raise RunbookContractError(
-            "Git could not list the tracked and non-ignored contract files"
+            "Git could not list the tracked and non-ignored contract files: "
+            + _first_error_line(listing)
         )
     visible: set[str] = set()
+    entries: set[str] = set()
     for raw in listing.stdout.split(b"\0"):
         if not raw:
             continue
         relative = Path(os.fsdecode(raw))
         if not os.path.lexists(root / relative):
             continue
+        if stat.S_ISDIR((root / relative).lstat().st_mode):
+            raise RunbookContractError(
+                f"Git lists {relative.as_posix()} as one entry, but the work tree holds a "
+                "directory there: a submodule, a nested Git repository, or a tracked file "
+                "replaced by a directory; select paths outside it or restore the file"
+            )
+        entries.add(relative.as_posix())
         visible.add(relative.as_posix())
         visible.update(parent.as_posix() for parent in relative.parents if parent.parts)
-    return frozenset(visible)
+    return frozenset(visible), frozenset(entries)
+
+
+def _skipped_by_name(relative: str) -> bool:
+    return any(
+        part.lower() in EXCLUDED_DIRECTORY_NAMES
+        or part.lower() in EXCLUDED_CACHE_FILE_NAMES
+        for part in relative.split("/")
+    )
 
 
 def _reject_hidden_secrets(path: Path, logical: Path) -> None:
@@ -617,17 +703,27 @@ def compute_contract_fingerprint(
         (value, *_validate_selector(root, value))
         for value in sorted(contract_paths, key=lambda item: item.encode("utf-8"))
     ]
-    visible = _git_visible_paths(
+    listing = _git_visible_paths(
         root, [logical.as_posix() for _, _, logical in selectors]
     )
+    visible = listing[0] if listing is not None else None
     record_map: dict[tuple[str, str], ContractRecord] = {}
     for value, lexical, logical in selectors:
         if visible is not None and logical.as_posix() not in visible:
             raise RunbookContractError(
-                f"contract path is ignored by Git or holds no tracked or non-ignored file: {value}"
+                "contract path is ignored by Git or holds no tracked or non-ignored file "
+                f"in the work tree: {value}"
             )
         for record in _walk_contract_path(root, lexical, logical, visible):
             record_map[(record.path, record.object_type)] = record
+    if listing is not None:
+        recorded = {path for path, _ in record_map}
+        for entry in sorted(listing[1], key=lambda item: item.encode("utf-8")):
+            if entry not in recorded and not _skipped_by_name(entry):
+                raise RunbookContractError(
+                    f"Git lists {entry}, but the file system shows it under a different name "
+                    "(letter case or Unicode normalization); rename it on disk to match Git"
+                )
     records = tuple(
         record_map[key]
         for key in sorted(
