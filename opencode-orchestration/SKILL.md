@@ -190,6 +190,30 @@ within the same batch, with a new run prefix:
 <skill>/scripts/oc-launch.sh resume <sessionID> <reply path> <next stop file> <new run prefix> '<provider/model>#<variant>'
 ```
 
+A run is finished only when its stop file is. On 2026-10-18 the third
+opencode run in a week ended its turn while its test job on the host was
+still going, saying it would continue later, so nothing was left to wake it
+and the batch sat idle until Claude noticed. The launcher now enforces this:
+
+- A new session needs a brief that names exactly one stop file not yet
+  written, a path ending in `stop.md` or `stop-<N>.md`.
+  [scripts/stop-file.py](scripts/stop-file.py) `pick` finds it; none, two,
+  or one that already exists ends the launch with `STOP_FILE_UNCLEAR`
+  (exit 2). A resume whose stop file already exists ends with
+  `STOP_FILE_EXISTS`.
+- [scripts/oc-run.sh](scripts/oc-run.sh) runs opencode. When it exits with
+  code 0 and the stop file is missing, empty, or still holds a placeholder
+  (`待填写`, `待补充`, `TBD`, or a section left as `本节…填写`), it resumes the
+  same session with a message telling the agent to wait for its job and
+  write the stop file, and logs `AUTO_RESUME <n>` in `<prefix>.err`. It
+  tries `OC_AUTO_RESUMES` times (default 2); then it writes
+  `<prefix>.unfinished`, and `oc-watch.py` reports the exit as
+  `EXITED ... UNFINISHED`.
+
+On `UNFINISHED`, read the last events and the host's job state before
+resuming by hand: the agent stopped twice more without finishing, so the
+brief or the wait it is using is the likelier fault.
+
 A manual `opencode run` needs `--server "$(cat <handoff>/oc-server/url)"`,
 `OPENCODE_PASSWORD` read from `<handoff>/oc-server/password`, and closed
 standard input (`< /dev/null`).
@@ -260,7 +284,7 @@ Each printed line is a notification:
 | `SAYS: ...` | check the direction |
 | `SIGNAL: <match>; <match> xN (<tool>: <command>)`, `TOOL_ERROR:`, `RUN_ERROR:` | look at once; one line per tool call with repeated matches counted, and the command shown without its leading `cd <dir> &&`, so it tells which run the match came from; a match in a log the agent is only reading back is not a new failure |
 | `STALL:` | check the test host before calling it stuck (see [Waiting and liveness](#waiting-and-liveness)) |
-| `STOP_FILE` / `EXITED` | handle the stop file or the exit |
+| `STOP_FILE` / `EXITED` | handle the stop file or the exit; `EXITED ... UNFINISHED` means the automatic resumes ran out without a finished stop file |
 
 A tool call emits its event only when it returns, so the start of a long
 command is invisible; the `CHECKPOINT:` line the brief demands before every
@@ -422,6 +446,9 @@ revise them from experience):
 - Say what not to do, especially relaxing checks, changing expected values,
   editing unrelated files, and touching production.
 - Give a time budget and require a stop file when it is exceeded.
+- Name the batch's one stop file by its full path, and no other path ending
+  in `stop.md`: the launcher refuses a brief that names none or several
+  (see [Launching and resuming](#launching-and-resuming)).
 - Paste [templates/stop-summary.md](templates/stop-summary.md) into the
   appendix.
 - Name every cleanup target by exact path, never by kind ("superseded

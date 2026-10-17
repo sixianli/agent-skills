@@ -146,7 +146,8 @@ def main():
                 print(f"STOP_FILE {path}", flush=True)
                 return 0
         if rc_file.exists():
-            print(f"EXITED rc={rc_file.read_text().strip()}", flush=True)
+            unfinished = " UNFINISHED" if Path(f"{args.prefix}.unfinished").exists() else ""
+            print(f"EXITED rc={rc_file.read_text().strip()}{unfinished}", flush=True)
             return 0
         if not stalled and time.time() - last_event >= args.quiet_seconds:
             print(f"STALL: no event for {int(time.time() - last_event)}s", flush=True)

@@ -17,14 +17,14 @@ class GrokLaunchTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.prefix = self.root / "runs" / "run-01"
         self.brief = self.root / "brief.md"
-        self.brief.write_text("# brief\n")
+        self.brief.write_text(f"# brief\n\nStop file: {self.root / 'run-stop.md'}\n")
         self.reply = self.root / "reply.md"
         self.reply.write_text("# reply\n")
         self.args_file = self.root / "args.txt"
         fake = self.root / "fake-opencode"
         fake.write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" > {self.args_file}\necho \'{TEXT}\'\n')
         fake.chmod(0o755)
-        self.env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6")
+        self.env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_AUTO_RESUMES="0")
 
     def tearDown(self):
         pid_file = Path(str(self.prefix) + ".pid")

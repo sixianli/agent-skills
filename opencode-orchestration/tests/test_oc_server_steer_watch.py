@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
+os.environ["OC_AUTO_RESUMES"] = "0"
 SESSION = "ses_fixture0001"
 
 
@@ -168,7 +169,7 @@ class ServerTests(Base):
 class LaunchThroughServerTests(Base):
     def test_new_run_connects_to_the_task_server_instead_of_a_private_one(self):
         brief = self.root / "brief.md"
-        brief.write_text("# brief\n")
+        brief.write_text(f"# brief\n\n停止文件：`{self.root / 'handoff' / 'stop-01.md'}`\n")
         result = self.run_script("oc-launch.sh", "new", str(brief), str(self.prefix), "provider/model")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(f"session={SESSION}", result.stdout)
@@ -417,6 +418,14 @@ class WatchTests(unittest.TestCase):
         out, _ = proc.communicate(timeout=10)
         self.assertEqual(out.count("STALL"), 1)
         self.assertIn("EXITED rc=0", out)
+        self.assertNotIn("UNFINISHED", out)
+
+    def test_an_exit_without_a_finished_stop_file_is_reported_as_unfinished(self):
+        self.jsonl.write_text(text("waiting for the host run") + "\n")
+        Path(str(self.prefix) + ".unfinished").write_text("stop file missing after 2 automatic resumes\n")
+        Path(str(self.prefix) + ".rc").write_text("0\n")
+        out = self.watch("--from-start").stdout
+        self.assertTrue(out.rstrip().endswith("EXITED rc=0 UNFINISHED"), out)
 
     def test_first_line_names_the_watched_file(self):
         self.jsonl.write_text(text("CHECKPOINT: old") + "\n")

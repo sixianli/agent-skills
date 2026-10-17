@@ -22,6 +22,16 @@ bash deny pattern of the form *text* (no spaces or other wildcards) that the
 brief or reply contains must also appear on a line starting with
 本地禁止规则：, which tells the agent to read those files with its read tools;
 otherwise nothing starts and the exit code is 2 (BRIEF_NAMES_DENIED_TEXT).
+The run's stop file is the resume argument, or for a new run the one path in
+the brief ending in stop.md or stop-N.md that does not exist yet (paths that
+exist are references to earlier runs); a brief naming none or several unwritten
+ones is refused with STOP_FILE_UNCLEAR, and a resume naming an existing stop
+file with STOP_FILE_EXISTS (exit code 2, nothing starts). When opencode exits
+with code 0 while the stop file is missing, empty or still holds a placeholder
+(for example 本节…填写 or 待填写), the same session is resumed with a message
+saying an ended turn does not wait for background work, up to OC_AUTO_RESUMES
+times (default 2); each resume adds an AUTO_RESUME line to <prefix>.err, and a
+run still unfinished after the last one leaves <prefix>.unfinished.
 EOF
   exit 2
 }
@@ -75,6 +85,12 @@ fi
 if [ -f .opencode/opencode.json ]; then
   python3 "$script_dir/brief-denied-text.py" .opencode/opencode.json "$document" || exit 2
 fi
+if [ "$mode" = new ]; then
+  stop=$(python3 "$script_dir/stop-file.py" pick "$brief") || exit 2
+elif [ -e "$stop" ]; then
+  echo "STOP_FILE_EXISTS: $stop already exists; name a new stop file for this run" >&2
+  exit 2
+fi
 if [ "$mode" = new ] && [ -d .agents/tasks ] && [ -f "$longtask" ]; then
   python3 "$longtask" check-brief "$brief" || { echo "check-brief refused the brief" >&2; exit 2; }
 fi
@@ -92,11 +108,7 @@ server_url=$(cat "$server_dir/url")
 OPENCODE_PASSWORD=$(cat "$server_dir/password")
 export OPENCODE_PASSWORD
 
-nohup sh -c '
-  prefix=$1; shift
-  "$@" > "$prefix.jsonl" 2> "$prefix.err"
-  echo $? > "$prefix.rc"
-' oc-launch "$prefix" "$opencode_bin" "$1" --server "$server_url" "${@:2}" > /dev/null 2>&1 &
+nohup bash "$script_dir/oc-run.sh" "$prefix" "$stop" "$model" "$server_url" "${OC_AUTO_RESUMES:-2}" "$opencode_bin" "$1" --server "$server_url" "${@:2}" > /dev/null 2>&1 &
 echo $! > "$prefix.pid"
 pid=$(cat "$prefix.pid")
 

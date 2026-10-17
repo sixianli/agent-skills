@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
+os.environ["OC_AUTO_RESUMES"] = "0"
 SESSION = "ses_fixture0001"
 
 
@@ -50,7 +51,8 @@ class Base(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.prefix = self.root / "runs" / "run-01"
         self.brief = self.root / "brief.md"
-        self.brief.write_text("# brief\n")
+        self.stop = self.root / "runs" / "run-01-stop.md"
+        self.brief.write_text(f"# brief\n\n写停止文件 `{self.stop}`。\n")
         self.server_dir = self.root / "oc-server"
 
     def tearDown(self):
@@ -308,7 +310,7 @@ class DeniedTextTests(Base):
         )
 
     def new(self, text):
-        self.brief.write_text(text)
+        self.brief.write_text(f"{text}\n停止文件：`{self.stop}`\n")
         return self.run_launch("new", str(self.brief), str(self.prefix), "provider/model")
 
     def resume(self, text):
@@ -493,3 +495,114 @@ class ScriptModeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StopFileTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.count = self.root / "count"
+
+    def counting_fake(self, finish_on=None, first_text=None):
+        lines = [
+            f'n=$(cat {self.count} 2>/dev/null || echo 0); n=$((n+1)); echo $n > {self.count}',
+            f'printf "%s\\n" "$@" > {self.root}/args-$n',
+            f"echo '{TEXT}'",
+        ]
+        if first_text is not None:
+            lines.append(f"[ $n -eq 1 ] && printf '%s\\n' '{first_text}' > {self.stop}")
+        if finish_on is not None:
+            lines.append(f"[ $n -ge {finish_on} ] && printf '%s\\n' '# 停止文件' '全部完成。' > {self.stop}")
+        lines.append("exit 0")
+        return self.fake("\n".join(lines))
+
+    def launch_resuming(self, fake, resumes="2"):
+        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_SERVER_DIR=str(self.server_dir), OC_AUTO_RESUMES=resumes)
+        return subprocess.run(
+            ["bash", str(SCRIPTS / "oc-launch.sh"), "new", str(self.brief), str(self.prefix), "provider/model"],
+            cwd=self.root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+
+    def calls(self):
+        return int(self.count.read_text()) if self.count.exists() else 0
+
+    def finish(self):
+        self.wait_for(str(self.prefix) + ".rc", seconds=40)
+        return Path(str(self.prefix) + ".rc").read_text().strip()
+
+    def test_a_brief_without_an_unwritten_stop_file_is_refused(self):
+        self.brief.write_text("# brief\n")
+        result = self.launch_resuming(self.counting_fake())
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("STOP_FILE_UNCLEAR", result.stderr)
+        self.assertEqual(self.calls(), 0)
+
+    def test_a_brief_naming_two_unwritten_stop_files_is_refused(self):
+        self.brief.write_text(f"写 `{self.stop}` 或 `{self.root / 'other-stop.md'}`\n")
+        result = self.launch_resuming(self.counting_fake())
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("STOP_FILE_UNCLEAR", result.stderr)
+        self.assertEqual(self.calls(), 0)
+
+    def test_stop_files_that_already_exist_are_references_to_earlier_runs(self):
+        earlier = self.root / "earlier-stop.md"
+        earlier.write_text("# 上一轮\n")
+        self.brief.write_text(f"上一轮见 `{earlier}`。这次写 `{self.stop}`。\n")
+        result = self.launch_resuming(self.counting_fake(finish_on=1))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.finish(), "0")
+        self.assertEqual(self.calls(), 1)
+
+    def test_resume_refuses_a_stop_file_that_already_exists(self):
+        reply = self.root / "reply.md"
+        reply.write_text("# 回复\n")
+        self.stop.parent.mkdir(parents=True, exist_ok=True)
+        self.stop.write_text("# 旧的\n")
+        fake = self.counting_fake()
+        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_SERVER_DIR=str(self.server_dir))
+        result = subprocess.run(
+            ["bash", str(SCRIPTS / "oc-launch.sh"), "resume", SESSION, str(reply), str(self.stop), str(self.prefix), "provider/model"],
+            cwd=self.root, env=env, capture_output=True, text=True, check=False, timeout=60,
+        )
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("STOP_FILE_EXISTS", result.stderr)
+        self.assertEqual(self.calls(), 0)
+
+    def test_ending_without_the_stop_file_resumes_the_same_session(self):
+        result = self.launch_resuming(self.counting_fake(finish_on=2))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.finish(), "0")
+        self.assertEqual(self.calls(), 2)
+        second = (self.root / "args-2").read_text().splitlines()
+        self.assertIn("-s", second)
+        self.assertEqual(second[second.index("-s") + 1], SESSION)
+        self.assertIn("provider/model", second)
+        self.assertIn(str(self.stop), second[-1])
+        self.assertIn("等待", second[-1])
+        self.assertFalse(Path(str(self.prefix) + ".unfinished").exists())
+        self.assertIn("AUTO_RESUME 1", Path(str(self.prefix) + ".err").read_text())
+        self.assertEqual(Path(str(self.prefix) + ".jsonl").read_text().splitlines(), [TEXT, TEXT])
+
+    def test_a_stop_file_still_holding_a_placeholder_counts_as_unfinished(self):
+        fake = self.counting_fake(finish_on=2, first_text="（本节在拿到 Layer 0 结果后填写。）")
+        self.launch_resuming(fake)
+        self.assertEqual(self.finish(), "0")
+        self.assertEqual(self.calls(), 2)
+        self.assertNotIn("本节在拿到", self.stop.read_text())
+
+    def test_gives_up_after_the_limit_and_marks_the_run_unfinished(self):
+        self.launch_resuming(self.counting_fake(), resumes="1")
+        self.assertEqual(self.finish(), "0")
+        self.assertEqual(self.calls(), 2)
+        self.assertTrue(Path(str(self.prefix) + ".unfinished").exists())
+
+    def test_a_failed_run_is_not_resumed(self):
+        fake = self.fake(f'n=$(cat {self.count} 2>/dev/null || echo 0); echo $((n+1)) > {self.count}; echo \'{TEXT}\'; exit 1')
+        self.launch_resuming(fake)
+        self.assertEqual(self.finish(), "1")
+        self.assertEqual(self.calls(), 1)
+        self.assertFalse(Path(str(self.prefix) + ".unfinished").exists())
