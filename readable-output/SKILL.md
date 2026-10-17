@@ -84,13 +84,13 @@ When the user requires every reply in Chinese, a written rule is not enough: rep
 
 | Hook event | Command | Effect |
 | --- | --- | --- |
-| `MessageDisplay` | `record` | Replaces each English line with a one-line Chinese notice before it is shown (`displayContent`), and keeps the original text in `~/.claude/reply-language/<session>.txt` until the next check. |
+| `MessageDisplay` | `record` | Keeps the text shown to the user in `~/.claude/reply-language/<session>.txt` until the next check. |
 | `PostToolBatch` | `batch` | Checks the kept text after each batch of tool calls. English adds a request to restate it in Chinese before the next model call, and a notice for the user. |
 | `Stop` | `stop` | Checks the kept text and the final message. English blocks the stop until Claude restates it in Chinese. |
 | `PreToolUse`, matcher `AskUserQuestion` | `ask` | Denies a question whose text or options are in English, before the user sees it. |
 
 Each entry in `~/.claude/settings.json` is `{"type": "command", "command": "python3 /absolute/path/to/skills/readable-output/scripts/check_chinese_reply.py <command>"}`. Hooks that run inside a subagent are skipped, because the user does not see a subagent's text.
 
-The `record` hook stops English lines before they are shown, where the client applies `displayContent`; the stored message and what the model reads are unchanged. It was added on 2026-10-17 after replies drifted into English more than three times in one long session: the other hooks only acted after the text was shown. The other hooks still make every slip visible and get it restated in Chinese.
+The hooks cannot take back text already shown. They make every slip visible at once and get it restated.
 
 A line counts as English when a stretch of it without Chinese characters has at least four words, two of them common English function words such as `the` or `to`, or is a sentence of at least three words with one such word. Code blocks, inline code, `>` quote lines, quoted text, Markdown links, and anything containing `/` are skipped. So put commands and identifiers in backticks, and put English that must be quoted in a code block or a `>` line. To check a draft or a document, run `python3 <skill-dir>/scripts/check_chinese_reply.py check <file>`, or pass `-` for standard input.
