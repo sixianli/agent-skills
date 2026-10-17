@@ -68,6 +68,13 @@ clear; the round trip costs more than it finds.
 - Treat each finding as a hypothesis. Confirm it with a reading of the
   code or a reproducing test before changing anything; record rejected
   findings with the reason.
+- When the change adds or tightens a check, ask the reviewer to state, for
+  each place the check runs, whether an effect (a file write, a commit, a
+  sent message) has already happened by then. A check that fires after the
+  effect turns a refusal into "done but reported as failed". On 2026-10-17
+  a reviewer listed exactly that case as a mere suggestion, because it did
+  not follow the call order across two functions; the severity a reviewer
+  gives is a hypothesis too.
 - Fixes Claude makes after the review follow the usual test layers. A
   change large enough to alter the design goes back for a second review.
 
