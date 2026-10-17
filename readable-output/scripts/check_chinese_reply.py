@@ -27,6 +27,8 @@ STOPWORDS = frozenset(
         "before", "after", "about", "because", "while",
     }
 )
+LIST_MARK = re.compile(r"^\s*(?:[-*+]\s+|\d+[.)]\s+)?")
+REPLACEMENT = "（这一行是英文，显示前已被回复语言检查换掉，Claude 会用中文重说。）"
 MAX_REPORTED = 8
 REPORT_WIDTH = 200
 
@@ -52,10 +54,9 @@ def closes_fence(line, fence):
     return bool(stripped) and set(stripped) == {fence[0]} and len(stripped) >= len(fence)
 
 
-def english_lines(text):
+def scan(lines, fence=None):
     found = []
-    fence = None
-    for number, line in enumerate(text.splitlines(), 1):
+    for number, line in enumerate(lines, 1):
         if fence:
             if closes_fence(line, fence):
                 fence = None
@@ -68,7 +69,11 @@ def english_lines(text):
             continue
         if any(is_english(run) for run in runs(line)):
             found.append((number, line.strip()))
-    return found
+    return found, fence
+
+
+def english_lines(text):
+    return scan(text.splitlines())[0]
 
 
 def unique_lines(found):
@@ -108,19 +113,33 @@ def take_shown_text(payload, state_dir):
     return text
 
 
+def replaced(line):
+    return LIST_MARK.match(line).group(0) + REPLACEMENT
+
+
 def record(payload, state_dir):
     delta = payload.get("delta") or ""
-    if delta:
-        state_dir.mkdir(parents=True, exist_ok=True)
-        with state_file(state_dir, payload).open("a", encoding="utf-8") as handle:
-            handle.write(delta if delta.endswith("\n") else delta + "\n")
+    if not delta:
+        return None
+    path = state_file(state_dir, payload)
+    earlier = path.read_text(encoding="utf-8") if path.exists() else ""
+    lines = delta.split("\n")
+    found, _ = scan(lines, scan(earlier.split("\n"))[1])
+    state_dir.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(delta if delta.endswith("\n") else delta + "\n")
+    if not found:
+        return None
+    numbers = {number for number, _ in found}
+    shown = "\n".join(replaced(line) if number in numbers else line for number, line in enumerate(lines, 1))
+    return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
 
 
 def batch(payload, state_dir):
     found = english_lines(take_shown_text(payload, state_dir))
     if not found:
         return None
-    request = "这些文字已经显示给用户。请先用简体中文把这些内容重新告诉用户，再继续原来的工作。"
+    request = "这些英文行在显示时已被换成提示；界面不支持替换时，用户看到的是原文。请先用简体中文把这些内容告诉用户，再继续原来的工作。"
     return {
         "systemMessage": notice(found),
         "hookSpecificOutput": {"hookEventName": "PostToolBatch", "additionalContext": report(found, request)},
@@ -132,7 +151,7 @@ def stop(payload, state_dir):
     found += english_lines(payload.get("last_assistant_message") or "")
     if not found:
         return None
-    request = "这些文字已经显示给用户。请用简体中文把这些内容重新告诉用户，然后再结束。"
+    request = "这些英文行在显示时已被换成提示；界面不支持替换时，用户看到的是原文。请用简体中文把这些内容告诉用户，然后再结束。"
     return {"decision": "block", "reason": report(found, request), "systemMessage": notice(found)}
 
 
@@ -156,7 +175,7 @@ def ask(payload, state_dir):
 
 
 EVENTS = {
-    "record": (record, "MessageDisplay hook: keep the text shown to the user until the next check"),
+    "record": (record, "MessageDisplay hook: replace English lines before they are shown, keep them for the next check"),
     "batch": (batch, "PostToolBatch hook: report English shown before the tool calls"),
     "stop": (stop, "Stop hook: block the stop when this turn showed English"),
     "ask": (ask, "PreToolUse hook for AskUserQuestion: deny English questions and options"),

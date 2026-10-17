@@ -103,9 +103,57 @@ class HookTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout) if result.stdout.strip() else None
 
-    def display(self, session, delta):
-        payload = {"session_id": session, "hook_event_name": "MessageDisplay", "index": 0, "final": True, "delta": delta}
-        self.assertIsNone(self.hook("record", payload))
+    def display(self, session, delta, **extra):
+        payload = {"session_id": session, "hook_event_name": "MessageDisplay", "index": 0, "final": True, "delta": delta,
+                   **extra}
+        return self.hook("record", payload)
+
+    def shown(self, session, delta):
+        output = self.display(session, delta)
+        if output is None:
+            return delta
+        self.assertEqual(output["hookSpecificOutput"]["hookEventName"], "MessageDisplay")
+        return output["hookSpecificOutput"]["displayContent"]
+
+    def test_display_replaces_english_lines_before_they_are_shown(self) -> None:
+        shown = self.shown("s1", "先看日志。\n" + REPRODUCED_SENTENCE + "\n日志没有报错。\n")
+        lines = shown.splitlines()
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[0], "先看日志。")
+        self.assertNotIn("sandbox", lines[1])
+        self.assertIn("英文", lines[1])
+        self.assertEqual(lines[2], "日志没有报错。")
+        self.assertTrue(shown.endswith("\n"))
+
+    def test_display_keeps_list_marks_of_replaced_lines(self) -> None:
+        lines = self.shown("s1", "- Now running the tests.\n  2. The build failed because the file is missing.\n").splitlines()
+        self.assertTrue(lines[0].startswith("- （"), lines[0])
+        self.assertTrue(lines[1].startswith("  2. （"), lines[1])
+        self.assertNotIn("running", lines[0])
+        self.assertNotIn("build", lines[1])
+
+    def test_display_leaves_chinese_unchanged(self) -> None:
+        self.assertIsNone(self.display("s1", "正在运行测试，`npm test` 的结果见下文。\n"))
+
+    def test_display_keeps_a_code_block_opened_in_an_earlier_delta(self) -> None:
+        self.assertIsNone(self.display("s1", "日志如下：\n```text\n"))
+        self.assertIsNone(self.display("s1", "The build failed because the file is missing.\n```\n"))
+
+    def test_display_keeps_quoted_english(self) -> None:
+        self.assertIsNone(self.display("s1", "> Claude Code watches your settings files and reloads them when they change.\n"))
+
+    def test_display_keeps_a_final_delta_without_a_newline(self) -> None:
+        shown = self.shown("s1", "Now running the tests.")
+        self.assertFalse(shown.endswith("\n"))
+        self.assertNotIn("running", shown)
+
+    def test_replaced_english_is_still_reported_for_restatement(self) -> None:
+        self.shown("s1", REPRODUCED_SENTENCE + "\n")
+        context = self.batch("s1")["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("The sandbox only allows", context)
+
+    def test_subagent_display_is_left_alone(self) -> None:
+        self.assertIsNone(self.display("s1", REPRODUCED_SENTENCE + "\n", agent_id="a1", agent_type="Explore"))
 
     def batch(self, session, **extra):
         return self.hook("batch", {"session_id": session, "hook_event_name": "PostToolBatch", "tool_calls": [], **extra})
