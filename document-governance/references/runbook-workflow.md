@@ -125,6 +125,18 @@ must use this exact algorithm and a shared fixed test vector:
    deterministic order. Safe additions, deletions, renames, contents, object
    types, and executable-bit changes affect the digest. Overlapping selectors
    are deduplicated by normalized path and type.
+6. When the project root is inside a Git work tree, a descendant counts only
+   when `git ls-files --cached --others --exclude-standard` lists it (tracked,
+   or untracked and not ignored) or when it is a directory above such a file.
+   Ignored files, ignored directories, and empty directories are skipped, so a
+   work tree with local leftovers hashes exactly like a copy of the listed
+   files. Outside a Git work tree every safe descendant counts. A clean
+   checkout selects the same records under both rules, so the fixed test
+   vector and seals made from clean checkouts stay valid under version 1.
+   Git location variables inherited from a hook, such as `GIT_DIR`, are not
+   used; the project root alone decides which repository applies. In a Git
+   work tree, a selector that Git ignores, or a directory without any listed
+   file, is rejected, because a clean checkout cannot reproduce it.
 
 Selectors must be repository-relative POSIX paths. Reject absolute paths,
 Windows drive syntax, backslashes, `..`, missing paths, the repository root,
@@ -139,7 +151,9 @@ caches cannot be selected. When a known cache, build, VCS, or evidence-named
 subtree occurs below an otherwise safe selected source directory, traversal
 skips it deterministically. Fixed host metadata such as `.DS_Store` is skipped
 by the same rule. A real secret found elsewhere inside the selected
-directory fails the whole contract rather than being silently omitted.
+directory fails the whole contract rather than being silently omitted. This
+includes a secret that Git ignores: files skipped under rule 6 are checked by
+name only and never read.
 
 The fingerprint excludes mtime, the current date, and unrelated Git commits.
 It cannot cover external services or live target state; Live-State Preflight

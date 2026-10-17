@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_DIR = SKILL_ROOT / "scripts"
@@ -17,6 +19,7 @@ FIXTURE = SKILL_ROOT / "tests/fixtures/runbook-contract-v1"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from runbook import (
+    RunbookContractError,
     compute_contract_fingerprint,
     execution_gate,
 )
@@ -35,15 +38,8 @@ REQUIRED_SECTIONS = [
 ]
 
 
-class RunbookTests(unittest.TestCase):
-    """Exercise deterministic hashing, safety, sealing, and policy gates."""
-
-    def setUp(self) -> None:
-        self.temporary_directory = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temporary_directory.cleanup)
-        self.sandbox = Path(self.temporary_directory.name)
-        self.root = self.sandbox / "project"
-        (self.root / "docs/runbooks").mkdir(parents=True)
+class RunbookFixture:
+    root: Path
 
     def write_runbook(
         self,
@@ -107,6 +103,17 @@ class RunbookTests(unittest.TestCase):
             "--confirm-reconciled",
             "--apply",
         )
+
+
+class RunbookTests(RunbookFixture, unittest.TestCase):
+    """Exercise deterministic hashing, safety, sealing, and policy gates."""
+
+    def setUp(self) -> None:
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary_directory.cleanup)
+        self.sandbox = Path(self.temporary_directory.name)
+        self.root = self.sandbox / "project"
+        (self.root / "docs/runbooks").mkdir(parents=True)
 
     def test_fixed_version_one_vector(self) -> None:
         """Pin an implementation-independent digest for repository checkers."""
@@ -336,6 +343,181 @@ class RunbookTests(unittest.TestCase):
             mutation.authorization, "immediate-explicit-authorization"
         )
         self.assertEqual(unknown.effective_risk, "critical")
+
+
+class GitWorkTreeContractTests(RunbookFixture, unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary_directory.cleanup)
+        self.sandbox = Path(self.temporary_directory.name).resolve()
+        empty_config = self.sandbox / "empty.gitconfig"
+        empty_config.write_text("", encoding="utf-8")
+        environment = mock.patch.dict(
+            os.environ,
+            {"GIT_CONFIG_GLOBAL": str(empty_config), "GIT_CONFIG_NOSYSTEM": "1"},
+        )
+        environment.start()
+        self.addCleanup(environment.stop)
+        for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR"):
+            os.environ.pop(name, None)
+        self.root = self.sandbox / "repo"
+        (self.root / "docs/runbooks").mkdir(parents=True)
+        (self.root / "src/nested").mkdir(parents=True)
+        (self.root / "src/app.py").write_text("APP = 1\n", encoding="utf-8")
+        (self.root / "src/nested/module.py").write_text("VALUE = 1\n", encoding="utf-8")
+        (self.root / ".gitignore").write_text(
+            "*.log\n.claude/\ngenerated/\nscratch/\n.env\ncredentials.json\n",
+            encoding="utf-8",
+        )
+        self.runbook = self.write_runbook(contract=["src"])
+        self.git("init", "-q")
+        self.git("add", "--all")
+        self.git("commit", "-q", "-m", "initial")
+        self.baseline = self.fingerprint()
+
+    def git(self, *arguments: str, cwd: Path | None = None) -> str:
+        result = subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.com",
+                "-c",
+                "init.defaultBranch=main",
+                *arguments,
+            ],
+            cwd=cwd or self.root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout
+
+    def fingerprint(self, root: Path | None = None, runbook: Path | None = None) -> str:
+        return compute_contract_fingerprint(
+            root or self.root, runbook or self.runbook
+        ).fingerprint
+
+    def add_ignored_local_files(self, root: Path) -> None:
+        (root / "src/debug.log").write_text("local log\n", encoding="utf-8")
+        (root / "src/nested/.claude/.cc-writes").mkdir(parents=True)
+        (root / "src/generated").mkdir()
+        (root / "src/generated/out.js").write_text("built\n", encoding="utf-8")
+
+    def test_ignored_files_and_directories_do_not_change_the_fingerprint(self) -> None:
+        self.add_ignored_local_files(self.root)
+
+        self.assertEqual(self.fingerprint(), self.baseline)
+
+    def test_untracked_and_force_added_files_change_the_fingerprint(self) -> None:
+        (self.root / "src/new.py").write_text("NEW = 1\n", encoding="utf-8")
+        with_new = self.fingerprint()
+        self.assertNotEqual(with_new, self.baseline)
+
+        forced = self.root / "src/generated/kept.js"
+        forced.parent.mkdir()
+        forced.write_text("v1\n", encoding="utf-8")
+        self.git("add", "--force", "src/generated/kept.js")
+        with_forced = self.fingerprint()
+        self.assertNotEqual(with_forced, with_new)
+
+        forced.write_text("v2\n", encoding="utf-8")
+        self.assertNotEqual(self.fingerprint(), with_forced)
+
+    def test_work_tree_matches_a_copy_of_its_visible_files(self) -> None:
+        self.add_ignored_local_files(self.root)
+        (self.root / "src/new.py").write_text("NEW = 1\n", encoding="utf-8")
+        (self.root / "src/nested/module.py").unlink()
+        copy = self.sandbox / "copy"
+        listed = self.git(
+            "ls-files", "-z", "--cached", "--others", "--exclude-standard"
+        ).split("\0")
+        for name in filter(None, listed):
+            source = self.root / name
+            if not source.exists():
+                continue
+            target = copy / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+
+        self.assertEqual(
+            self.fingerprint(copy, copy / "docs/runbooks/test-runbook.md"),
+            self.fingerprint(),
+        )
+
+    def test_ignored_secret_material_still_fails_the_contract(self) -> None:
+        for relative in ("src/.env", "src/generated/credentials.json"):
+            with self.subTest(path=relative):
+                secret = self.root / relative
+                secret.parent.mkdir(parents=True, exist_ok=True)
+                secret.write_text("TOKEN=x\n", encoding="utf-8")
+                with self.assertRaisesRegex(
+                    RunbookContractError, "secret or credential"
+                ):
+                    self.fingerprint()
+                secret.unlink()
+
+    def test_pathspec_characters_in_selectors_are_literal(self) -> None:
+        (self.root / "src1").mkdir()
+        (self.root / "src1/b.py").write_text("B = 1\n", encoding="utf-8")
+        for selector in ("src[1]", ":/lib"):
+            with self.subTest(selector=selector):
+                source = self.root / selector / "a.py"
+                source.parent.mkdir(parents=True)
+                source.write_text("A = 1\n", encoding="utf-8")
+                runbook = self.write_runbook(contract=[selector])
+                before = self.fingerprint(runbook=runbook)
+
+                source.write_text("A = 2\n", encoding="utf-8")
+
+                self.assertNotEqual(self.fingerprint(runbook=runbook), before)
+
+    def test_selectors_hidden_by_git_ignore_rules_are_rejected(self) -> None:
+        project = self.root / "scratch/project"
+        (project / "docs/runbooks").mkdir(parents=True)
+        (project / "src").mkdir()
+        (project / "src/app.py").write_text("APP = 1\n", encoding="utf-8")
+        (self.root / "src/debug.log").write_text("local log\n", encoding="utf-8")
+        original_root = self.root
+        cases = ((project, ["src"]), (original_root, ["src/debug.log"]))
+        for root, contract in cases:
+            with self.subTest(root=root.name, contract=contract):
+                self.root = root
+                runbook = self.write_runbook(contract=contract)
+                self.root = original_root
+                with self.assertRaisesRegex(RunbookContractError, "ignored by Git"):
+                    self.fingerprint(root, runbook)
+
+    def test_project_root_below_the_work_tree_top_level(self) -> None:
+        site = self.root / "site"
+        (site / "docs/runbooks").mkdir(parents=True)
+        (site / "src/nested").mkdir(parents=True)
+        (site / "src/app.py").write_text("SITE = 1\n", encoding="utf-8")
+        (site / "src/nested/module.py").write_text("VALUE = 2\n", encoding="utf-8")
+        original_root = self.root
+        self.root = site
+        runbook = self.write_runbook(contract=["src"])
+        self.root = original_root
+        self.git("add", "--all")
+        self.git("commit", "-q", "-m", "site")
+        before = self.fingerprint(site, runbook)
+
+        self.add_ignored_local_files(site)
+        self.assertEqual(self.fingerprint(site, runbook), before)
+
+        (site / "src/new.py").write_text("NEW = 1\n", encoding="utf-8")
+        self.assertNotEqual(self.fingerprint(site, runbook), before)
+
+    def test_inherited_git_location_variables_are_ignored(self) -> None:
+        other = self.sandbox / "other"
+        other.mkdir()
+        self.git("init", "-q", cwd=other)
+        os.environ["GIT_DIR"] = str(other / ".git")
+        os.environ["GIT_WORK_TREE"] = str(other)
+        self.add_ignored_local_files(self.root)
+
+        self.assertEqual(self.fingerprint(), self.baseline)
 
 
 if __name__ == "__main__":

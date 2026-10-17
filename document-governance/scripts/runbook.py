@@ -14,6 +14,7 @@ import json
 import os
 import re
 import stat
+import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -82,6 +83,14 @@ SECRET_FILE_NAMES = {
 SECRET_SUFFIXES = {".jks", ".key", ".p12", ".pem", ".pfx"}
 SECRET_EXACT_NAMES = {"id_dsa", "id_ed25519", "id_ecdsa", "id_rsa"}
 ALLOWED_ENV_SUFFIXES = (".example", ".sample", ".template")
+GIT_LOCATION_VARIABLES = {
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_COMMON_DIR",
+    "GIT_DIR",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_WORK_TREE",
+}
 
 FindingKind = Literal["migration", "error"]
 Risk = Literal["standard", "high", "critical"]
@@ -450,8 +459,63 @@ def _record_for_path(root: Path, path: Path, logical: Path) -> ContractRecord:
     )
 
 
+def _git_visible_paths(
+    root: Path, selectors: list[str]
+) -> frozenset[str] | None:
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if name not in GIT_LOCATION_VARIABLES
+    }
+    environment["GIT_OPTIONAL_LOCKS"] = "0"
+    git = ["git", "--literal-pathspecs", "-C", str(root)]
+    try:
+        probe = subprocess.run(
+            [*git, "rev-parse", "--is-inside-work-tree"],
+            capture_output=True,
+            check=False,
+            env=environment,
+        )
+    except FileNotFoundError:
+        return None
+    if probe.returncode != 0 or probe.stdout.strip() != b"true":
+        return None
+    listing = subprocess.run(
+        [*git, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *selectors],
+        capture_output=True,
+        check=False,
+        env=environment,
+    )
+    if listing.returncode != 0:
+        raise RunbookContractError(
+            "Git could not list the tracked and non-ignored contract files"
+        )
+    visible: set[str] = set()
+    for raw in listing.stdout.split(b"\0"):
+        if not raw:
+            continue
+        relative = Path(os.fsdecode(raw))
+        if not os.path.lexists(root / relative):
+            continue
+        visible.add(relative.as_posix())
+        visible.update(parent.as_posix() for parent in relative.parents if parent.parts)
+    return frozenset(visible)
+
+
+def _reject_hidden_secrets(path: Path, logical: Path) -> None:
+    mode = path.lstat().st_mode
+    if stat.S_ISREG(mode) and _is_secret_path(logical):
+        raise RunbookContractError(
+            f"contract contains real secret or credential material: {logical.as_posix()}"
+        )
+    if stat.S_ISDIR(mode):
+        for child in path.iterdir():
+            if child.name.lower() not in EXCLUDED_DIRECTORY_NAMES:
+                _reject_hidden_secrets(child, logical / child.name)
+
+
 def _walk_contract_path(
-    root: Path, path: Path, logical: Path
+    root: Path, path: Path, logical: Path, visible: frozenset[str] | None
 ) -> list[ContractRecord]:
     """Walk one selector deterministically without following symlink dirs."""
 
@@ -467,7 +531,10 @@ def _walk_contract_path(
             continue
         if child.name.lower() in EXCLUDED_CACHE_FILE_NAMES:
             continue
-        records.extend(_walk_contract_path(root, child, child_logical))
+        if visible is not None and child_logical.as_posix() not in visible:
+            _reject_hidden_secrets(child, child_logical)
+            continue
+        records.extend(_walk_contract_path(root, child, child_logical, visible))
     return records
 
 
@@ -546,10 +613,20 @@ def compute_contract_fingerprint(
     if not contract_paths:
         raise RunbookContractError("missing runbook-contract block")
 
+    selectors = [
+        (value, *_validate_selector(root, value))
+        for value in sorted(contract_paths, key=lambda item: item.encode("utf-8"))
+    ]
+    visible = _git_visible_paths(
+        root, [logical.as_posix() for _, _, logical in selectors]
+    )
     record_map: dict[tuple[str, str], ContractRecord] = {}
-    for value in sorted(contract_paths, key=lambda item: item.encode("utf-8")):
-        lexical, logical = _validate_selector(root, value)
-        for record in _walk_contract_path(root, lexical, logical):
+    for value, lexical, logical in selectors:
+        if visible is not None and logical.as_posix() not in visible:
+            raise RunbookContractError(
+                f"contract path is ignored by Git or holds no tracked or non-ignored file: {value}"
+            )
+        for record in _walk_contract_path(root, lexical, logical, visible):
             record_map[(record.path, record.object_type)] = record
     records = tuple(
         record_map[key]
