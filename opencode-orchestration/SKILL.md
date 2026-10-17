@@ -446,9 +446,17 @@ revise them from experience):
   holding its path and SHA-256 elsewhere; and a stop-file note for any
   evidence file over 50 MB or any run over 100 MB saying what it holds and
   why it is needed.
-- Warn that name-based `bash` deny patterns also block harmless commands
-  such as `ls` or `grep` on a file whose name matches, and tell it to use
-  its read and edit tools for those files instead.
+- Name-based `bash` deny patterns also block harmless commands such as
+  `ls` or `grep` on a file whose name or path matches. Put a line starting
+  with `本地禁止规则：` in the brief (and in a resume reply) that names each
+  such text and tells the agent to read and search those files with its
+  read, glob and grep tools. `oc-launch.sh` refuses to start with
+  `BRIEF_NAMES_DENIED_TEXT` when the brief or reply contains the text of a
+  `*text*` deny pattern in `.opencode/opencode.json` (no spaces or other
+  wildcards: paths, file names, addresses) and no such line names it. A
+  written reminder failed three times: two reviews of one production
+  packet and the plan for the next were each denied 4 to 6 shell reads
+  of the packet before the agent switched tools (2026-10-17).
 - Deny patterns match the whole command text, so a pattern meant for the
   local machine (for example `node *`) also blocks the same word inside an
   `ssh host '...'` string. Tell it to put remote steps in a script file on

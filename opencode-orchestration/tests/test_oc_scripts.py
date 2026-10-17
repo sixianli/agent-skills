@@ -269,6 +269,114 @@ class PrefixDirectoryTests(Base):
         self.assertTrue((self.server_dir / "pid").exists())
 
 
+class DeniedTextTests(Base):
+    def setUp(self):
+        super().setUp()
+        (self.root / ".opencode").mkdir()
+        self.config = self.root / ".opencode" / "opencode.json"
+        self.config.write_text(
+            json.dumps(
+                {
+                    "permission": {
+                        "bash": {
+                            "*": "allow",
+                            "*records/live*": "deny",
+                            "*deploy-step*": "deny",
+                            "*git gc*": "deny",
+                            "*ssh *box*": "deny",
+                            "sudo *": "deny",
+                            "*records/archive*": "allow",
+                        }
+                    }
+                }
+            )
+        )
+        self.called = self.root / "called"
+        self.reply = self.root / "reply.md"
+
+    def run_launch(self, *args):
+        fake = self.fake(f"touch {self.called}; echo '{TEXT}'")
+        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_SERVER_DIR=str(self.server_dir))
+        return subprocess.run(
+            ["bash", str(SCRIPTS / "oc-launch.sh"), *args],
+            cwd=self.root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+
+    def new(self, text):
+        self.brief.write_text(text)
+        return self.run_launch("new", str(self.brief), str(self.prefix), "provider/model")
+
+    def resume(self, text):
+        self.reply.write_text(text)
+        return self.run_launch("resume", "ses_x", str(self.reply), str(self.root / "stop.md"), str(self.prefix), "provider/model")
+
+    def assert_refused(self, result, *texts):
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("BRIEF_NAMES_DENIED_TEXT", result.stderr)
+        for text in texts:
+            self.assertIn(f"`{text}`", result.stderr)
+        self.assertFalse(self.called.exists())
+        self.assertFalse(Path(str(self.prefix) + ".pid").exists())
+        self.assertFalse((self.server_dir / "pid").exists())
+
+    def assert_started(self, result):
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.called.exists())
+
+    def test_a_brief_naming_a_denied_path_without_the_warning_line_is_refused(self):
+        result = self.new("# brief\n\nRead .data/records/live/2026-01/README.md first.\n")
+        self.assert_refused(result, "records/live")
+        self.assertIn(f"{self.brief}:3", result.stderr)
+        self.assertIn("本地禁止规则：", result.stderr)
+
+    def test_the_warning_line_naming_the_text_lets_it_start(self):
+        self.assert_started(
+            self.new(
+                "# brief\n\nRead .data/records/live/2026-01/README.md first.\n\n"
+                "- 本地禁止规则：shell 命令里出现 `records/live` 会被拒绝；读这些文件用读文件工具。\n"
+            )
+        )
+
+    def test_a_warning_line_for_another_text_does_not_cover_it(self):
+        result = self.new(
+            "# brief\n\nRead .data/records/live/x.md and run tools/deploy-step.sh --dry-run.\n\n"
+            "本地禁止规则：shell 命令里出现 `deploy-step` 会被拒绝。\n"
+        )
+        self.assert_refused(result, "records/live")
+        self.assertNotIn("`deploy-step`", result.stderr)
+
+    def test_every_missing_text_is_listed_at_once(self):
+        self.assert_refused(self.new("records/live and deploy-step\n"), "records/live", "deploy-step")
+
+    def test_text_that_appears_only_in_the_warning_line_needs_nothing_more(self):
+        self.assert_started(self.new("# brief\n本地禁止规则：shell 命令里出现 `records/live` 会被拒绝。\n"))
+
+    def test_patterns_with_spaces_inner_wildcards_or_allow_are_not_required(self):
+        self.assert_started(self.new("Never run git gc, never ssh into the box, never sudo; records/archive is fine.\n"))
+
+    def test_a_reply_is_checked_when_resuming(self):
+        self.assert_refused(self.resume("Now grep records/live/ for the code.\n"), "records/live")
+
+    def test_a_reply_with_the_warning_line_resumes(self):
+        self.assert_started(self.resume("Now read records/live/x.md.\n本地禁止规则：`records/live` 在 shell 里会被拒绝。\n"))
+
+    def test_without_a_project_config_nothing_is_required(self):
+        self.config.unlink()
+        self.assert_started(self.new("Read records/live/x.md.\n"))
+
+    def test_an_unreadable_project_config_refuses_to_start(self):
+        self.config.write_text("{ not json")
+        result = self.new("# brief\n")
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("OPENCODE_CONFIG_UNREADABLE", result.stderr)
+        self.assertFalse(self.called.exists())
+
+
 class WaitTests(Base):
     def start(self, body):
         result = self.launch(self.fake(body))

@@ -17,6 +17,11 @@ When OC_ALLOWED_MODELS names a file, or .opencode/allowed-models.txt exists in
 the current directory, the model (without its #variant) must equal one of its
 lines (blank lines and lines starting with # are ignored); otherwise nothing
 starts and the exit code is 2.
+When .opencode/opencode.json exists in the current directory, every text in a
+bash deny pattern of the form *text* (no spaces or other wildcards) that the
+brief or reply contains must also appear on a line starting with
+本地禁止规则：, which tells the agent to read those files with its read tools;
+otherwise nothing starts and the exit code is 2 (BRIEF_NAMES_DENIED_TEXT).
 EOF
   exit 2
 }
@@ -34,6 +39,7 @@ case "$mode" in
     [ $# -ge 3 ] || usage
     brief=$1 prefix=$2 model=$3 title=${4:-$(basename "$1" .md)}
     [ -f "$brief" ] || { echo "brief not found: $brief" >&2; exit 2; }
+    document=$brief
     message="Read the attached brief fully, then do the work it describes. Write the stop file it names when it tells you to stop."
     set -- run --auto --format json -m "$model" --title "$title" -f "$brief" "$message"
     ;;
@@ -41,6 +47,7 @@ case "$mode" in
     [ $# -ge 5 ] || usage
     session=$1 reply=$2 stop=$3 prefix=$4 model=$5
     [ -f "$reply" ] || { echo "reply not found: $reply" >&2; exit 2; }
+    document=$reply
     message="Read $reply fully, then continue per its ruling. The next stop file is $stop."
     set -- run --auto --format json -m "$model" -s "$session" "$message"
     ;;
@@ -64,6 +71,9 @@ if [ -n "$allowed_list" ] &&
   ! grep -v -E '^[[:space:]]*(#|$)' "$allowed_list" | sed 's/[[:space:]]*$//' | grep -q -x -F -- "${model%%#*}"; then
   echo "MODEL_NOT_ALLOWED: $model is not listed in $allowed_list" >&2
   exit 2
+fi
+if [ -f .opencode/opencode.json ]; then
+  python3 "$script_dir/brief-denied-text.py" .opencode/opencode.json "$document" || exit 2
 fi
 if [ "$mode" = new ] && [ -d .agents/tasks ] && [ -f "$longtask" ]; then
   python3 "$longtask" check-brief "$brief" || { echo "check-brief refused the brief" >&2; exit 2; }
