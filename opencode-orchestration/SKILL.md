@@ -422,11 +422,23 @@ that may be busy with a measured run; include allowed look-alikes such as
 
 Poll a detached job through its result file: have the script write a
 final line (an exit code or a marker such as `CAND_OK`) and test for that
-line. Do not poll with `pgrep -f '<pattern>'` sent through the wrapper:
-the wrapper runs the remote command as `bash -c '… pgrep -f <pattern> …'`,
-so that command line contains the pattern and `pgrep` finds itself. On
-2026-10-16 a candidate build finished in two minutes while such a loop
-kept reporting it as running until it was stopped seven minutes later.
+line, and judge liveness by a PID the job records when it starts. Do not
+poll by command-line text, whether with `pgrep -f`, a `/proc/*/cmdline`
+scan or `ps … | grep`: a wrapper that runs the remote command as
+`bash -c '<command>'` puts the pattern on that shell's command line, so the
+check finds itself. On 2026-10-16 a candidate build finished in two minutes
+while such a loop kept reporting it as running until it was stopped seven
+minutes later; on 2026-10-18 a `/proc` scan kept a session waiting ten
+minutes for a host that was already idle. Refusing `pgrep -f` alone did
+not stop it, because each new spelling of the check repeated the mistake.
+Remove the cause in the wrapper instead: send the command base64-encoded
+and decode it in the remote shell
+(`bash -c 'eval "$(printf %s <encoded> | base64 -d)"'`), so no remote
+command line carries the command's text, and test it with a stand-in
+`ssh` that runs the remote string and checks `ps -p $$ -o args=`. Text
+matching can still hit unrelated processes that mention the same text (a
+`tail` of the job's log, another run of the same script), which is why
+the PID stays the test of liveness.
 
 Two sessions can share one test host when each brief names its own result
 directories and scratch prefix and forbids touching the other session's
