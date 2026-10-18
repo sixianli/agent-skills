@@ -29,9 +29,11 @@ When the delegated model is a Grok model, or Claude chooses between a Grok
 model and another one, read [references/grok.md](references/grok.md) first;
 skip it otherwise.
 
-When the user lets Claude write code too and wants opencode's view, read
+Whenever Claude writes code itself, read
 [references/consult-and-cross-review.md](references/consult-and-cross-review.md)
-before settling a design or fix and before committing Claude's own code.
+before settling a design or fix and before running, freezing or committing
+that code: opencode reviews every line Claude writes, just as Claude reviews
+every line opencode writes.
 
 ## Contents
 
@@ -619,8 +621,14 @@ deny pattern or a check that fails on its own. Patterns added on
 
 ## Reviewing
 
-Claude reviews every opencode change itself, line by line, before accepting
-it. Do not delegate the review back to opencode or to the same model.
+Every line of code is reviewed by the side that did not write it: Claude
+reviews every opencode change itself, line by line, before accepting it, and
+opencode reviews every line Claude writes (see
+[references/consult-and-cross-review.md](references/consult-and-cross-review.md#opencode-reviewing-claudes-code)).
+An author's review of their own code never counts as the review. Do not
+delegate the review of opencode's change back to opencode or to the same
+model. When one change mixes both authors' lines, split it by author and
+have each part reviewed by the other side.
 
 - Read the full diff of every commit or working-tree change; compare it with
   the brief. Anything outside the brief's files is drift until explained.
@@ -686,7 +694,10 @@ it. Do not delegate the review back to opencode or to the same model.
 - Diff the touched tree against a baseline copy you took before launch
   (for files outside version control), not only against git.
 - Record the outcome: `longtask.py record --review --items <ids> --verdict
-  approved|rejected --files <reviewed files> --by claude`.
+  approved|rejected --files <reviewed files> --by claude`. `--by` names the
+  reviewer, never the author: an item whose code Claude wrote is recorded
+  `--by opencode` after opencode's review, with its review stop file in
+  `--note`.
 
 ## Handling a stop file
 

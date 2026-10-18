@@ -1,8 +1,10 @@
 # Consulting opencode and cross-review
 
-Read this when the user lets Claude write code itself and wants a second
-model's view: before Claude settles a design or a fix, and before Claude
-commits code it wrote. Skip it when opencode only implements briefs.
+Read this whenever Claude writes code itself: before Claude settles a design
+or a fix, and before Claude runs, freezes or commits code it wrote. The rule
+is symmetric: code is reviewed only by the side that did not write it, so
+Claude's code always gets opencode's review, as opencode's code always gets
+Claude's. Skip it only when opencode implements every line of the change.
 
 ## Contents
 
@@ -65,6 +67,20 @@ clear; the round trip costs more than it finds.
   commit range or a patch file with its SHA-256, the requirement and the
   tests that ran. Ask for findings only, each with `file:line`, the inputs
   that trigger it, the wrong result, and a suggested check; no edits.
+- Code that is never committed needs the same review before it runs or is
+  frozen: operation packet tools, entry scripts that reach a production
+  host, one-off scripts on a test host. List each file with its SHA-256 and
+  the version it was derived from, and ask the reviewer to diff the two;
+  a script that "only renames" an approved one is still reviewed, because a
+  copied script also carries the old version's data and wording. On
+  2026-10-18 a renamed packet still held the previous deployment's real
+  readbacks and a sentence claiming the old approval applied.
+- Claude's own reading of its code is not the review. When opencode's
+  review session cannot run (every allowed model rate-limited or out of
+  allowance), keep the code unrun and uncommitted and say so in the
+  handoff; do not substitute a self-review.
+- A design proposal session may not review the code built from its own
+  proposal; start a new session for the review.
 - Treat each finding as a hypothesis. Confirm it with a reading of the
   code or a reproducing test before changing anything; record rejected
   findings with the reason.
