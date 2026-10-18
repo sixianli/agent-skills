@@ -4,7 +4,12 @@ import sys
 from pathlib import Path
 
 STOP_FILE = re.compile(r"[^\s`'\"()（）<>\[\]]*stop(?:-[0-9]+)?\.md")
-PLACEHOLDER = re.compile(r"本节[^\n]{0,40}填写|待填写|待补充|\bTBD\b")
+PLACEHOLDER = re.compile(
+    r"本节[^\n]{0,40}填写|待填写|待补充|\bTBD\b"
+    r"|(?:^[ \t]*(?:[-*+][ \t]+)?|[（(:：][ \t]*)待[补填]"
+    r"|待[补填][。.]?[ \t]*[)）]",
+    re.MULTILINE,
+)
 
 
 def pick(brief):

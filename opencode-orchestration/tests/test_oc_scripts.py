@@ -594,6 +594,47 @@ class StopFileTests(Base):
         self.assertEqual(self.calls(), 2)
         self.assertNotIn("本节在拿到", self.stop.read_text())
 
+    def test_a_stop_file_left_pending_while_the_host_job_runs_counts_as_unfinished(self):
+        fake = self.counting_fake(finish_on=2, first_text="（运行中；结果与用例通过/失败清单、summary 原文待补。）")
+        self.launch_resuming(fake)
+        self.assertEqual(self.finish(), "0")
+        self.assertEqual(self.calls(), 2)
+        self.assertIn("AUTO_RESUME 1", Path(str(self.prefix) + ".err").read_text())
+
+    def finished(self, text):
+        self.stop.parent.mkdir(parents=True, exist_ok=True)
+        self.stop.write_text(f"# 停止文件\n\n## 结果\n\n{text}\n", encoding="utf-8")
+        return subprocess.run(
+            ["python3", str(SCRIPTS / "stop-file.py"), "finished", str(self.stop)], capture_output=True, text=True, check=False
+        ).returncode
+
+    def test_pending_marks_count_as_placeholders(self):
+        for text in [
+            "（运行中；结果与用例通过/失败清单、summary 原文待补。）",
+            "（待补：git apply -R、git status --porcelain 为空、HEAD 核对输出。）",
+            "（待补。）",
+            "（待填。）",
+            "(待补)",
+            "结果：待补。",
+            "待填：最终 Layer 3 结果与清理记录。",
+            "（本节在拿到 Layer 0 结果后填写。）",
+            "待补充",
+            "TBD",
+        ]:
+            with self.subTest(text=text):
+                self.assertEqual(self.finished(text), 1)
+
+    def test_finished_prose_that_mentions_pending_work_is_not_a_placeholder(self):
+        for text in [
+            "代码里的检查是拒绝未填值的检查，不是待填占位符。",
+            "普通生产 loader 要求完整资格且包含本次待补的两个保证。",
+            "工具运行中停止本轮：宿主和进程组退出、Run 取消。",
+            "运行中根盘最低 12.06 GiB，清理后恢复到开始时的水平。",
+            "第 4 层运行结束：31 个用例全部通过，检出已还原。",
+        ]:
+            with self.subTest(text=text):
+                self.assertEqual(self.finished(text), 0)
+
     def test_gives_up_after_the_limit_and_marks_the_run_unfinished(self):
         self.launch_resuming(self.counting_fake(), resumes="1")
         self.assertEqual(self.finish(), "0")

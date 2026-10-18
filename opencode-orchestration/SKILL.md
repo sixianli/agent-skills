@@ -205,7 +205,10 @@ and the batch sat idle until Claude noticed. The launcher now enforces this:
   `STOP_FILE_EXISTS`.
 - [scripts/oc-run.sh](scripts/oc-run.sh) runs opencode. When it exits with
   code 0 and the stop file is missing, empty, or still holds a placeholder
-  (`待填写`, `待补充`, `TBD`, or a section left as `本节…填写`), it resumes the
+  (`待填写`, `待补充`, `TBD`, a section left as `本节…填写`, or a pending
+  mark `待补` or `待填` that opens a line, a list item, a bracket or a
+  `：` value, or closes a bracket, as in `（待补。）`, `（待补：…）`,
+  `（运行中；结果…待补。）` or `结果：待补`), it resumes the
   same session with a message telling the agent to wait for its job and
   write the stop file, and logs `AUTO_RESUME <n>` in `<prefix>.err`. It
   tries `OC_AUTO_RESUMES` times (default 2); then it writes
@@ -773,5 +776,17 @@ instructions reserve for the user. Production steps are never delegated.
   process still exited with code 1. Neither the error event nor the exit
   code alone decides whether a run failed; read what follows the error and
   the stop file.
+- 2026-10-18: a fourth run ended its turn while its host test job was still
+  going, and the auto-resume above did not catch it. Its stop file was
+  written in advance with sections reading `（运行中；结果…待补。）`,
+  `（待补：…）` and `（待补。）`; the placeholder pattern then knew only
+  `待填写` and `待补充`, so `oc-run.sh` took the file as finished, and the
+  job's result sat unread for 18 minutes. The pattern now also catches a
+  bare `待补` or `待填` in a slot position, and a test reproduces this stop
+  file. A run of the new pattern over 305 earlier stop files from one
+  project flagged only this file and one draft that was meant to be
+  unfinished; mentions inside prose, such as `本次待补的两个保证`, still
+  pass. When a run's stop file uses another way to say "not yet", add it to
+  `PLACEHOLDER` in [scripts/stop-file.py](scripts/stop-file.py) with a test.
 - Observed cost, for planning: a 14-minute batch with about 40 tool calls on
   `deepseek-v4.1-flash` cost about USD 0.10, mostly cached input.
