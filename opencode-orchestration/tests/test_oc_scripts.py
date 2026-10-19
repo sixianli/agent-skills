@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -225,6 +226,90 @@ class ModelAllowlistTests(Base):
         self.assertEqual(result.returncode, 2)
         self.assertIn("MODEL_LIST_MISSING", result.stderr)
         self.assertFalse(self.called.exists())
+
+
+class RequiredPluginTests(Base):
+    def setUp(self):
+        super().setUp()
+        (self.root / ".opencode").mkdir()
+        self.listing = self.root / ".opencode" / "required-plugins.txt"
+        self.guard = self.root / ".opencode" / "plugins" / "guard" / "index.ts"
+        self.guard.parent.mkdir(parents=True)
+        self.guard.write_text("export default 1\n")
+        self.called = self.root / "called"
+
+    def digest(self, text):
+        return hashlib.sha256(text.encode()).hexdigest()
+
+    def write_listing(self, *lines):
+        self.listing.write_text("".join(f"{line}\n" for line in lines))
+
+    def run_launch(self, *args):
+        fake = self.fake(f"touch {self.called}; echo '{TEXT}'")
+        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_SERVER_DIR=str(self.server_dir))
+        return subprocess.run(
+            ["bash", str(SCRIPTS / "oc-launch.sh"), *args],
+            cwd=self.root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+
+    def new(self):
+        return self.run_launch("new", str(self.brief), str(self.prefix), "provider/model")
+
+    def assert_unstarted(self, result, marker):
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn(marker, result.stderr)
+        self.assertFalse(self.called.exists())
+        self.assertFalse(Path(str(self.prefix) + ".pid").exists())
+        self.assertFalse((self.server_dir / "pid").exists())
+
+    def test_a_listed_plugin_with_the_right_digest_lets_the_run_start(self):
+        self.write_listing(f"{self.digest('export default 1\n')}  .opencode/plugins/guard/index.ts")
+        result = self.new()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.called.exists())
+
+    def test_a_missing_plugin_is_refused(self):
+        self.write_listing(f"{self.digest('x')}  .opencode/plugins/guard/gone.ts")
+        self.assert_unstarted(self.new(), "REQUIRED_PLUGIN_MISSING")
+
+    def test_a_changed_plugin_is_refused(self):
+        self.write_listing(f"{self.digest('other')}  .opencode/plugins/guard/index.ts")
+        self.assert_unstarted(self.new(), "REQUIRED_PLUGIN_CHANGED")
+
+    def test_a_line_that_is_not_a_digest_and_a_path_is_refused(self):
+        self.listing.write_text("the guard plugin is required\n")
+        self.assert_unstarted(self.new(), "REQUIRED_PLUGIN_BAD_LINE")
+
+    def test_a_path_outside_the_project_is_refused(self):
+        self.write_listing(f"{self.digest('export default 1\n')}  /etc/passwd")
+        self.assert_unstarted(self.new(), "REQUIRED_PLUGIN_BAD_LINE")
+
+    def test_comments_and_blank_lines_are_ignored(self):
+        self.write_listing("", "# the wait-guard plugin", f"{self.digest('export default 1\n')}  .opencode/plugins/guard/index.ts")
+        result = self.new()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.called.exists())
+
+    def test_without_the_listing_nothing_is_required(self):
+        result = self.new()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.called.exists())
+
+    def test_an_empty_listing_is_refused(self):
+        self.write_listing("# only a comment", "")
+        self.assert_unstarted(self.new(), "REQUIRED_PLUGIN_LIST_EMPTY")
+
+    def test_a_resume_is_checked_too(self):
+        self.write_listing(f"{self.digest('x')}  .opencode/plugins/guard/gone.ts")
+        reply = self.root / "reply.md"
+        reply.write_text("go on\n")
+        result = self.run_launch("resume", "ses_x", str(reply), str(self.root / "stop.md"), str(self.prefix), "provider/model")
+        self.assert_unstarted(result, "REQUIRED_PLUGIN_MISSING")
 
 
 class PrefixDirectoryTests(Base):

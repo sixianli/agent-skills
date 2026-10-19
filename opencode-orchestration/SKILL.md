@@ -145,6 +145,22 @@ against `opencode/deepseek-v4.1-flash-free`) is exactly what the
 whole-line match stops. The started line ends with `model=<id>`; report
 the model, the time, and why it was chosen when the project asks for it.
 
+When the directory you launch from keeps a guard plugin under
+`.opencode/plugins/` (opencode loads it into every session started there,
+and a check in the plugin's `tool.execute.before` hook can refuse a tool
+call before it runs), list it in `.opencode/required-plugins.txt`, one
+`<SHA-256>  <relative path>` line per file. `oc-launch.sh` then refuses to
+start, exit code 2, when a listed file is missing
+(`REQUIRED_PLUGIN_MISSING`), its digest differs (`REQUIRED_PLUGIN_CHANGED`),
+a line is not a digest and a relative path inside the directory
+(`REQUIRED_PLUGIN_BAD_LINE`), or the list names nothing
+(`REQUIRED_PLUGIN_LIST_EMPTY`). Without the list nothing changes. Every
+worktree you launch from needs its own copy of the plugin and the list;
+after changing the plugin, update every copy and every list, or the next
+launch from an old copy is refused. A plugin added while a session runs
+was loaded by that session at once in v2.0.32, so a guard can refuse the
+session that is still writing it.
+
 New session (one batch = one session):
 
 ```bash

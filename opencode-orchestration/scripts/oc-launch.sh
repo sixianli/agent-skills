@@ -22,6 +22,14 @@ bash deny pattern of the form *text* (no spaces or other wildcards) that the
 brief or reply contains must also appear on a line starting with
 本地禁止规则：, which tells the agent to read those files with its read tools;
 otherwise nothing starts and the exit code is 2 (BRIEF_NAMES_DENIED_TEXT).
+When .opencode/required-plugins.txt exists in the current directory, every
+non-blank line that does not start with # must read <SHA-256>  <relative path>
+and name a file whose contents hash to that value, so that a guard plugin the
+run depends on is present and unchanged; a missing file refuses with
+REQUIRED_PLUGIN_MISSING, a changed one with REQUIRED_PLUGIN_CHANGED, a line
+that is not a digest and a relative path with REQUIRED_PLUGIN_BAD_LINE, and a
+listing with no such line with REQUIRED_PLUGIN_LIST_EMPTY (nothing starts,
+exit code 2). Neither list is required when the file is absent.
 The run's stop file is the resume argument, or for a new run the one path in
 the brief ending in stop.md or stop-N.md that does not exist yet (paths that
 exist are references to earlier runs); a brief naming none or several unwritten
@@ -81,6 +89,40 @@ if [ -n "$allowed_list" ] &&
   ! grep -v -E '^[[:space:]]*(#|$)' "$allowed_list" | sed 's/[[:space:]]*$//' | grep -q -x -F -- "${model%%#*}"; then
   echo "MODEL_NOT_ALLOWED: $model is not listed in $allowed_list" >&2
   exit 2
+fi
+if [ -f .opencode/required-plugins.txt ]; then
+  python3 -I - .opencode/required-plugins.txt <<'PY' || exit 2
+import hashlib
+import os
+import re
+import sys
+
+listing = sys.argv[1]
+seen = 0
+for number, line in enumerate(open(listing, encoding="utf-8"), start=1):
+    text = line.strip()
+    if text == "" or text.startswith("#"):
+        continue
+    parts = text.split()
+    if len(parts) != 2 or not re.fullmatch(r"[0-9a-fA-F]{64}", parts[0]):
+        print("REQUIRED_PLUGIN_BAD_LINE: %s line %d is not '<SHA-256>  <relative path>'" % (listing, number), file=sys.stderr)
+        sys.exit(2)
+    digest, name = parts[0].lower(), parts[1]
+    if os.path.isabs(name) or ".." in name.split("/"):
+        print("REQUIRED_PLUGIN_BAD_LINE: %s line %d names %s, which is not a relative path inside the project" % (listing, number, name), file=sys.stderr)
+        sys.exit(2)
+    seen += 1
+    if not os.path.isfile(name):
+        print("REQUIRED_PLUGIN_MISSING: %s line %d requires %s, which is not a file" % (listing, number, name), file=sys.stderr)
+        sys.exit(2)
+    actual = hashlib.sha256(open(name, "rb").read()).hexdigest()
+    if actual != digest:
+        print("REQUIRED_PLUGIN_CHANGED: %s line %d: %s has SHA-256 %s, not %s" % (listing, number, name, actual, digest), file=sys.stderr)
+        sys.exit(2)
+if seen == 0:
+    print("REQUIRED_PLUGIN_LIST_EMPTY: %s lists no plugin to check" % listing, file=sys.stderr)
+    sys.exit(2)
+PY
 fi
 if [ -f .opencode/opencode.json ]; then
   python3 "$script_dir/brief-denied-text.py" .opencode/opencode.json "$document" || exit 2
