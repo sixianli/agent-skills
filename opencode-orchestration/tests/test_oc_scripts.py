@@ -229,13 +229,15 @@ class ModelAllowlistTests(Base):
 
 
 class RequiredPluginTests(Base):
+    GUARD_SOURCE = "export default 1\n"
+
     def setUp(self):
         super().setUp()
         (self.root / ".opencode").mkdir()
         self.listing = self.root / ".opencode" / "required-plugins.txt"
         self.guard = self.root / ".opencode" / "plugins" / "guard" / "index.ts"
         self.guard.parent.mkdir(parents=True)
-        self.guard.write_text("export default 1\n")
+        self.guard.write_text(self.GUARD_SOURCE)
         self.called = self.root / "called"
 
     def digest(self, text):
@@ -268,7 +270,7 @@ class RequiredPluginTests(Base):
         self.assertFalse((self.server_dir / "pid").exists())
 
     def test_a_listed_plugin_with_the_right_digest_lets_the_run_start(self):
-        self.write_listing(f"{self.digest('export default 1\n')}  .opencode/plugins/guard/index.ts")
+        self.write_listing(f"{self.digest(self.GUARD_SOURCE)}  .opencode/plugins/guard/index.ts")
         result = self.new()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(self.called.exists())
@@ -286,11 +288,11 @@ class RequiredPluginTests(Base):
         self.assert_unstarted(self.new(), "REQUIRED_PLUGIN_BAD_LINE")
 
     def test_a_path_outside_the_project_is_refused(self):
-        self.write_listing(f"{self.digest('export default 1\n')}  /etc/passwd")
+        self.write_listing(f"{self.digest(self.GUARD_SOURCE)}  /etc/passwd")
         self.assert_unstarted(self.new(), "REQUIRED_PLUGIN_BAD_LINE")
 
     def test_comments_and_blank_lines_are_ignored(self):
-        self.write_listing("", "# the wait-guard plugin", f"{self.digest('export default 1\n')}  .opencode/plugins/guard/index.ts")
+        self.write_listing("", "# the wait-guard plugin", f"{self.digest(self.GUARD_SOURCE)}  .opencode/plugins/guard/index.ts")
         result = self.new()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(self.called.exists())
