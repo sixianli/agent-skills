@@ -80,17 +80,26 @@ Drawing rules:
 
 ## 5. Check that replies are in Chinese
 
-When the user requires every reply in Chinese, a written rule is not enough: replies drift into English after long stretches of English tool work, briefs, or documents. `scripts/check_chinese_reply.py` finds English prose in replies and runs as Claude Code hooks:
+When the user requires every reply in Chinese, a written rule is not enough: replies drift into English after long stretches of English tool work, briefs, or documents. `scripts/check_chinese_reply.py` finds English prose in replies. In Claude Code it runs as hooks that this folder ships as a plugin:
 
 | Hook event | Command | Effect |
 | --- | --- | --- |
-| `MessageDisplay` | `record` | Keeps the text shown to the user in `~/.claude/reply-language/<session>.txt` until the next check. |
+| `MessageDisplay` | `record` | Keeps the text shown to the user in `${CLAUDE_PLUGIN_DATA}/reply-language/<session>.txt` until the next check. |
 | `PostToolBatch` | `batch` | Checks the kept text after each batch of tool calls. English adds a request to restate it in Chinese before the next model call, and a notice for the user. |
 | `Stop` | `stop` | Checks the kept text and the final message. English blocks the stop until Claude restates it in Chinese. |
 | `PreToolUse`, matcher `AskUserQuestion` | `ask` | Denies a question whose text or options are in English, before the user sees it. |
 
-Each entry in `~/.claude/settings.json` is `{"type": "command", "command": "python3 /absolute/path/to/skills/readable-output/scripts/check_chinese_reply.py <command>"}`. Hooks that run inside a subagent are skipped, because the user does not see a subagent's text.
+The hooks are declared in `hooks/hooks.json`, next to the plugin manifest `.claude-plugin/plugin.json`. Do not copy them into `settings.json`:
+
+- **Install**: put this folder, or a symbolic link to it, in `~/.claude/skills/`. Claude Code loads it in place as the plugin `readable-output@skills-dir`, enabled by default, and the skill keeps its plain name `readable-output`.
+- **Turn off or on**: set `"readable-output@skills-dir": false` (or `true`) under `enabledPlugins` in `~/.claude/settings.json`, or use the `/plugin` menu. This switches all four hooks together.
+- **After editing** `hooks/hooks.json`, run `/reload-plugins` or start a new session. Edits to the script apply on the next hook run.
+- **Upgrading from manual hooks**: remove any `check_chinese_reply.py` entries from `settings.json` first, or every check runs twice.
+
+Hooks that run inside a subagent are skipped, because the user does not see a subagent's text.
 
 The hooks cannot take back text already shown. They make every slip visible at once and get it restated.
 
-A line counts as English when a stretch of it without Chinese characters has at least four words, two of them common English function words such as `the` or `to`, or is a sentence of at least three words with one such word. Code blocks, inline code, `>` quote lines, quoted text, Markdown links, and anything containing `/` are skipped. So put commands and identifiers in backticks, and put English that must be quoted in a code block or a `>` line. To check a draft or a document, run `python3 <skill-dir>/scripts/check_chinese_reply.py check <file>`, or pass `-` for standard input.
+A line counts as English when a stretch of it without Chinese characters has at least four words, two of them common English function words such as `the` or `to`, or is a sentence of at least three words with one such word. Words joined by hyphens count as one word, so a term such as `LLM-as-a-judge` in a Chinese sentence passes. Code blocks, inline code, `>` quote lines, quoted text, Markdown links, and anything containing `/` are skipped. So put commands and identifiers in backticks, and put English that must be quoted in a code block or a `>` line. To check a draft or a document, run `python3 <skill-dir>/scripts/check_chinese_reply.py check <file>`, or pass `-` for standard input.
+
+To check the installed plugin in a real session, run `python3 <skill-dir>/tests/plugin_session_e2e.py`. It starts `claude -p` with a prompt that asks for English, checks that the session loaded the plugin and that the `Stop` hook made Claude restate the reply in Chinese, and keeps the stream and a summary under `tests/verification/<date>/local/`. It uses the network and costs one short model call.

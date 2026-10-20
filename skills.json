@@ -642,7 +642,7 @@
       "package_dir": "readable-output",
       "readme": "readable-output/SKILL.md",
       "skill_dir": "readable-output",
-      "description": "Make every response to the user easy to understand and check: plain text, a checked ASCII diagram, or an HTML page with its link; writing rules adapted from ASD-STE100; optional Claude Code hooks that catch English prose in replies that must be Chinese.",
+      "description": "Make every response to the user easy to understand and check: plain text, a checked ASCII diagram, or an HTML page with its link; writing rules adapted from ASD-STE100; Claude Code plugin hooks that catch English prose in replies that must be Chinese.",
       "implicit_invocation": true,
       "has_tests": true,
       "checks": [
@@ -655,7 +655,8 @@
             "readable-output/scripts/check_ascii.py",
             "readable-output/scripts/check_chinese_reply.py",
             "readable-output/tests/test_check_ascii.py",
-            "readable-output/tests/test_check_chinese_reply.py"
+            "readable-output/tests/test_check_chinese_reply.py",
+            "readable-output/tests/plugin_session_e2e.py"
           ]
         },
         {

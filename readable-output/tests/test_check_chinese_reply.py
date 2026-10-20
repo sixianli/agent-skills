@@ -82,6 +82,25 @@ class EnglishProseTests(unittest.TestCase):
     def test_english_link_text_of_a_source_title_passes(self) -> None:
         self.assert_passes("- [What is the subscription and how does it work?](https://example.com/overview)（官方文档）")
 
+    def test_hyphenated_terms_in_chinese_pass(self) -> None:
+        for text in [
+            "上一条回复第 1 点很可能直接写了 LLM-as-a-judge 而没放进反引号。",
+            "这次算是半误报：LLM-as-a-judge 是一个术语。",
+            "这套方案是 state-of-the-art 的做法，装好就能 out-of-the-box 使用。",
+            "先跑 end-to-end 测试。",
+        ]:
+            with self.subTest(text=text):
+                self.assert_passes(text)
+
+    def test_english_sentences_with_hyphenated_words_are_flagged(self) -> None:
+        for text in [
+            "The end-to-end tests pass on the host now.",
+            "结论：We use LLM-as-a-judge to score the answers in the report.",
+            "This is a state-of-the-art approach for the retrieval step.",
+        ]:
+            with self.subTest(text=text):
+                self.assert_flagged(text)
+
     def test_insight_banner_passes(self) -> None:
         self.assert_passes(
             "`★ Insight ─────────────────────────────────────`\n"
@@ -190,6 +209,68 @@ class HookTests(unittest.TestCase):
     def test_ask_allows_chinese_question_text_with_an_english_preview(self) -> None:
         options = [{"label": "方案 A (Recommended)", "description": "只改颜色。"}, {"label": "方案 B", "description": "改布局。"}]
         self.assertIsNone(self.ask(options, preview="The preview shows the code that will change in the file."))
+
+
+class PluginTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.data = Path(self.temp.name) / "plugin data"
+        self.manifest = json.loads((SKILL_DIR / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+        self.hooks = json.loads((SKILL_DIR / "hooks" / "hooks.json").read_text(encoding="utf-8"))["hooks"]
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def handler(self, event, matcher=None):
+        groups = [group for group in self.hooks[event] if group.get("matcher") == matcher]
+        self.assertEqual(len(groups), 1, f"{event} {matcher}")
+        (handler,) = groups[0]["hooks"]
+        return handler
+
+    def run_handler(self, handler, payload):
+        places = {"${CLAUDE_PLUGIN_ROOT}": str(SKILL_DIR), "${CLAUDE_PLUGIN_DATA}": str(self.data)}
+
+        def substitute(value):
+            for placeholder, path in places.items():
+                value = value.replace(placeholder, path)
+            return value
+
+        self.assertEqual(handler["type"], "command")
+        argv = [substitute(handler["command"]), *map(substitute, handler["args"])]
+        if argv[0] == "python3":
+            argv[0] = sys.executable
+        result = subprocess.run(argv, input=json.dumps(payload), capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout) if result.stdout.strip() else None
+
+    def test_plugin_hooks_run_the_script_with_plugin_paths(self) -> None:
+        self.assertEqual(self.manifest["name"], "readable-output")
+        self.assertEqual(set(self.hooks), {"MessageDisplay", "PostToolBatch", "Stop", "PreToolUse"})
+        for handler in [
+            self.handler("MessageDisplay"),
+            self.handler("PostToolBatch"),
+            self.handler("Stop"),
+            self.handler("PreToolUse", "AskUserQuestion"),
+        ]:
+            self.assertEqual(handler["args"][0], "${CLAUDE_PLUGIN_ROOT}/scripts/check_chinese_reply.py")
+            self.assertIn("${CLAUDE_PLUGIN_DATA}/reply-language", handler["args"])
+
+        shown = {"session_id": "s1", "hook_event_name": "MessageDisplay", "delta": REPRODUCED_SENTENCE}
+        self.assertIsNone(self.run_handler(self.handler("MessageDisplay"), shown))
+        self.assertTrue((self.data / "reply-language" / "s1.txt").is_file())
+
+        stop = {"session_id": "s1", "hook_event_name": "Stop", "last_assistant_message": "全部完成。"}
+        output = self.run_handler(self.handler("Stop"), stop)
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("The sandbox only allows", output["reason"])
+
+        question = {"question": "选哪个？", "header": "方案", "options": [{"label": "A", "description": "This keeps the current layout as it is."}]}
+        ask = {"session_id": "s1", "hook_event_name": "PreToolUse", "tool_input": {"questions": [question]}}
+        output = self.run_handler(self.handler("PreToolUse", "AskUserQuestion"), ask)
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+        batch = {"session_id": "s1", "hook_event_name": "PostToolBatch", "tool_calls": []}
+        self.assertIsNone(self.run_handler(self.handler("PostToolBatch"), batch))
 
 
 if __name__ == "__main__":

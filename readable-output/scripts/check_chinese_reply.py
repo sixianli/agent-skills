@@ -14,7 +14,7 @@ INLINE_CODE = re.compile(r"(`+).+?\1")
 LINK = re.compile(r"\[[^\]]*\]\([^)\s]*\)")
 QUOTED = re.compile(r"“[^”]*”|\"[^\"]*\"")
 SLASHED = re.compile(r"\S*/\S*")
-WORD = re.compile(r"[A-Za-z]+(?:['’][A-Za-z]+)?")
+WORD = re.compile(r"[A-Za-z]+(?:['’-][A-Za-z]+)*")
 SENTENCE = re.compile(r"^[A-Z].*[.!?]$")
 STOPWORDS = frozenset(
     {

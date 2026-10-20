@@ -1,0 +1,109 @@
+{
+  "task": "readable-output-plugin",
+  "prefix": "RO",
+  "fingerprint": {
+    "include": [
+      "readable-output/",
+      "README.md",
+      "skills.json"
+    ],
+    "exclude": [
+      "readable-output/tests/verification/"
+    ]
+  },
+  "items": [
+    {
+      "id": "RO-1",
+      "title": "带连字符的英文术语不再被当成英文句子，真正的英文句子照样被拦",
+      "goal_ref": [
+        "G1"
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-20",
+        "why": "用户截图里的误报就是这个原因，改成插件后会照样发生"
+      },
+      "done_when": [
+        {
+          "type": "test",
+          "file": "readable-output/tests/test_check_chinese_reply.py",
+          "name": "test_hyphenated_terms_in_chinese_pass"
+        },
+        {
+          "type": "test",
+          "file": "readable-output/tests/test_check_chinese_reply.py",
+          "name": "test_english_sentences_with_hyphenated_words_are_flagged"
+        }
+      ]
+    },
+    {
+      "id": "RO-2",
+      "title": "skill 文件夹自带插件清单和 hooks/hooks.json，四个 hook 按 Claude Code 的执行方式能跑通",
+      "goal_ref": [
+        "G1"
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-20"
+      },
+      "done_when": [
+        {
+          "type": "test",
+          "file": "readable-output/tests/test_check_chinese_reply.py",
+          "name": "test_plugin_hooks_run_the_script_with_plugin_paths"
+        },
+        {
+          "type": "command",
+          "run": "claude plugin validate readable-output"
+        }
+      ]
+    },
+    {
+      "id": "RO-3",
+      "title": "真实 Claude Code 会话加载 readable-output@skills-dir，Stop hook 拦下英文结尾",
+      "goal_ref": [
+        "G1"
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-20"
+      },
+      "done_when": [
+        {
+          "type": "command",
+          "run": "python3 readable-output/tests/plugin_session_e2e.py"
+        }
+      ]
+    },
+    {
+      "id": "RO-4",
+      "title": "SKILL.md、README、skills.json 改成插件装法，readable-output 在仓库检查里全部通过",
+      "goal_ref": [
+        "G1"
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-20"
+      },
+      "done_when": [
+        {
+          "type": "doc",
+          "path": "readable-output/SKILL.md",
+          "heading": "5. Check that replies are in Chinese"
+        },
+        {
+          "type": "command",
+          "run": "python3 -m py_compile readable-output/scripts/check_ascii.py readable-output/scripts/check_chinese_reply.py readable-output/tests/test_check_ascii.py readable-output/tests/test_check_chinese_reply.py readable-output/tests/plugin_session_e2e.py"
+        },
+        {
+          "type": "command",
+          "run": "uv run --with ruff ruff check readable-output/scripts readable-output/tests"
+        },
+        {
+          "type": "command",
+          "run": "uv run --no-project --with pyyaml python -c \"import sys; sys.path.insert(0, 'scripts'); from pathlib import Path; import validate_all; sys.exit(1 if validate_all.skill_structure_error(Path('readable-output')) else 0)\""
+        }
+      ]
+    }
+  ]
+}
