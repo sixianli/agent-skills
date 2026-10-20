@@ -101,6 +101,56 @@ class EnglishProseTests(unittest.TestCase):
             with self.subTest(text=text):
                 self.assert_flagged(text)
 
+    def test_english_terms_in_chinese_pass(self) -> None:
+        terms = [
+            "ai agent",
+            "AI Agent",
+            "llm as judge",
+            "LLM as a judge",
+            "human in the loop",
+            "Human in the Loop",
+            "state of the art",
+            "the state of the art",
+            "out of the box",
+            "end to end",
+            "proof of concept",
+            "chain of thought",
+            "mixture of experts",
+            "single source of truth",
+            "separation of concerns",
+            "time to first token",
+            "bring your own key",
+            "learning to rank",
+            "reinforcement learning from human feedback",
+            "retrieval augmented generation",
+            "Model Context Protocol",
+            "Claude in Chrome",
+            "Attention Is All You Need",
+        ]
+        for term in terms:
+            with self.subTest(term=term):
+                self.assert_passes(f"我们用 {term} 来做这件事。")
+                self.assert_passes(f"- {term}：评测方法")
+                self.assert_passes(f"| {term} | 术语 |")
+
+    def test_english_sentences_without_punctuation_are_flagged(self) -> None:
+        for text in [
+            "now running the tests",
+            "running the tests on the host",
+            "the tests pass on the host now",
+            "we use LLM as a judge to score answers",
+            "I will check the logs",
+            "it is the state of the art approach",
+            "LLM as a judge is used to score the answers.",
+            "Use LLM as a judge for scoring.",
+            "结论：the build is broken on the host",
+            "1. Re-read the user's words in `goal.md`.",
+            "- Re-read the user's words in `goal.md`.",
+            "| `context` | Print what the hook injects |",
+        ]:
+            with self.subTest(text=text):
+                self.assert_flagged(text)
+
     def test_insight_banner_passes(self) -> None:
         self.assert_passes(
             "`★ Insight ─────────────────────────────────────`\n"

@@ -7,6 +7,10 @@
 
 ## 当前批次
 
+- RO-5 先写测试列出必须放行的术语和必须拦下的句子，再改判定规则：区分“有句子特征”（助动词、主语代词、句末标点、动词形态）和“只是名词短语”；证据：两条测试通过、端到端脚本退出码 0
+
+## 上一批次（保留原文）
+
 - RO-1 先写测试再改 `WORD` 规则，让连字符连起来的词算一个词；证据：两条测试通过
 - RO-2 先写测试，再加 `.claude-plugin/plugin.json` 和 `hooks/hooks.json`（exec 形式，状态目录放 `${CLAUDE_PLUGIN_DATA}`）；证据：测试通过、`claude plugin validate` 退出码 0
 - RO-3 写 `plugin_session_e2e.py`，用 `claude -p` 开真实会话，检查插件已加载、Stop hook 拦下英文；证据：脚本退出码 0 和留存的输出
@@ -20,6 +24,7 @@
 - 2026-10-20 10:15 建立任务。
 - 2026-10-20 RO-4 的完成条件从整个 `validate_all.py` 退出码 0 改成 readable-output 自己登记的检查（结构、py-compile、ruff；unittest 由 RO-1/RO-2 的测试证据覆盖）。原因：`opencode-orchestration` 在当前 HEAD 上就有 py-compile、unittest、ruff 失败（测试文件的 f-string 含反斜杠），与本任务无关，`validate_all.py` 不能只跑一个 skill。状态：未完成 4。
 - 2026-10-20 指纹排除 `readable-output/tests/verification/`，让验证说明写在证据之后也不会让证据失效。
+- 2026-10-20 新增 RO-5（G2）：用户要求只拦完整英文句子，不拦英文专有名词。现状：RO-1~RO-4 当前版本已验证 4。
 
 ## 意外和发现
 

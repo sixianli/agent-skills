@@ -104,6 +104,33 @@
           "run": "uv run --no-project --with pyyaml python -c \"import sys; sys.path.insert(0, 'scripts'); from pathlib import Path; import validate_all; sys.exit(1 if validate_all.skill_structure_error(Path('readable-output')) else 0)\""
         }
       ]
+    },
+    {
+      "id": "RO-5",
+      "title": "只拦完整的英文句子，不拦英文专有名词和术语（如 ai agent、llm as judge、human in the loop）",
+      "goal_ref": [
+        "G2"
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-20"
+      },
+      "done_when": [
+        {
+          "type": "test",
+          "file": "readable-output/tests/test_check_chinese_reply.py",
+          "name": "test_english_terms_in_chinese_pass"
+        },
+        {
+          "type": "test",
+          "file": "readable-output/tests/test_check_chinese_reply.py",
+          "name": "test_english_sentences_without_punctuation_are_flagged"
+        },
+        {
+          "type": "command",
+          "run": "python3 readable-output/tests/plugin_session_e2e.py"
+        }
+      ]
     }
   ]
 }

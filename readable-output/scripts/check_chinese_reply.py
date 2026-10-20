@@ -16,6 +16,7 @@ QUOTED = re.compile(r"“[^”]*”|\"[^\"]*\"")
 SLASHED = re.compile(r"\S*/\S*")
 WORD = re.compile(r"[A-Za-z]+(?:['’-][A-Za-z]+)*")
 SENTENCE = re.compile(r"^[A-Z].*[.!?]$")
+LIST_MARKER = re.compile(r"^(?:\d+[.)]|[-*+])\s+")
 STOPWORDS = frozenset(
     {
         "a", "an", "the", "is", "are", "was", "were", "be", "been", "being", "to", "of", "and", "or",
@@ -27,6 +28,15 @@ STOPWORDS = frozenset(
         "before", "after", "about", "because", "while",
     }
 )
+CLAUSE_WORDS = frozenset(
+    {
+        "am", "is", "are", "was", "were", "be", "been", "being", "will", "would", "can", "could", "should",
+        "must", "may", "might", "shall", "has", "have", "had", "do", "does", "did", "i", "we", "you", "they",
+        "he", "she", "it", "me", "us", "them", "let", "please", "now", "then", "there", "what", "which",
+        "when", "where", "why", "how",
+    }
+)
+VERB_FORM = re.compile(r"[a-z]{3,}(?:ing|ed)$")
 MAX_REPORTED = 8
 REPORT_WIDTH = 200
 
@@ -39,12 +49,23 @@ def runs(line):
     return [run.strip() for run in SEPARATOR.split(line)]
 
 
+def is_name(words, run):
+    content = [word for word in words if word.lower() not in STOPWORDS]
+    return len(words) >= 2 and bool(content) and all(word[0].isupper() for word in content) and not run.endswith((".", "!", "?"))
+
+
 def is_english(run):
     words = WORD.findall(run)
-    stops = sum(word.lower() in STOPWORDS for word in words)
-    if len(words) >= 4 and stops >= 2:
+    lowered = [word.lower() for word in words]
+    stops = sum(word in STOPWORDS for word in lowered)
+    if len(words) < 3 or stops == 0 or is_name(words, run):
+        return False
+    if SENTENCE.match(LIST_MARKER.sub("", run)) or any(word in CLAUSE_WORDS for word in lowered):
         return True
-    return len(words) >= 3 and stops >= 1 and bool(SENTENCE.match(run))
+    verb_form = any(VERB_FORM.match(word) and word not in STOPWORDS for word in lowered)
+    if len(words) >= 4 and stops >= 2 and verb_form:
+        return True
+    return len(words) >= 6 and stops >= 2
 
 
 def closes_fence(line, fence):

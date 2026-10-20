@@ -62,6 +62,21 @@ UV_CACHE_DIR="$TMPDIR/uv-cache" uv run --no-project --with pytest python -m pyte
 
 第一次写这个脚本时，提示词要求模型原样说出“构建完成、测试全部通过”，模型拒绝说没有依据的话，换了一句英文，脚本因为只认原句而报失败。hook 本身那次也拦下了。现在的提示词不含事实断言，第 4 项只检查拦截理由引用了模型实际说的英文。
 
+## 第二轮：只拦完整句子，不拦术语
+
+用户要求只拦完整的英文句子，不拦 `ai agent`、`llm as judge` 这类英文专有名词。旧规则只看“至少 4 个词、其中 2 个是虚词”，而 `a`、`the`、`of`、`in` 在术语里也很常见，所以 `LLM as a judge`、`human in the loop`、`state of the art`、`out of the box` 都会被拦。
+
+新规则要求一段英文同时有虚词和“句子特征”才拦。句子特征指以下任一种：大写开头、句末标点（忽略行首的列表编号）；含助动词、主语代词、`let`、`please`、`now`、`then` 或疑问词；4 个词以上、2 个虚词、带 `-ing` 或 `-ed` 结尾的动词；6 个词以上、2 个虚词。另外，首字母大写、末尾没有句号的名称会放行。
+
+| 项目 | 结果 |
+| --- | --- |
+| 先写测试再改代码 | 23 个术语（每个放进 3 种位置：句中、列表项、表格）里有 7 个被旧规则拦下，测试失败；12 个必须拦的句子当时都能拦 |
+| 漏拦补救 | 和旧规则逐行对比英文文档，发现 `1. Re-read the user's words in goal.md.` 和 `Print what the hook injects` 两种完整句子会漏拦，先补测试（失败），再修：判断大写开头时去掉列表编号，疑问词算句子特征 |
+| 本机真实回复对比 | 最近 40 个 Claude Code 会话里 3977 条中文回复：新旧规则都拦下同样 23 行，全是真正的英文句子，没有术语 |
+| 英文文档对比 | `long-task-planning/SKILL.md` 旧 102 行、新 100 行；新规则放行的是 `Needs a user decision`、`Check the rules in` 这类短语和残句 |
+
+已知会放行的情况：不含虚词的英文句子（如 `Tests passed.`）、3 个词以内的祈使句（如 `Ask the user`），旧规则也一样放行。
+
 ## 没有覆盖的部分
 
 - 交互式会话里 `PostToolBatch` 和 `AskUserQuestion` 的拦截：只在单元测试里按 Claude Code 的执行方式跑过，真实会话只验证了 `MessageDisplay` 和 `Stop`。
