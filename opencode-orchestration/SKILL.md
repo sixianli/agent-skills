@@ -105,12 +105,15 @@ waiting for the agent to stop:
 
 ## Goal, plan and progress
 
-Every delegated task is a full-mode long task under
-[long-task-planning](../long-task-planning/SKILL.md): the goal (user's words),
-items with completion conditions, and the plan live in
-`<repo>/.agents/tasks/<task>/`, and whether an item is done comes only from
-`longtask.py status`. Each brief names at most three item IDs as bullets in
-its `范围` section and copies their `done_when`; run
+A delegated batch is by itself a light-mode task under
+[long-task-planning](../long-task-planning/SKILL.md): its brief and stop file
+in the handoff directory are its record. When the batch belongs to a task
+that is in full mode (an open-ended goal, more than three verified
+acceptance items, or the user asked for it), the goal (user's words), items
+with completion conditions, and the plan live in
+`<repo>/.agents/tasks/<task>/`, whether an item is done comes only from
+`longtask.py status`, and each brief names at most three item IDs as
+bullets in its `范围` section and copies their `done_when`; run
 `longtask.py check-brief <brief>` before launching. A batch that changes no
 file at all (reading code for a report, reviewing a document Claude wrote)
 needs no item: put a line that is exactly `只读任务：是` in the brief, outside

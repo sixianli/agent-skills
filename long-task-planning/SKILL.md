@@ -1,6 +1,6 @@
 ---
 name: long-task-planning
-description: Keeps a long-running coding task's goal, plan and done/not-done state from drifting. Use at the start of every hands-on task to pick light or full mode, and in full mode whenever you plan, replan, delegate to Codex or another agent, record test evidence, report progress or declare completion. Full mode applies when part of the work goes to another agent, the goal is open-ended ("fix every bug found", "until launch"), there are more than 3 separately verified acceptance items, the task continues unfinished earlier work, or the user asks; light mode upgrades after a compaction with unfinished work, before delegating, or when scope or difficulty grows.
+description: Keeps a long-running coding task's goal, plan and done/not-done state from drifting. Use at the start of every hands-on task to pick light or full mode, and in full mode whenever you plan, replan, delegate to Codex or another agent, record test evidence, report progress or declare completion. Light mode is the default and costs nothing; full mode applies when the goal is open-ended ("fix every bug found", "until launch"), there are more than 3 separately verified acceptance items, the task continues one already in full mode, or the user asks; light mode upgrades after a compaction with unfinished work or when scope or difficulty grows. Delegating a bounded batch to another agent does not by itself make a task long.
 ---
 
 # Long Task Planning
@@ -33,23 +33,22 @@ The model forgets; files and scripts do not. This skill keeps three things apart
 
 ## Choose the mode
 
-The question is whether the work, before it is done, will change agent, change session, or go through context compaction. At the start, check five facts; **any hit means full mode**:
+The question is whether the work, before it is done, will change session or go through context compaction so often that memory alone would lose its state. Light mode is the default and costs nothing. At the start, check four facts; **any hit means full mode**:
 
-1. Part of the work goes to Codex or another agent. A read-only search subagent that returns within minutes does not count.
-2. The goal is open-ended: until an unknown number is reached ("fix every bug found", "find them all") or until a state ("launch soon").
-3. More than 3 separately verified acceptance items. List them before counting; items verified by one command count as one.
-4. It continues an unfinished earlier task: the user says "continue", or a task directory for this goal already exists.
-5. The user asks for it.
+1. The goal is open-ended: until an unknown number is reached ("fix every bug found", "find them all") or until a state ("launch soon").
+2. More than 3 separately verified acceptance items. List them before counting; items verified by one command count as one.
+3. It continues a task that is already in full mode: a task directory for this goal exists and is not closed.
+4. The user asks for it.
 
-If unsure whether a fact hits, count it as a hit. For hands-on tasks (code, configuration, debugging) state the mode and the facts that hit in one line at the start, for example `模式：完整（第 1、2 条：要交给 Codex；目标是“一经发现的 bug 都修掉”）`. Skip this for pure questions.
+Delegating work to Codex, opencode or another agent is not a fact by itself: a bounded batch (one deliverable, about two hours, one brief and one stop file) stays in light mode, and the brief and stop file in the project's handoff directory are its record. A delegated batch is full mode only when one of the four facts hits, for example when it is one item of a task already in full mode. If unsure whether a fact hits, count it as a hit. For hands-on tasks (code, configuration, debugging) state the mode and the facts that hit in one line at the start, for example `模式：完整（第 1 条：目标是“一经发现的 bug 都修掉”）` or `模式：轻量（一次交付，交给 opencode 的一个批次）`. Skip this for pure questions.
 
 ## Light mode
 
 - Keep the steps in the session todo tool (Claude Code todos, Codex `update_plan`). The first todo quotes the user's goal verbatim.
 - Before saying it is done, show the verification output.
-- No task files. Upgrade immediately, never downgrade, when:
+- No task files. A delegated batch keeps its brief and stop file in the project's handoff directory; that is its record.
+- Upgrade immediately, never downgrade, when:
   - the context was just compacted and the work is unfinished;
-  - you are about to delegate to another agent;
   - scope or difficulty grows: more than 3 acceptance items, the goal turns open-ended, or two attempts at the same problem failed.
 
 ## Full mode files
