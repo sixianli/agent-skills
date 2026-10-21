@@ -147,4 +147,3 @@ discipline, not the project's commands or hosts.
 For behavior-preserving refactors, run relevant existing tests and add
 coverage where needed. Documentation-only or formatting-only changes that
 do not affect behavior may use direct inspection or existing checks.
-
