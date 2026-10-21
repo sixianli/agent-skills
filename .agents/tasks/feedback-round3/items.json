@@ -1,0 +1,129 @@
+{
+  "task": "feedback-round3",
+  "prefix": "S3",
+  "items": [
+    {
+      "id": "S3-F21",
+      "title": "记录测试后又改了 test_exclude 里的文件、再和代码一起提交，测试证据仍算当前版本",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "tag": "S3-F21"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-21",
+        "why": "FEEDBACK F21，已复现"
+      }
+    },
+    {
+      "id": "S3-F22",
+      "title": "命令类检查可以用 ignore_test_exclude 选择认 test_exclude，不写时行为不变",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "tag": "S3-F22"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-21",
+        "why": "FEEDBACK F22，部分确认"
+      }
+    },
+    {
+      "id": "S3-R1",
+      "title": "仓库总校验、变异检查、私人信息扫描通过，文档写明新规则",
+      "goal_ref": [
+        "G1"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "uv run --no-project --with pyyaml python scripts/validate_all.py"
+        },
+        {
+          "type": "command",
+          "run": "python3 long-task-planning/tests/mutate.py"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_mutate.py",
+          "name": "test_every_mutant_applies_to_its_target_exactly_once"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_mutate.py",
+          "name": "test_every_mutant_names_tests_that_exist"
+        },
+        {
+          "type": "command",
+          "run": "test -s .agents/local/private-patterns.txt && python3 sensitive-information-scan/scripts/scan_sensitive.py --repo . --policy sensitive-information-scan/assets/repository-policy.json --private-patterns .agents/local/private-patterns.txt --fail-on-findings"
+        },
+        {
+          "type": "doc",
+          "path": "long-task-planning/SKILL.md",
+          "heading": "Documentation-only changes"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-21",
+        "why": "最终检查"
+      }
+    },
+    {
+      "id": "S3-R2",
+      "title": "FEEDBACK.md 的 F21、F22 补“已处理”，F23 记暂缓，F24 记复现；本仓库记忆更新",
+      "goal_ref": [
+        "G1",
+        "G4"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-21",
+        "why": "收尾"
+      }
+    }
+  ],
+  "fingerprint": {
+    "include": [
+      "long-task-planning/",
+      "codex-orchestration/",
+      "scripts/",
+      "skills.json",
+      ".gitignore"
+    ],
+    "test_exclude": [
+      "README.md",
+      "long-task-planning/SKILL.md",
+      "long-task-planning/references/",
+      "long-task-planning/tests/verification/",
+      "codex-orchestration/SKILL.md",
+      "codex-orchestration/templates/"
+    ]
+  }
+}
