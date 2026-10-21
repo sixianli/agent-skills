@@ -748,7 +748,7 @@
       "package_dir": "verification-discipline",
       "readme": "verification-discipline/SKILL.md",
       "skill_dir": "verification-discipline",
-      "description": "Test-first, end-to-end-first verification discipline with retained evidence for implementation work.",
+      "description": "Test-value gate, test-first and end-to-end-first verification with speed and isolation budgets, required tests for storage, recovery and model-facing changes, retained evidence, and three-state reporting.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
