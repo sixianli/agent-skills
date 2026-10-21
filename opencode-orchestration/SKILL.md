@@ -492,6 +492,12 @@ revise them from experience):
 - For a read-only batch, write the line `只读任务：是` on its own, outside
   fenced code, so the launcher skips the long-task item check; a brief that
   lets the agent edit any file must not carry it.
+- Require the six test-value answers for every new test file (entry point
+  and observable result, bug or rule, gap, smallest failing input, tier,
+  measured time) and the three-state result (not run, failed, passed) with
+  red and green runs for a fix; the brief template carries the wording and
+  the stop summary has the rows. The rules are the
+  [verification-discipline](../verification-discipline/SKILL.md) skill's.
 - Paste [templates/stop-summary.md](templates/stop-summary.md) into the
   appendix.
 - Name every cleanup target by exact path, never by kind ("superseded
