@@ -27,10 +27,15 @@ DEFAULT_SIGNALS = [
 ]
 EDIT_TOOLS = {"edit", "write", "patch", "apply_patch", "multiedit"}
 MARKERS = ("CHECKPOINT:", "QUESTION:")
+ZERO_WIDTH = dict.fromkeys(map(ord, "\u200b\u200c\u200d\u2060\ufeff"))
 
 
 def one_line(value, limit):
     return " ".join(str(value).split())[:limit]
+
+
+def has_visible_text(value):
+    return bool(value.translate(ZERO_WIDTH).strip())
 
 
 def describe(event, signals):
@@ -47,7 +52,7 @@ def describe(event, signals):
             stripped = line.strip()
             if stripped.startswith(MARKERS):
                 lines.append(one_line(stripped, 400))
-            elif stripped:
+            elif has_visible_text(stripped):
                 rest.append(stripped)
         if rest:
             lines.insert(0, f"SAYS: {one_line(' '.join(rest), 400)}")

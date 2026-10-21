@@ -327,6 +327,19 @@ class WatchTests(unittest.TestCase):
         self.assertIn("RUN_ERROR: provider.no-route Model unavailable", out)
         self.assertTrue(out.rstrip().endswith("EXITED rc=1"))
 
+    def test_text_of_only_blank_and_zero_width_characters_gives_no_says_line(self):
+        lines = [
+            text("\u200b"),
+            text("\u200b\u200c\u200d\u2060\ufeff \t\n\u200b\n"),
+            text("\u200bReview finished.\u200b"),
+            text("Plain words here."),
+        ]
+        self.jsonl.write_text("\n".join(lines) + "\n")
+        Path(str(self.prefix) + ".rc").write_text("0\n")
+        out = self.watch("--from-start").stdout
+        says_lines = [line for line in out.splitlines() if line.startswith("SAYS:")]
+        self.assertEqual(says_lines, ["SAYS: \u200bReview finished.\u200b", "SAYS: Plain words here."])
+
     def test_one_tool_call_gives_one_signal_line_with_counts_and_the_real_command(self):
         log = "\n".join(["Error: Test timed out in 5000ms."] * 4 + ["Tests  2 failed | 9 passed"])
         lines = [

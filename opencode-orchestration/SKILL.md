@@ -836,5 +836,16 @@ instructions reserve for the user. Production steps are never delegated.
   the launcher with the check removed. The `只读任务：是` line now gives
   such briefs a proper way through (see
   [Launching and resuming](#launching-and-resuming)).
+- 2026-10-22: during a review run in another real project,
+  `opencode/deepseek-v4.1-flash-free#high` kept sending text parts that held
+  only a zero-width space (U+200B). Python's `strip()` does not remove it,
+  so `oc-watch.py` printed a bare `SAYS:` line for each one and woke Claude
+  more than a dozen times with nothing to act on; the user saw Claude
+  spinning. That run's event stream had 42 such parts out of 44 text parts.
+  `oc-watch.py` now prints `SAYS` only when a line still has text after
+  removing whitespace and U+200B, U+200C, U+200D, U+2060 and U+FEFF; the text
+  it prints is unchanged. A test feeds it zero-width-only, mixed and plain
+  text, and a replay of that stream dropped the 42 empty lines and left
+  every other line the same.
 - Observed cost, for planning: a 14-minute batch with about 40 tool calls on
   `deepseek-v4.1-flash` cost about USD 0.10, mostly cached input.
