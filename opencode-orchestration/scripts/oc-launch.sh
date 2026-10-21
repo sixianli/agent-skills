@@ -17,6 +17,11 @@ When OC_ALLOWED_MODELS names a file, or .opencode/allowed-models.txt exists in
 the current directory, the model (without its #variant) must equal one of its
 lines (blank lines and lines starting with # are ignored); otherwise nothing
 starts and the exit code is 2.
+When .agents/tasks exists in the current directory, a new session's brief must
+name at least one long-task item (longtask.py check-brief), unless the brief
+holds a line that is exactly 只读任务：是 outside fenced code: then the check is
+skipped and READ_ONLY_BRIEF is printed. Use it only for work that changes no
+file (reading code for a report, reviewing a document).
 When .opencode/opencode.json exists in the current directory, every text in a
 bash deny pattern of the form *text* (no spaces or other wildcards) that the
 brief or reply contains must also appear on a line starting with
@@ -134,7 +139,23 @@ elif [ -e "$stop" ]; then
   exit 2
 fi
 if [ "$mode" = new ] && [ -d .agents/tasks ] && [ -f "$longtask" ]; then
-  python3 "$longtask" check-brief "$brief" || { echo "check-brief refused the brief" >&2; exit 2; }
+  if python3 - "$brief" <<'PY'
+import sys
+inside = False
+for line in open(sys.argv[1], encoding="utf-8"):
+    stripped = line.rstrip("\n")
+    if stripped.startswith("```") or stripped.startswith("~~~"):
+        inside = not inside
+        continue
+    if not inside and stripped == "只读任务：是":
+        sys.exit(0)
+sys.exit(1)
+PY
+  then
+    echo "READ_ONLY_BRIEF: the brief marks itself read-only (只读任务：是), so the long-task item check is skipped"
+  else
+    python3 "$longtask" check-brief "$brief" || { echo "check-brief refused the brief" >&2; exit 2; }
+  fi
 fi
 
 for suffix in jsonl err pid rc; do

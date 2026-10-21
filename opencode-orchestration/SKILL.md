@@ -111,7 +111,11 @@ items with completion conditions, and the plan live in
 `<repo>/.agents/tasks/<task>/`, and whether an item is done comes only from
 `longtask.py status`. Each brief names at most three item IDs as bullets in
 its `范围` section and copies their `done_when`; run
-`longtask.py check-brief <brief>` before launching. opencode records test
+`longtask.py check-brief <brief>` before launching. A batch that changes no
+file at all (reading code for a report, reviewing a document Claude wrote)
+needs no item: put a line that is exactly `只读任务：是` in the brief, outside
+fenced code, and `oc-launch.sh new` skips the check and prints
+`READ_ONLY_BRIEF`; every other check still runs. opencode records test
 evidence with `longtask.py record --by opencode` and never edits `goal.md`,
 `items.json` or `plan.md`.
 
@@ -482,6 +486,9 @@ revise them from experience):
 - Name the batch's one stop file by its full path, and no other path ending
   in `stop.md`: the launcher refuses a brief that names none or several
   (see [Launching and resuming](#launching-and-resuming)).
+- For a read-only batch, write the line `只读任务：是` on its own, outside
+  fenced code, so the launcher skips the long-task item check; a brief that
+  lets the agent edit any file must not carry it.
 - Paste [templates/stop-summary.md](templates/stop-summary.md) into the
   appendix.
 - Name every cleanup target by exact path, never by kind ("superseded
@@ -804,5 +811,11 @@ instructions reserve for the user. Production steps are never delegated.
   unfinished; mentions inside prose, such as `本次待补的两个保证`, still
   pass. When a run's stop file uses another way to say "not yet", add it to
   `PLACEHOLDER` in [scripts/stop-file.py](scripts/stop-file.py) with a test.
+- 2026-10-20: a brief that only asked opencode to read code and write a
+  report was refused by `check-brief`, because every brief had to name a
+  long-task item; four read-only review sessions then ran from a copy of
+  the launcher with the check removed. The `只读任务：是` line now gives
+  such briefs a proper way through (see
+  [Launching and resuming](#launching-and-resuming)).
 - Observed cost, for planning: a 14-minute batch with about 40 tool calls on
   `deepseek-v4.1-flash` cost about USD 0.10, mostly cached input.

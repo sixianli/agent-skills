@@ -659,6 +659,7 @@ class StopFileTests(Base):
         self.assertIn("STOP_FILE_EXISTS", result.stderr)
         self.assertEqual(self.calls(), 0)
 
+
     def test_ending_without_the_stop_file_resumes_the_same_session(self):
         result = self.launch_resuming(self.counting_fake(finish_on=2))
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -734,3 +735,42 @@ class StopFileTests(Base):
         self.assertEqual(self.finish(), "1")
         self.assertEqual(self.calls(), 1)
         self.assertFalse(Path(str(self.prefix) + ".unfinished").exists())
+
+
+class ReadOnlyBriefTests(Base):
+    counting_fake = StopFileTests.counting_fake
+    launch_resuming = StopFileTests.launch_resuming
+    calls = StopFileTests.calls
+    finish = StopFileTests.finish
+
+    def setUp(self):
+        super().setUp()
+        self.count = self.root / "count"
+        subprocess.run(["git", "init", "-q", str(self.root)], capture_output=True, check=True)
+        subprocess.run(
+            [sys.executable, str(SCRIPTS.parent.parent / "long-task-planning" / "scripts" / "longtask.py"), "init", "t1", "--prefix", "T", "--goal", "目标"],
+            cwd=self.root, capture_output=True, text=True, check=True,
+        )
+
+    def test_a_read_only_brief_skips_the_item_check(self):
+        self.brief.write_text(f"# brief\n\n只读任务：是\n\n写停止文件 `{self.stop}`。\n")
+        result = self.launch_resuming(self.counting_fake(finish_on=1))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("READ_ONLY_BRIEF", result.stdout)
+        self.assertEqual(self.finish(), "0")
+        self.assertEqual(self.calls(), 1)
+
+    def test_a_brief_without_the_line_still_needs_an_item(self):
+        self.brief.write_text(f"# brief\n\n写停止文件 `{self.stop}`。\n")
+        result = self.launch_resuming(self.counting_fake())
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("check-brief refused the brief", result.stderr)
+        self.assertNotIn("READ_ONLY_BRIEF", result.stdout)
+        self.assertEqual(self.calls(), 0)
+
+    def test_the_line_inside_fenced_code_or_indented_does_not_count(self):
+        self.brief.write_text(f"# brief\n\n```\n只读任务：是\n```\n\n  只读任务：是\n\n写停止文件 `{self.stop}`。\n")
+        result = self.launch_resuming(self.counting_fake())
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("check-brief refused the brief", result.stderr)
+        self.assertEqual(self.calls(), 0)
