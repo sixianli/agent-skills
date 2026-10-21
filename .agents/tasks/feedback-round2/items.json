@@ -220,13 +220,13 @@
       "done_when": [
         {
           "type": "command",
-          "run": "test -s .agents/local/private-patterns.txt && { git grep -q --untracked -IEf .agents/local/private-patterns.txt -- long-task-planning codex-orchestration .gitignore .agents/tasks; test $? -eq 1; }"
+          "run": "test -s .agents/local/private-patterns.txt && python3 sensitive-information-scan/scripts/scan_sensitive.py --repo . --policy sensitive-information-scan/assets/repository-policy.json --private-patterns .agents/local/private-patterns.txt --fail-on-findings"
         }
       ],
       "added": {
         "by": "claude",
         "on": "2026-10-03",
-        "why": "最终检查；README.md、skills.json 里有别人原有的私人信息，按用户要求不动，所以不在检查范围内"
+        "why": "最终检查；2026-10-21 起用仓库的敏感信息扫描程序扫整个仓库，因为私人信息规则文件含 Python 正则，git grep -E 读不懂，原命令以退出码 128 报错"
       }
     },
     {
@@ -288,6 +288,10 @@
         "by": "claude",
         "on": "2026-10-03",
         "why": "用户 2026-10-03 要求的定时任务；看第一次运行的结果"
+      },
+      "withdrawn": {
+        "on": "2026-10-21",
+        "ref": "G8"
       }
     }
   ],
