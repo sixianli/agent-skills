@@ -408,6 +408,10 @@ def digest_lines(entries):
     return hashlib.sha256("\n".join(fingerprint_lines(entries)).encode("utf-8", "surrogateescape")).hexdigest()
 
 
+def code_digest(entries, test_excludes):
+    return digest_lines({path: value for path, value in entries.items() if not under_any(path, test_excludes)})
+
+
 def worktree_entries(repo, scope):
     entries, pending = {}, set()
     for line in split_z(git_out(repo, "ls-files", "-s", "-z")):
@@ -544,6 +548,16 @@ def environment_problem(check):
     return None
 
 
+def ignore_test_exclude_problem(check):
+    if "ignore_test_exclude" in check and not isinstance(check["ignore_test_exclude"], bool):
+        return (f"ignore_test_exclude 只能是 true 或 false，现在是 {check['ignore_test_exclude']!r}："
+                "写成布尔值，例如 \"ignore_test_exclude\": true")
+    if "ignore_test_exclude" in check and check.get("scope") == "environment":
+        return ("ignore_test_exclude 不能和 \"scope\": \"environment\" 一起用：环境检查不看代码版本，"
+                "删掉 ignore_test_exclude，或去掉 scope")
+    return None
+
+
 def parse_vitest(path):
     data = json.loads(read_text(path))
     start = data.get("startTime")
@@ -631,12 +645,15 @@ def base_record(kind, fingerprint, args):
     }
     if fingerprint.get("scope") is not None:
         record["scope"] = fingerprint["scope"]
+    if fingerprint.get("code_fingerprint") is not None:
+        record["code_fingerprint"] = fingerprint["code_fingerprint"]
+        record["test_exclude"] = fingerprint["test_exclude"]
     if args.note:
         record["note"] = args.note
     return record
 
 
-def record_fingerprint(task, args, scope):
+def record_fingerprint(task, args, scope, data=None):
     local = local_host()
     if args.fingerprint_file:
         try:
@@ -657,9 +674,14 @@ def record_fingerprint(task, args, scope):
                 "scope": recorded}
     if args.host and args.host != local:
         raise Fail("测试在别的机器上跑时，必须用 --fingerprint-file 传入在那台机器上运行 `longtask.py fingerprint --json` 得到的文件")
-    fingerprint = compute_fingerprint(task.repo, scope)
+    entries = worktree_entries(task.repo, scope)
+    fingerprint = compute_fingerprint(task.repo, scope, entries)
     fingerprint["host"] = local
     fingerprint["scope"] = scope_record(scope)
+    test_excludes = path_list(data, "test_exclude") if data is not None else []
+    if test_excludes:
+        fingerprint["code_fingerprint"] = code_digest(entries, test_excludes)
+        fingerprint["test_exclude"] = sorted(set(test_excludes))
     return fingerprint
 
 
@@ -786,7 +808,7 @@ def cmd_record(args):
     elif args.command is not None:
         if args.exit_code is None:
             raise Fail("--command 需要同时给出 --exit-code")
-        record = base_record("command", record_fingerprint(task, args, scope), args)
+        record = base_record("command", record_fingerprint(task, args, scope, data), args)
         record.update({"command": args.command, "exit_code": args.exit_code})
         if args.artifact:
             record["artifacts"] = artifacts_of(repo, args.artifact)
@@ -816,7 +838,7 @@ def cmd_record(args):
         if reviewed:
             record["reviewed_commit"] = reviewed
     else:
-        record = test_record(task, data, args, record_fingerprint(task, args, scope))
+        record = test_record(task, data, args, record_fingerprint(task, args, scope, data))
     append_record(task, record)
     print(describe_record(record))
     for path in record.get("unresolved_files", []):
@@ -915,13 +937,29 @@ class Evaluation:
     def untested_changes(self, record):
         if not self.test_excludes:
             return None
-        key = (record.get("commit"), record.get("fingerprint"))
+        recorded = record.get("test_exclude")
+        key = (record.get("commit"), record.get("fingerprint"), record.get("code_fingerprint"),
+               tuple(recorded) if isinstance(recorded, list) else None)
         if key not in self._untested:
             base = self.tested_commit(record)
             changed = self.changed_since(base) if base else None
             untested_only = changed is not None and all(excluded(path, self.test_excludes) for path in changed)
+            if not untested_only:
+                base = record.get("commit")
+                changed = self.changed_since(base) if base else None
+                if changed is not None and self.code_fingerprint_matches(record):
+                    changed = sorted(path for path in changed if under_any(path, self.test_excludes))
+                    untested_only = True
             self._untested[key] = (base, changed) if untested_only else None
         return self._untested[key]
+
+    def code_fingerprint_matches(self, record):
+        recorded = record.get("test_exclude")
+        if not isinstance(recorded, list) or not isinstance(record.get("code_fingerprint"), str):
+            return False
+        if recorded != sorted(set(self.test_excludes)):
+            return False
+        return record["code_fingerprint"] == code_digest(self.entries, self.test_excludes)
 
     def test_current(self, record):
         return self.current(record) or self.untested_changes(record) is not None
@@ -932,6 +970,8 @@ class Evaluation:
             return "", []
         commits = sorted({self.untested_changes(record)[0][:7] for record in relaxed})
         files = sorted({path for record in relaxed for path in self.untested_changes(record)[1]})
+        if any(self.tested_commit(record) is None and record.get("dirty") for record in relaxed):
+            return f"测试跑在 {'、'.join(commits)} 加记录时未提交的改动上，之后只改了测试不读的文件", files
         return f"测试跑在 {'、'.join(commits)} 上，之后只改了测试不读的文件", files
 
     def check(self, entry, check):
@@ -1093,11 +1133,17 @@ class Evaluation:
             return self.check_environment(run, host, check["max_age_days"])
         relevant = [record for record in self.records if record.get("kind") == "command"
                     and record.get("command") == run and self.host_ok(record, host)]
+        ignore = check.get("ignore_test_exclude") is True
         current = [record for record in relevant if self.current(record)]
+        if ignore:
+            current = [record for record in relevant if self.test_current(record)]
         if current:
             failed = [record for record in current if record.get("exit_code") != 0]
             if failed:
                 return "not_done", f"当前版本上“{run}”失败过（{'、'.join(record['id'] for record in failed)}）", []
+            note, untested = self.relaxed_note(current) if ignore else ("", [])
+            if note:
+                return "verified", f"“{run}”在当前版本上通过；{note}", untested
             return "verified", f"“{run}”在当前版本上通过", []
         for record in reversed(relevant):
             if record.get("exit_code") == 0:
@@ -1370,6 +1416,13 @@ def validate_check(name, check):
         errors.append(f"条目 {name} 的命令类完成条件缺少 run")
     elif kind == "command" and "scope" in check:
         problem = environment_problem(check)
+        if problem:
+            errors.append(f"条目 {name} 的{problem}")
+        problem = ignore_test_exclude_problem(check)
+        if problem:
+            errors.append(f"条目 {name} 的{problem}")
+    elif kind == "command":
+        problem = ignore_test_exclude_problem(check)
         if problem:
             errors.append(f"条目 {name} 的{problem}")
     if "host" in check and not isinstance(check["host"], str):

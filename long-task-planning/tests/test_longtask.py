@@ -1092,6 +1092,12 @@ class TestExcludeTests(Base):
     def head(self):
         return self.git(self.repo, "rev-parse", "HEAD").strip()
 
+    def fresh_repo(self, name):
+        repo = self.make_repo(name)
+        write(repo, "docs/guide.md", "# 指南\n")
+        self.commit_all(repo, "docs")
+        return repo
+
     def test_doc_only_change_keeps_test_evidence_current(self):
         self.task_with([item("T-A1", [tag_check("T-A1")]),
                         item("T-S1", [{"type": "test", "file": "test/app.test.ts", "name": "adds"}]),
@@ -1166,6 +1172,99 @@ class TestExcludeTests(Base):
         self.record_vitest(self.repo, self.passing(self.repo), "--fingerprint-file", str(fp_file))
         write(self.repo, "docs/guide.md", "# 只改文档\n")
         self.assertEqual(self.status_of(self.repo, "T-A1"), "older")
+
+    def test_never_committed_alone_doc_change_keeps_evidence_current(self):
+        self.task_with([item("T-A1", [tag_check("T-A1")])])
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        recorded = self.record_vitest(self.repo, self.passing(self.repo))
+        self.assertEqual(recorded["test_exclude"], ["docs/"])
+        self.assertIn("code_fingerprint", recorded)
+        write(self.repo, "docs/guide.md", "# 指南\n\n新的一段\n")
+        for stage in ("uncommitted", "committed"):
+            with self.subTest(stage=stage):
+                if stage == "committed":
+                    self.commit_all(self.repo, "code and docs")
+                entry = self.item_of(self.status(self.repo)[1], "T-A1")
+                self.assertEqual(entry["status"], "verified", entry)
+                self.assertEqual(entry["changed_files"], [])
+                check = entry["checks"][0]
+                self.assertIn("测试不读", check["reason"])
+                self.assertIn("加记录时未提交的改动", check["reason"])
+                self.assertEqual(check["changed_files"], ["docs/guide.md"])
+
+    def test_never_committed_alone_later_code_change_is_older(self):
+        for label, change_docs in (("code", False), ("code and docs", True)):
+            with self.subTest(change=label):
+                repo = self.fresh_repo(f"repo-{label.replace(' ', '-')}")
+                self.init_task(repo, [item("T-A1", [tag_check("T-A1")])],
+                               extra={"fingerprint": {"test_exclude": ["docs/"]}})
+                write(repo, "src/app.ts", "export const x = 2;\n")
+                self.record_vitest(repo, self.passing(repo))
+                write(repo, "src/app.ts", "export const x = 3;\n")
+                if change_docs:
+                    write(repo, "docs/guide.md", "# 改了文档\n")
+                entry = self.item_of(self.status(repo)[1], "T-A1")
+                self.assertEqual(entry["status"], "older", entry)
+                self.assertIn("src/app.ts", entry["changed_files"])
+
+    def test_never_committed_alone_changed_test_exclude_is_older(self):
+        self.task_with([item("T-A1", [tag_check("T-A1")])])
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        self.record_vitest(self.repo, self.passing(self.repo))
+        write(self.repo, "docs/guide.md", "# 只改文档\n")
+        self.assertEqual(self.status_of(self.repo, "T-A1"), "verified")
+        self.set_items(self.repo, [item("T-A1", [tag_check("T-A1")])],
+                       extra={"fingerprint": {"test_exclude": ["docs/", "CHANGELOG.md"]}})
+        entry = self.item_of(self.status(self.repo)[1], "T-A1")
+        self.assertEqual(entry["status"], "older", entry)
+
+    def test_never_committed_alone_without_test_exclude_records_no_fields(self):
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        recorded = self.record_vitest(self.repo, self.passing(self.repo))
+        self.assertNotIn("code_fingerprint", recorded)
+        self.assertNotIn("test_exclude", recorded)
+        write(self.repo, "docs/guide.md", "# 只改文档\n")
+        self.assertEqual(self.status_of(self.repo, "T-A1"), "older")
+
+    def test_never_committed_alone_failure_survives_doc_change(self):
+        self.task_with([item("T-A1", [tag_check("T-A1")])])
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        failed = self.record_vitest(self.repo, [(str(self.repo / "test/app.test.ts"), "[T-A1] adds", "failed")])
+        write(self.repo, "docs/guide.md", "# 只改文档\n")
+        self.commit_all(self.repo, "code and docs")
+        entry = self.item_of(self.status(self.repo)[1], "T-A1")
+        self.assertEqual(entry["status"], "not_done", entry)
+        self.assertIn(failed["id"], " ".join(entry["reasons"]))
+
+    def test_ignore_test_exclude_command_follows_doc_only_change(self):
+        self.task_with([item("T-C1", [{"type": "command", "run": "make check", "ignore_test_exclude": True}]),
+                        item("T-C2", [{"type": "command", "run": "make check"}])])
+        self.ok(self.cli(self.repo, "record", "--command", "make check", "--exit-code", "0"))
+        write(self.repo, "docs/guide.md", "# 改了文档\n")
+        data = self.status(self.repo)[1]
+        entry = self.item_of(data, "T-C1")
+        self.assertEqual(entry["status"], "verified", entry)
+        self.assertIn("测试不读", entry["checks"][0]["reason"])
+        self.assertEqual(entry["checks"][0]["changed_files"], ["docs/guide.md"])
+        self.assertEqual(self.item_of(data, "T-C2")["status"], "older")
+
+    def test_ignore_test_exclude_command_ages_with_code_changes(self):
+        self.task_with([item("T-C1", [{"type": "command", "run": "make check", "ignore_test_exclude": True}])])
+        self.ok(self.cli(self.repo, "record", "--command", "make check", "--exit-code", "0"))
+        write(self.repo, "src/app.ts", "export const x = 2;\n")
+        entry = self.item_of(self.status(self.repo)[1], "T-C1")
+        self.assertEqual(entry["status"], "older", entry)
+        self.assertIn("src/app.ts", entry["changed_files"])
+
+    def test_ignore_test_exclude_command_failure_survives_doc_change(self):
+        self.task_with([item("T-C1", [{"type": "command", "run": "make check", "ignore_test_exclude": True}])])
+        self.ok(self.cli(self.repo, "record", "--command", "make check", "--exit-code", "1"))
+        recorded = self.records(self.repo)[-1]
+        write(self.repo, "docs/guide.md", "# 改了文档\n")
+        entry = self.item_of(self.status(self.repo)[1], "T-C1")
+        self.assertEqual(entry["status"], "not_done", entry)
+        self.assertIn(recorded["id"], " ".join(entry["reasons"]))
 
     def test_commands_and_reviews_ignore_test_exclude(self):
         self.task_with([item("T-C1", [{"type": "command", "run": "make check"}]), item("T-R1", [{"type": "review"}])])
@@ -1519,6 +1618,32 @@ class LintTests(Base):
         code, output = self.lint(self.repo)
         self.assertEqual(code, 1)
         self.assertIn("意外和发现", output)
+
+    def test_ignore_test_exclude_lint_requires_a_boolean(self):
+        for index, value in enumerate(("yes", 1)):
+            with self.subTest(value=value):
+                repo = self.make_repo(f"lint-bool-{index}")
+                self.init_task(repo, [item("T-C1", [
+                    {"type": "command", "run": "make check", "ignore_test_exclude": value}])], commit=False)
+                code, output = self.lint(repo)
+                self.assertEqual(code, 1, output)
+                self.assertIn("ignore_test_exclude", output)
+                self.assertIn("true", output)
+        valid = self.make_repo("lint-bool-valid")
+        self.init_task(valid, [item("T-C1", [
+            {"type": "command", "run": "make check", "ignore_test_exclude": True}])])
+        code, output = self.lint(valid)
+        self.assertEqual(code, 0, output)
+
+    def test_ignore_test_exclude_lint_refuses_environment_scope(self):
+        check = {"type": "command", "run": "make check", "scope": "environment", "host": "test-server",
+                 "max_age_days": 7, "ignore_test_exclude": True}
+        self.init_task(self.repo, [item("T-C1", [check])])
+        code, output = self.lint(self.repo)
+        self.assertEqual(code, 1, output)
+        self.assertIn("ignore_test_exclude", output)
+        self.assertIn("scope", output)
+        self.assertIn("删掉", output)
 
 
 class ContextHookTests(Base):

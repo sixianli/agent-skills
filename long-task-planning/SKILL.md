@@ -77,19 +77,25 @@ New findings that do not serve this task's goal go to the project's backlog (for
 | `{"type":"doc","path":"…","heading":"…"}` | The file, and the heading if given, exist | Missing → 未完成. Pair with a `command` check when the project has a document validator |
 | `{"type":"review","by":"claude"}` | The latest review of the item (by that reviewer, by recorded time) approved it and the reviewed files are unchanged | Files changed since → 旧版本验证过; rejected or none → 未完成 |
 | `{"type":"user","ref":null,"question":"…"}` | `ref` names a `goal.md` entry holding the user's decision | `ref` null → 等你决定; `ref` missing from `goal.md` → 无法判断 |
-| `{"type":"command","run":"…"}`, optional `"host"` | A record of exactly this command with exit code 0 on the current fingerprint | Use sparingly; prefer tagged tests |
+| `{"type":"command","run":"…"}`, optional `"host"` and `"ignore_test_exclude": true` | A record of exactly this command with exit code 0 on the current fingerprint; with `ignore_test_exclude`, a record kept current by `test_exclude` also counts | Use sparingly; prefer tagged tests. The switch is for commands that only read code and tests, and cannot be combined with `"scope": "environment"` |
 | `{"type":"command","run":"…","scope":"environment","host":"…","max_age_days":7}` | For the environment, not the code (a tool version on the test server). The latest record (by recorded time) of exactly this command on `host` has exit code 0 and was recorded at most `max_age_days` days ago; code changes do not matter | Older than that → 旧版本验证过; latest record failed → 未完成. Age counts from when the evidence was recorded. Record a run on another host with that host's fingerprint file like any remote result |
 
 Tag tests with the item ID in the title, for example `it("[R2-D1] 期限早于准备上限时归为执行期限", …)`. Renaming files or wording keeps the tag. A tag counts only in test files (`*.test.*`, `*.spec.*`, `test_*.py`, `*_test.py`, `*_test.go`, or under `test/`, `tests/`, `__tests__/`, `e2e/`, `spec/`), never in `.md` or `.txt`. Skipped or filtered-out tests never count as passed. Commits may end with an `Item: R2-D1` trailer for tracing, but a trailer never counts as evidence.
 
 ### Documentation-only changes
 
-List path prefixes that no test reads in `items.json` under `fingerprint.test_exclude`, for example `["docs/", "AGENTS.md"]`. A test record still counts as current when both hold:
+List path prefixes that no test reads in `items.json` under `fingerprint.test_exclude`, for example `["docs/", "AGENTS.md"]`. A local test or command record stores two extra fields when this list is not empty: `code_fingerprint` (the digest of the fingerprint entries outside those paths) and `test_exclude` (the sorted list). Records made with `--fingerprint-file` and older records do not have them, and their behaviour does not change.
 
-1. The tested content is in a commit: the record's own commit, or a later commit on the way to `HEAD`, has exactly the recorded fingerprint. This covers the usual order of recording a report and then committing the code together with `evidence.jsonl`. Records with an `unknown` fingerprint, or whose tested content was never committed, never qualify.
-2. Every file changed since that commit is under `test_exclude`.
+A test record still counts as current in either case:
 
-`status` then shows `测试跑在 <commit> 上，之后只改了测试不读的文件` with the files. Failures follow the same rule, so editing a document never hides a failure. Commands, reviews and doc checks ignore `test_exclude`; a documentation validator still has to run again. `fingerprint.exclude` is different: it removes paths from the fingerprint for every check.
+1. The tested content is in a commit: the record's own commit, or a later commit on the way to `HEAD`, has exactly the recorded fingerprint. This covers the usual order of recording a report and then committing the code together with `evidence.jsonl`.
+2. The record has both fields, `test_exclude` equals the current sorted list, and `code_fingerprint` equals the digest of the current worktree entries outside those paths. The tested content then matches even though that exact state was never committed.
+
+In case 2 the baseline is the record's own commit. The changed files are the paths changed since that commit that are under `test_exclude`. A change outside `test_exclude` cannot be missing from that list, because the digest comparison would already have failed.
+
+`status` shows `测试跑在 <commit> 上，之后只改了测试不读的文件` for a baseline commit, and `测试跑在 <commit> 加记录时未提交的改动上，之后只改了测试不读的文件` when the record was dirty. A record is still 旧版本验证过 when a file outside `test_exclude` changed after it, when the `test_exclude` list changed, and when the record lacks the two fields.
+
+Failures follow the same rule, so editing a document never hides a failure. Reviews and doc checks ignore `test_exclude`; a documentation validator still has to run again. A command check ignores `test_exclude` by default; add `"ignore_test_exclude": true` for a command that only reads code and tests, such as the full test suite. `fingerprint.exclude` is different: it removes paths from the fingerprint for every check.
 
 ### Several projects in one repository
 

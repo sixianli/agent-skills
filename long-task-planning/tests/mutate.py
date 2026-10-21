@@ -340,8 +340,33 @@ mutant("relaxed failures ignored",
        [('            failed = [record for record in current if record["tags"][tag].get("failed", 0)]', '            failed = [record for record in current if self.current(record) and record["tags"][tag].get("failed", 0)]')],
        ["TestExcludeTests.test_failure_then_doc_only_change_stays_not_done"])
 mutant("commands follow test exclusions",
-       [('        current = [record for record in relevant if self.current(record)]\n        if current:\n            failed = [record for record in current if record.get("exit_code") != 0]', '        current = [record for record in relevant if self.test_current(record)]\n        if current:\n            failed = [record for record in current if record.get("exit_code") != 0]')],
+       [('        current = [record for record in relevant if self.current(record)]\n        if ignore:\n            current = [record for record in relevant if self.test_current(record)]', '        current = [record for record in relevant if self.test_current(record)]\n        if ignore:\n            current = [record for record in relevant if self.test_current(record)]')],
        ["TestExcludeTests.test_commands_and_reviews_ignore_test_exclude"])
+mutant("never-committed code fingerprint ignored",
+       [('        return record["code_fingerprint"] == code_digest(self.entries, self.test_excludes)', '        return True')],
+       ["TestExcludeTests.test_never_committed_alone_later_code_change_is_older"])
+mutant("changed test_exclude list ignored",
+       [('        if recorded != sorted(set(self.test_excludes)):\n            return False', '        if False:\n            return False')],
+       ["TestExcludeTests.test_never_committed_alone_changed_test_exclude_is_older"])
+mutant("untested files not limited to test_exclude",
+       [('                    changed = sorted(path for path in changed if under_any(path, self.test_excludes))', '                    changed = changed')],
+       ["TestExcludeTests.test_never_committed_alone_doc_change_keeps_evidence_current"])
+mutant("dirty record note hidden",
+       [('        if any(self.tested_commit(record) is None and record.get("dirty") for record in relaxed):', '        if False:')],
+       ["TestExcludeTests.test_never_committed_alone_doc_change_keeps_evidence_current"])
+mutant("command switch always accepted",
+       [('        ignore = check.get("ignore_test_exclude") is True', '        ignore = True')],
+       ["TestExcludeTests.test_commands_and_reviews_ignore_test_exclude",
+        "TestExcludeTests.test_ignore_test_exclude_command_follows_doc_only_change"])
+mutant("command switch never accepted",
+       [('        ignore = check.get("ignore_test_exclude") is True', '        ignore = False')],
+       ["TestExcludeTests.test_ignore_test_exclude_command_follows_doc_only_change"])
+mutant("ignore_test_exclude type unchecked",
+       [('    if "ignore_test_exclude" in check and not isinstance(check["ignore_test_exclude"], bool):', '    if False:')],
+       ["LintTests.test_ignore_test_exclude_lint_requires_a_boolean"])
+mutant("ignore_test_exclude with environment scope unchecked",
+       [('    if "ignore_test_exclude" in check and check.get("scope") == "environment":', '    if False:')],
+       ["LintTests.test_ignore_test_exclude_lint_refuses_environment_scope"])
 mutant("selector ignores test exclusions",
        [('        current_records = [record for record in relevant if self.test_current(record)]', '        current_records = [record for record in relevant if self.current(record)]')],
        ["TestExcludeTests.test_doc_only_change_keeps_test_evidence_current"])

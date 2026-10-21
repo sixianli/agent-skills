@@ -75,7 +75,7 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 - `fingerprint.exclude`: path prefixes left out of the fingerprint for every check. Add one only after checking that no test, command or review depends on those paths.
 - `fingerprint.include`: path prefixes; when set, only files under them enter the fingerprint, minus `exclude`. For a repository holding several independent projects; see [Several projects in one repository](../SKILL.md#several-projects-in-one-repository). `lint` refuses an entry that matches no file.
 - `fingerprint.test_exclude`: path prefixes that only test checks ignore, for documents no test reads. See [Documentation-only changes](../SKILL.md#documentation-only-changes). It does not change the fingerprint.
-- Check fields: `test` needs `tag`, or both `file` and `name` (`name` appears verbatim in the file and in the reported names, with no placeholder such as `%s`); `doc` needs `path`, optional `heading`; `review` optional `by`; `user` needs `ref` (null until decided) and `question`; `command` needs `run`, and with `"scope": "environment"` also `host` and `max_age_days` (a positive whole number of days). `test` and `command` accept `host`.
+- Check fields: `test` needs `tag`, or both `file` and `name` (`name` appears verbatim in the file and in the reported names, with no placeholder such as `%s`); `doc` needs `path`, optional `heading`; `review` optional `by`; `user` needs `ref` (null until decided) and `question`; `command` needs `run`, and with `"scope": "environment"` also `host` and `max_age_days` (a positive whole number of days). `test` and `command` accept `host`. `command` also accepts `ignore_test_exclude` (a boolean, `false` when omitted): `true` lets a record kept current by `test_exclude` satisfy the check, for a command that only reads code and tests. It cannot be combined with `"scope": "environment"`.
 - `done_when` needs at least one check, except on an item with `withdrawn`: an item dropped from the start may leave `done_when` out or empty.
 - `lint` compares with the version in `HEAD`: a removed item, or a changed `done_when` / `withdrawn` without a new `计划改动记录` line naming the item, is an error.
 
@@ -123,6 +123,7 @@ One JSON object per line, appended under a file lock. `lint` compares each commi
 | `time`, `by`, `host` | When, which agent, which machine |
 | `kind` | `test`, `command`, `review` or `retract` |
 | `fingerprint`, `commit`, `dirty` | The code it applies to; `dirty` means uncommitted changes existed. `fingerprint` is `unknown` for results recorded without one; each such record is judged on its own |
+| `code_fingerprint`, `test_exclude` | Present on local test and command records when `fingerprint.test_exclude` was non-empty: the digest of the fingerprint entries outside those paths, and the sorted list. Together they keep the record current after a documentation-only change when the tested state never became a commit. Missing in older records and in records made with `--fingerprint-file` |
 | `scope` | `{include, exclude}`: the paths the fingerprint was computed with. Missing in older records and in records from a hand-written fingerprint file |
 | `note` | Optional free text |
 
@@ -166,4 +167,4 @@ A fingerprint file (`record --fingerprint-file`) is the output of `fingerprint -
 - `reasons`: for an unfinished item, one line per check not yet verified on the current code, worst first; for a verified item, its checks.
 - `changed_files` of an item: files changed since the older evidence of any check that is not verified.
 - `include`: `fingerprint.include` from `items.json`, empty when not set. `warnings` lists goal and evidence problems and `include` entries that match no file.
-- `changed_files` of a check: the files behind its status. For a test check verified under `test_exclude`, the files changed since the tested commit, all under `test_exclude`.
+- `changed_files` of a check: the files behind its status. For a test or `ignore_test_exclude` command check verified under `test_exclude`, the files changed since the tested commit, all under `test_exclude`.
