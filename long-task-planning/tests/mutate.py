@@ -47,7 +47,7 @@ mutant("include paths unchecked in lint",
        [('        errors += include_problems(task.repo, path_list(data, "include"))', '        pass')],
        ["IncludeTests.test_include_paths_must_exist"])
 mutant("include problems not shown by status",
-       [(' + self.record_errors + include_problems(self.repo, self.scope[0]),', ' + self.record_errors,')],
+       [(' + self.record_errors + include_problems(self.repo, self.scope[0])\n', ' + self.record_errors\n')],
        ["IncludeTests.test_include_paths_must_exist"])
 mutant("include type unchecked",
        [('    if not (isinstance(include, list) and all(isinstance(value, str) for value in include)):', '    if False:')],
@@ -536,6 +536,54 @@ mutant("junit exit code ignores failures",
 mutant("junit run time missing",
        [('        "timestamp": started.isoformat(timespec="seconds"),\n', '')],
        ["JUnitReportTests.test_recorded_report_satisfies_selector_checks"], target="tests/junit_report.py", module="test_junit_report")
+mutant("unclassified goals accepted",
+       [('    missing = decision_missing(data, goal_entries)\n    if missing:', '    missing = decision_missing(data, goal_entries)\n    if False:')],
+       ["DecisionTests.test_unclassified_durable_decision_is_reported"])
+mutant("durable decisions need no item",
+       [('    unlinked = decision_unlinked(data, goal_entries, items)\n    if unlinked:', '    unlinked = decision_unlinked(data, goal_entries, items)\n    if False:')],
+       ["DecisionTests.test_durable_decision_needs_a_qualified_item"])
+mutant("quotes always found",
+       [('        missing = [ref for ref in quotes if normalize_quote(self.goal_texts[ref]) not in document]', '        missing = []')],
+       ["DecisionTests.test_durable_decision_quote_must_appear_verbatim"])
+mutant("quote whitespace kept",
+       [('    return re.sub(r"\\s+", "", "".join(lines))', '    return "".join(lines)')],
+       ["DecisionTests.test_durable_decision_quote_must_appear_verbatim"])
+mutant("quote marker kept",
+       [('        line = line.lstrip().removeprefix(">")', '        line = line.lstrip()')],
+       ["DecisionTests.test_durable_decision_quote_must_appear_verbatim"])
+mutant("decision docs prefix ignored",
+       [('                if isinstance(path, str) and under_any(path, docs) and gid in quotes_of(check):',
+         '                if isinstance(path, str) and gid in quotes_of(check):')],
+       ["DecisionTests.test_durable_decision_docs_prefix"])
+mutant("durable downgrade needs no record",
+       [('                    if not any(word.search(line) for line in added_lines):', '                    if False:')],
+       ["DecisionTests.test_durable_decision_downgrade_needs_a_plan_record"])
+mutant("goal ids matched as substrings",
+       [('                    word = re.compile(rf"(?<![A-Za-z0-9]){re.escape(gid)}(?![0-9])")', '                    word = re.compile(re.escape(gid))')],
+       ["DecisionTests.test_durable_decision_downgrade_needs_a_plan_record"])
+mutant("init writes no decisions",
+       [('    items = {"task": args.task, "prefix": args.prefix, "decisions": {"G1": "once"}, "items": []}',
+         '    items = {"task": args.task, "prefix": args.prefix, "items": []}')],
+       ["DecisionTests.test_init_writes_durable_decision_default"])
+mutant("tasks without decisions are checked",
+       [('def decision_errors(data, goal_entries, items):\n    if "decisions" not in data:\n        return []',
+         'def decision_errors(data, goal_entries, items):\n    if False:\n        return []')],
+       ["DecisionTests.test_task_without_durable_decision_key_keeps_old_behaviour"])
+mutant("removing decisions needs no record",
+       [('                if not any("decisions" in line for line in added_lines):\n                    errors.append("items.json 删掉了 decisions',
+         '                if False:\n                    errors.append("items.json 删掉了 decisions')],
+       ["DecisionTests.test_removing_durable_decision_key_needs_a_plan_record"])
+mutant("unknown quote goal accepted",
+       [('        unknown = [ref for ref in quotes if ref not in self.goal_ids]\n        if unknown:',
+         '        unknown = []\n        if unknown:')],
+       ["DecisionTests.test_durable_decision_quote_needs_a_known_goal"])
+mutant("decision values unchecked",
+       [('        if value not in DECISION_VALUES:', '        if False:')],
+       ["DecisionTests.test_invalid_durable_decision_fields_fail_lint"])
+mutant("decision docs type unchecked",
+       [("    if not (isinstance(value, list) and all(isinstance(item, str) for item in value)):\n        errors.append('items.json 的 decision_docs",
+         "    if False:\n        errors.append('items.json 的 decision_docs")],
+       ["DecisionTests.test_invalid_durable_decision_fields_fail_lint"])
 
 
 def mutated(replacements, target):

@@ -26,6 +26,8 @@ TASK_FILES = ("goal.md", "items.json", "plan.md", "evidence.jsonl")
 CONTEXT_BUDGET = 1600
 JUNK_NAMES = {".DS_Store", "Thumbs.db"}
 CHECK_TYPES = ("test", "doc", "review", "user", "command")
+DECISION_VALUES = ("once", "durable")
+DEFAULT_DECISION_DOCS = ("docs/adr/",)
 STATUS_PRIORITY = ("unknown", "waiting", "not_done", "older", "verified")
 DISPLAY_ORDER = ("unknown", "waiting", "not_done", "older", "verified", "withdrawn")
 COUNT_ORDER = ("verified", "older", "not_done", "unknown", "waiting", "withdrawn")
@@ -348,6 +350,98 @@ def under_any(path, prefixes):
         if prefix and (path == prefix or path.startswith(prefix + "/")):
             return True
     return False
+
+
+def quotes_of(check):
+    value = check.get("quotes")
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    return []
+
+
+def quotes_valid(value):
+    return isinstance(value, str) or (isinstance(value, list) and all(isinstance(item, str) for item in value))
+
+
+def normalize_quote(text):
+    lines = []
+    for line in text.splitlines():
+        line = line.lstrip().removeprefix(">")
+        lines.append(line)
+    return re.sub(r"\s+", "", "".join(lines))
+
+
+def decision_doc_paths(data):
+    value = data.get("decision_docs", list(DEFAULT_DECISION_DOCS))
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    return list(DEFAULT_DECISION_DOCS)
+
+
+def decision_doc_item(items, gid, docs):
+    for entry in items:
+        if entry.get("withdrawn"):
+            continue
+        if gid not in (entry.get("goal_ref") or []):
+            continue
+        for check in entry.get("done_when") or []:
+            if isinstance(check, dict) and check.get("type") == "doc":
+                path = check.get("path")
+                if isinstance(path, str) and under_any(path, docs) and gid in quotes_of(check):
+                    return True
+    return False
+
+
+def decision_missing(data, goal_entries):
+    decisions = data.get("decisions")
+    if not isinstance(decisions, dict):
+        return []
+    return [entry["id"] for entry in goal_entries if entry["id"] != "CLOSED" and entry["id"] not in decisions]
+
+
+def decision_unlinked(data, goal_entries, items):
+    decisions = data.get("decisions")
+    if not isinstance(decisions, dict):
+        return []
+    goal_ids = {entry["id"] for entry in goal_entries}
+    docs = decision_doc_paths(data)
+    return [gid for gid, value in decisions.items()
+            if value == "durable" and gid in goal_ids and not decision_doc_item(items, gid, docs)]
+
+
+def decision_warnings(data, goal_entries, items):
+    warnings = []
+    missing = decision_missing(data, goal_entries)
+    if missing:
+        warnings.append(f"goal.md 里的 {'、'.join(missing)} 还没分类：在 items.json 的 decisions 里写 \"once\" 或 \"durable\"")
+    unlinked = decision_unlinked(data, goal_entries, items)
+    if unlinked:
+        docs = decision_doc_paths(data)
+        where = "、".join(docs) if docs else "decision_docs 里的路径"
+        warnings.append(f"长期决定 {'、'.join(unlinked)} 还没有文档条目：加一个 goal_ref 含它的条目，done_when 里加 doc 检查，path 在 {where} 下，quotes 写这条 G")
+    return warnings
+
+
+def decision_errors(data, goal_entries, items):
+    if "decisions" not in data:
+        return []
+    decisions = data.get("decisions")
+    if not isinstance(decisions, dict):
+        return ['items.json 的 decisions 必须是对象：键写 goal.md 的 G 编号，值写 "once" 或 "durable"']
+    errors = []
+    goal_ids = {entry["id"] for entry in goal_entries}
+    for gid, value in decisions.items():
+        if value not in DECISION_VALUES:
+            errors.append(f"decisions 里的 {gid} 的值 {value!r} 不认识：只能是 \"once\" 或 \"durable\"")
+        if gid not in goal_ids:
+            errors.append(f"decisions 里的 {gid} 在 goal.md 里不存在：删掉这一项，或先在 goal.md 里记下这条原话")
+    value = data.get("decision_docs", list(DEFAULT_DECISION_DOCS))
+    if not (isinstance(value, list) and all(isinstance(item, str) for item in value)):
+        errors.append('items.json 的 decision_docs 必须是路径前缀列表，例如 ["docs/adr/"] 或 ["AGENTS.md"]')
+    errors += decision_warnings(data, goal_entries, items)
+    return errors
 
 
 def excluded(path, excludes):
@@ -869,6 +963,7 @@ class Evaluation:
         goal_text = read_text(task.path("goal.md")) if task.path("goal.md").exists() else ""
         self.goal_entries, self.goal_errors = parse_goal(goal_text)
         self.goal_ids = {entry["id"] for entry in self.goal_entries}
+        self.goal_texts = {entry["id"]: entry["text"] for entry in self.goal_entries}
         self.all_records, self.record_errors = load_records(task)
         self.records = in_time_order(effective_records(self.all_records))
         self.scope = scope_of(self.data)
@@ -1109,18 +1204,32 @@ class Evaluation:
         full = self.repo / rel
         if not full.is_file():
             return "not_done", f"文档 {rel} 不存在", []
+        text = full.read_text(encoding="utf-8", errors="replace")
         heading = check.get("heading")
         if heading:
             found = False
-            for line in full.read_text(encoding="utf-8", errors="replace").splitlines():
+            for line in text.splitlines():
                 match = re.match(r"^#{1,6}\s+(.*?)\s*#*\s*$", line)
                 if match and match.group(1) == heading:
                     found = True
                     break
             if not found:
                 return "not_done", f"{rel} 里还没有“{heading}”这一节", []
-            return "verified", f"{rel} 里有“{heading}”这一节", []
-        return "verified", f"{rel} 存在", []
+        if "quotes" not in check:
+            return "verified", (f"{rel} 里有“{heading}”这一节" if heading else f"{rel} 存在"), []
+        if not quotes_valid(check.get("quotes")):
+            return "unknown", '文档类完成条件的 quotes 要写 G 编号或 G 编号列表，例如 "G12" 或 ["G12", "G13"]', []
+        quotes = quotes_of(check)
+        unknown = [ref for ref in quotes if ref not in self.goal_ids]
+        if unknown:
+            return "unknown", f"quotes 里的 {'、'.join(unknown)} 在 goal.md 里不存在", []
+        document = normalize_quote(text)
+        missing = [ref for ref in quotes if normalize_quote(self.goal_texts[ref]) not in document]
+        if missing:
+            return "not_done", f"文档 {rel} 里没有 {'、'.join(missing)} 的原话：要原样引用（空白和换行可以不同）", []
+        if heading:
+            return "verified", f"{rel} 里有“{heading}”这一节，并原样引用了 {'、'.join(quotes)} 的原话", []
+        return "verified", f"{rel} 原样引用了 {'、'.join(quotes)} 的原话", []
 
     def check_command(self, entry, check):
         run, host = check.get("run"), check.get("host")
@@ -1221,7 +1330,8 @@ class Evaluation:
             "items": items,
             "changes_since_last": [],
             "include": self.scope[0],
-            "warnings": self.goal_errors + self.record_errors + include_problems(self.repo, self.scope[0]),
+            "warnings": (self.goal_errors + self.record_errors + include_problems(self.repo, self.scope[0])
+                         + decision_warnings(self.data, self.goal_entries, self.items)),
         }
 
 
@@ -1407,8 +1517,11 @@ def validate_check(name, check):
         problem = placeholder_problem(check.get("name"))
         if problem:
             errors.append(f"条目 {name} 的{problem}")
-    elif kind == "doc" and not isinstance(check.get("path"), str):
-        errors.append(f"条目 {name} 的文档类完成条件缺少 path")
+    elif kind == "doc":
+        if not isinstance(check.get("path"), str):
+            errors.append(f"条目 {name} 的文档类完成条件缺少 path")
+        if "quotes" in check and not quotes_valid(check.get("quotes")):
+            errors.append(f"条目 {name} 的文档类完成条件的 quotes 要写 G 编号或 G 编号列表，例如 \"G12\" 或 [\"G12\", \"G13\"]")
     elif kind == "user":
         if check.get("ref") is None and not check.get("question"):
             errors.append(f"条目 {name} 等你决定的完成条件要写 question")
@@ -1520,6 +1633,7 @@ def lint_task(task):
         errors.append(str(error))
     if data:
         errors += validate_items(data, goal_ids)
+        errors += decision_errors(data, entries, [entry for entry in data["items"] if isinstance(entry, dict)])
         errors += include_problems(task.repo, path_list(data, "include"))
         if not data["items"]:
             warnings.append("items.json 里还没有条目")
@@ -1572,10 +1686,13 @@ def lint_task(task):
     head_items = head_text(task, "items.json")
     if data and head_items:
         try:
-            before = {entry["id"]: entry for entry in json.loads(head_items).get("items", [])
-                      if isinstance(entry, dict) and "id" in entry}
-        except (json.JSONDecodeError, AttributeError):
-            before = {}
+            before_data = json.loads(head_items)
+        except json.JSONDecodeError:
+            before_data = {}
+        if not isinstance(before_data, dict):
+            before_data = {}
+        before = {entry["id"]: entry for entry in before_data.get("items") or []
+                  if isinstance(entry, dict) and "id" in entry}
         after = {entry.get("id"): entry for entry in data["items"] if isinstance(entry, dict)}
         head_plan = head_text(task, "plan.md") or ""
         old_log = strip_blank_head(section_lines(head_plan, "计划改动记录"))
@@ -1590,6 +1707,19 @@ def lint_task(task):
                        or json.dumps(old.get("withdrawn"), sort_keys=True) != json.dumps(new.get("withdrawn"), sort_keys=True))
             if changed and not any(item_id in line for line in added_lines):
                 errors.append(f"条目 {item_id} 的完成条件或撤回状态改了，但 plan.md 的“计划改动记录”里没有新写一行说明（要提到 {item_id}）")
+        before_decisions = before_data.get("decisions")
+        after_decisions = data.get("decisions")
+        if isinstance(before_decisions, dict):
+            if not isinstance(after_decisions, dict):
+                if not any("decisions" in line for line in added_lines):
+                    errors.append("items.json 删掉了 decisions，要在计划改动记录里写一行说明原因（含 decisions）")
+            else:
+                for gid, value in before_decisions.items():
+                    if value != "durable" or after_decisions.get(gid) == "durable":
+                        continue
+                    word = re.compile(rf"(?<![A-Za-z0-9]){re.escape(gid)}(?![0-9])")
+                    if not any(word.search(line) for line in added_lines):
+                        errors.append(f"长期决定 {gid} 不再标为 durable，但 plan.md 的“计划改动记录”里没有新写一行说明（要提到 {gid}）")
     return errors, warnings
 
 
@@ -1620,6 +1750,16 @@ def build_context(task, budget):
     batch = context_lines(plan, "当前批次")
     log = context_lines(plan, "计划改动记录")
     problems = [entry for status in ("unknown", "waiting", "not_done") for entry in report["items"] if entry["status"] == status]
+    missing_decisions = decision_missing(evaluation.data, evaluation.goal_entries)
+    unlinked_decisions = decision_unlinked(evaluation.data, evaluation.goal_entries, evaluation.items)
+    decision_text = ""
+    if missing_decisions or unlinked_decisions:
+        parts = []
+        if missing_decisions:
+            parts.append(f"{'、'.join(missing_decisions)} 还没分类")
+        if unlinked_decisions:
+            parts.append(f"{'、'.join(unlinked_decisions)} 是长期决定，还没有文档条目")
+        decision_text = "长期决定：" + "；".join(parts)
 
     def render(goal_keep, goal_width, problem_limit, line_width, questions):
         lines = [header, "目标（goal.md 原文）："]
@@ -1632,6 +1772,8 @@ def build_context(task, budget):
                 answer = f"问：{truncate(entry['question'], goal_width)} 答：{answer}"
             lines.append(f"  {entry['id']} {entry['date']}（{entry['source']}）：{answer}")
         lines.append(f"状态：{summary_line(report['counts'])}")
+        if decision_text:
+            lines.append(truncate(decision_text, line_width))
         for entry in problems[:problem_limit]:
             reason = entry["reasons"][0] if entry["reasons"] else ""
             lines.append(f"  {LABELS[entry['status']]} {entry['id']}：{truncate(reason, line_width)}")
@@ -1852,11 +1994,12 @@ def cmd_init(args):
     quote = "\n".join(f"> {line}".rstrip() for line in args.goal.strip().splitlines())
     task.dir.mkdir(parents=True)
     task.path("goal.md").write_text(GOAL_TEMPLATE.format(task=args.task, date=date, source=args.source, quote=quote), encoding="utf-8")
-    items = {"task": args.task, "prefix": args.prefix, "items": []}
+    items = {"task": args.task, "prefix": args.prefix, "decisions": {"G1": "once"}, "items": []}
     task.path("items.json").write_text(json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     task.path("plan.md").write_text(PLAN_TEMPLATE.format(task=args.task, created=moment.strftime("%Y-%m-%d %H:%M")), encoding="utf-8")
     task.path("evidence.jsonl").write_text("", encoding="utf-8")
     print(f"已建立 {task.rel}/：goal.md、items.json、plan.md、evidence.jsonl")
+    print("G1 先记为 once（本任务的目标）；它若是长期规则，改成 durable 并加文档条目")
     for name in FORMATTER_CONFIGS:
         if (repo / name).is_file():
             print(f"提醒：项目有格式化工具配置 {name}，把 {TASKS_DIR}/ 加进它的忽略列表（biome 的 files 设置、prettier 的 .prettierignore、dprint 的 excludes），"

@@ -47,6 +47,8 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 {
   "task": "round2",
   "prefix": "R2",
+  "decisions": {"G1": "once", "G2": "once", "G3": "once"},
+  "decision_docs": ["docs/adr/"],
   "fingerprint": {"test_exclude": ["docs/", "AGENTS.md"]},
   "items": [
     {
@@ -72,12 +74,14 @@ Back to [SKILL.md](../SKILL.md). All files live in `<repo>/.agents/tasks/<task>/
 ```
 
 - `prefix`: letters and digits, starting with a letter. Every `id` starts with `<prefix>-`.
+- `decisions`: optional object; each key is a `goal.md` entry other than `CLOSED` and each value is `"once"` or `"durable"`. `once` covers a one-off approval, an answer to one question, or a requirement that only affects this task. `durable` covers a decision or rule that keeps steering the project. A `durable` entry needs an active item whose `goal_ref` contains it and whose `done_when` has a `doc` check under `decision_docs` with `quotes` naming that entry. When the key is present, `lint` reports every unclassified entry. `init` writes `"decisions": {"G1": "once"}`.
+- `decision_docs`: optional list of decision document path prefixes, default `["docs/adr/"]`. Use another location when the project does not use `document-governance`, for example `["AGENTS.md"]`.
 - `fingerprint.exclude`: path prefixes left out of the fingerprint for every check. Add one only after checking that no test, command or review depends on those paths.
 - `fingerprint.include`: path prefixes; when set, only files under them enter the fingerprint, minus `exclude`. For a repository holding several independent projects; see [Several projects in one repository](../SKILL.md#several-projects-in-one-repository). `lint` refuses an entry that matches no file.
 - `fingerprint.test_exclude`: path prefixes that only test checks ignore, for documents no test reads. See [Documentation-only changes](../SKILL.md#documentation-only-changes). It does not change the fingerprint.
-- Check fields: `test` needs `tag`, or both `file` and `name` (`name` appears verbatim in the file and in the reported names, with no placeholder such as `%s`); `doc` needs `path`, optional `heading`; `review` optional `by`; `user` needs `ref` (null until decided) and `question`; `command` needs `run`, and with `"scope": "environment"` also `host` and `max_age_days` (a positive whole number of days). `test` and `command` accept `host`. `command` also accepts `ignore_test_exclude` (a boolean, `false` when omitted): `true` lets a record kept current by `test_exclude` satisfy the check, for a command that only reads code and tests. It cannot be combined with `"scope": "environment"`.
+- Check fields: `test` needs `tag`, or both `file` and `name` (`name` appears verbatim in the file and in the reported names, with no placeholder such as `%s`); `doc` needs `path`, optional `heading`, and optional `quotes` (a G id or a list of G ids whose words must appear verbatim in the document, ignoring whitespace and line breaks); `review` optional `by`; `user` needs `ref` (null until decided) and `question`; `command` needs `run`, and with `"scope": "environment"` also `host` and `max_age_days` (a positive whole number of days). `test` and `command` accept `host`. `command` also accepts `ignore_test_exclude` (a boolean, `false` when omitted): `true` lets a record kept current by `test_exclude` satisfy the check, for a command that only reads code and tests. It cannot be combined with `"scope": "environment"`.
 - `done_when` needs at least one check, except on an item with `withdrawn`: an item dropped from the start may leave `done_when` out or empty.
-- `lint` compares with the version in `HEAD`: a removed item, or a changed `done_when` / `withdrawn` without a new `计划改动记录` line naming the item, is an error.
+- `lint` compares with the version in `HEAD`: a removed item, or a changed `done_when` / `withdrawn` without a new `计划改动记录` line naming the item, is an error. A `durable` entry changed to `once` or removed needs a new line naming that entry. A removed `decisions` key needs a new line containing `decisions`.
 
 ## plan.md
 

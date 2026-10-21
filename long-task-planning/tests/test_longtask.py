@@ -145,6 +145,8 @@ class Base(unittest.TestCase):
         self.ok(self.cli(repo, "init", "demo", "--prefix", "T", "--goal", "修完所有发现的缺陷", "--date", "2026-10-01"))
         task = repo / TASK
         data = json.loads((task / "items.json").read_text(encoding="utf-8"))
+        if not extra or "decisions" not in extra:
+            data.pop("decisions", None)
         data["items"] = list(items)
         if extra:
             data.update(extra)
@@ -259,6 +261,179 @@ class InitTests(Base):
         self.init_task(repo, commit=False)
         code, output = self.lint(repo)
         self.assertEqual(code, 0, output)
+
+
+class DecisionTests(Base):
+    def goals(self):
+        return [("G1", "2026-10-01", "用户原话", "修完所有发现的缺陷"),
+                ("G2", "2026-10-02", "用户原话", "所有测试都在云端跑")]
+
+    def doc_item(self, path="docs/adr/0001-cloud-tests.md", quotes="G2", **extra):
+        check = {"type": "doc", "path": path}
+        if quotes is not None:
+            check["quotes"] = quotes
+        return item("T-D1", [check], goal_ref=["G2"], **extra)
+
+    def decisions_task(self, repo, items=(), decisions=None, goal_entries=None, plan=None, commit=True, extra=None):
+        data = dict(extra or {})
+        data["decisions"] = {"G1": "once"} if decisions is None else decisions
+        return self.init_task(repo, items, goal_entries=goal_entries, plan=plan, commit=commit, extra=data)
+
+    def test_init_writes_durable_decision_default(self):
+        repo = self.make_repo()
+        result = self.ok(self.cli(repo, "init", "demo", "--prefix", "T", "--goal", "修完所有发现的缺陷",
+                                  "--date", "2026-10-01"))
+        data = json.loads((repo / TASK / "items.json").read_text(encoding="utf-8"))
+        self.assertEqual(data.get("decisions"), {"G1": "once"})
+        self.assertIn("G1 先记为 once", result.stdout)
+        code, output = self.lint(repo)
+        self.assertEqual(code, 0, output)
+
+    def test_unclassified_durable_decision_is_reported(self):
+        repo = self.make_repo()
+        self.decisions_task(repo, goal_entries=self.goals())
+        code, output = self.lint(repo)
+        self.assertEqual(code, 1, output)
+        self.assertIn("G2", output)
+        self.assertIn("decisions", output)
+        _code, data = self.status(repo)
+        self.assertTrue(any("G2" in warning for warning in data["warnings"]), data["warnings"])
+        context = self.ok(self.cli(repo, "context")).stdout
+        self.assertIn("长期决定", context)
+        self.assertIn("G2", context)
+
+    def test_invalid_durable_decision_fields_fail_lint(self):
+        cases = (
+            ("value", {"decisions": {"G1": "maybe"}}, "maybe"),
+            ("key", {"decisions": {"G1": "once", "G9": "once"}}, "G9"),
+            ("docs", {"decisions": {"G1": "once"}, "decision_docs": "docs/adr/"}, "decision_docs"),
+        )
+        for index, (label, extra, token) in enumerate(cases):
+            with self.subTest(case=label):
+                repo = self.make_repo(f"invalid-{index}")
+                self.init_task(repo, goal_entries=[("G1", "2026-10-01", "用户原话", "修完所有发现的缺陷")],
+                               extra=extra)
+                code, output = self.lint(repo)
+                self.assertEqual(code, 1, output)
+                self.assertIn(token, output)
+
+    def test_durable_decision_needs_a_qualified_item(self):
+        cases = (
+            ("no item", []),
+            ("path outside", [self.doc_item(path="notes/rules.md")]),
+            ("no quotes", [self.doc_item(quotes=None)]),
+            ("withdrawn", [self.doc_item(withdrawn={"on": "2026-10-03", "ref": "G1"})]),
+        )
+        repo = self.make_repo("durable")
+        decisions = {"G1": "once", "G2": "durable"}
+        self.decisions_task(repo, [], decisions, self.goals(), commit=False)
+        for label, items in cases:
+            with self.subTest(case=label):
+                self.set_items(repo, items, extra={"decisions": decisions})
+                code, output = self.lint(repo)
+                self.assertEqual(code, 1, output)
+                self.assertIn("G2", output)
+                self.assertIn("文档条目", output)
+                if label == "no item":
+                    _code, data = self.status(repo)
+                    self.assertTrue(any("G2" in warning for warning in data["warnings"]), data["warnings"])
+                    context = self.ok(self.cli(repo, "context")).stdout
+                    self.assertIn("长期决定", context)
+                    self.assertIn("G2", context)
+        self.set_items(repo, [self.doc_item()], extra={"decisions": decisions})
+        code, output = self.lint(repo)
+        self.assertEqual(code, 0, output)
+
+    def test_durable_decision_quote_must_appear_verbatim(self):
+        repo = self.make_repo()
+        self.decisions_task(repo, [self.doc_item()], {"G1": "once", "G2": "durable"}, self.goals())
+        self.assertEqual(self.status_of(repo, "T-D1"), "not_done")
+        path = "docs/adr/0001-cloud-tests.md"
+        write(repo, path, "# ADR\n\n我们决定用云端测试。\n")
+        entry = self.item_of(self.status(repo)[1], "T-D1")
+        self.assertEqual(entry["status"], "not_done")
+        self.assertIn("G2", entry["checks"][0]["reason"])
+        self.assertIn("原话", entry["checks"][0]["reason"])
+        write(repo, path, "# ADR\n\n用户原话，2026-10-02：\n\n> 所有测试都在\n>   云端跑\n")
+        self.assertEqual(self.status_of(repo, "T-D1"), "verified")
+
+    def test_durable_decision_quote_needs_a_known_goal(self):
+        repo = self.make_repo()
+        self.decisions_task(repo, [self.doc_item(quotes="G8")], {"G1": "once", "G2": "durable"}, self.goals())
+        write(repo, "docs/adr/0001-cloud-tests.md", "# ADR\n\n用户原话，2026-10-02：所有测试都在云端跑。\n")
+        _code, data = self.status(repo)
+        entry = self.item_of(data, "T-D1")
+        self.assertEqual(entry["status"], "unknown")
+        self.assertIn("G8", entry["checks"][0]["reason"])
+
+    def test_durable_decision_docs_prefix(self):
+        custom = self.make_repo("docs-custom")
+        self.decisions_task(custom, [self.doc_item(path="AGENTS.md")], {"G1": "once", "G2": "durable"},
+                            self.goals(), extra={"decision_docs": ["AGENTS.md"]})
+        code, output = self.lint(custom)
+        self.assertEqual(code, 0, output)
+        default = self.make_repo("docs-default")
+        self.decisions_task(default, [self.doc_item(path="AGENTS.md")], {"G1": "once", "G2": "durable"},
+                            self.goals())
+        code, output = self.lint(default)
+        self.assertEqual(code, 1, output)
+        self.assertIn("G2", output)
+
+    def test_durable_decision_downgrade_needs_a_plan_record(self):
+        repo = self.make_repo()
+        self.decisions_task(repo, [self.doc_item()], {"G1": "once", "G2": "durable"}, self.goals())
+        self.set_items(repo, [self.doc_item()], extra={"decisions": {"G1": "once", "G2": "once"}})
+        plan = repo / TASK / "plan.md"
+        for log, expected in (
+            (["- 2026-10-02 10:00 建立任务。"], 1),
+            (["- 2026-10-02 10:00 建立任务。", "- 2026-10-02 G21 的完成条件调整。"], 1),
+            (["- 2026-10-02 10:00 建立任务。", "- 2026-10-02 G2 改为一次性决定。"], 0),
+        ):
+            with self.subTest(log=log[-1]):
+                plan.write_text(plan_text(log=log), encoding="utf-8")
+                code, output = self.lint(repo)
+                self.assertEqual(code, expected, output)
+                if expected:
+                    self.assertIn("G2", output)
+
+    def test_removing_durable_decision_key_needs_a_plan_record(self):
+        repo = self.make_repo()
+        self.decisions_task(repo, goal_entries=self.goals())
+        path = repo / TASK / "items.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        del data["decisions"]
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        plan = repo / TASK / "plan.md"
+        code, output = self.lint(repo)
+        self.assertEqual(code, 1, output)
+        self.assertIn("decisions", output)
+        plan.write_text(plan_text(log=["- 2026-10-02 10:00 建立任务。",
+                                       "- 2026-10-02 删掉 decisions：本任务不启用分类。"]), encoding="utf-8")
+        code, output = self.lint(repo)
+        self.assertEqual(code, 0, output)
+
+    def test_task_without_durable_decision_key_keeps_old_behaviour(self):
+        repo = self.make_repo()
+        self.init_task(repo, goal_entries=self.goals())
+        data = json.loads((repo / TASK / "items.json").read_text(encoding="utf-8"))
+        self.assertNotIn("decisions", data)
+        code, output = self.lint(repo)
+        self.assertEqual(code, 0, output)
+
+    def test_selected_durable_decision_quote_uses_the_answer(self):
+        repo = self.make_repo()
+        self.decisions_task(repo, [self.doc_item()], {"G1": "once", "G2": "durable"},
+                            [("G1", "2026-10-01", "用户原话", "修完所有发现的缺陷")], commit=False)
+        write(repo, TASK / "goal.md",
+              "# 目标：demo\n\n## G1 2026-10-01 用户原话\n\n> 修完所有发现的缺陷\n\n"
+              "## G2 2026-10-02 用户选择\n\n问题：长期规则放在哪里？\n\n> 放 docs/adr/\n> 每个决定一个文件。\n")
+        self.commit_all(repo, "task")
+        path = "docs/adr/0001-cloud-tests.md"
+        write(repo, path, "# ADR\n\n问题：长期规则放在哪里？\n")
+        entry = self.item_of(self.status(repo)[1], "T-D1")
+        self.assertEqual(entry["status"], "not_done")
+        write(repo, path, "# ADR\n\n问题：长期规则放在哪里？\n\n> 放 docs/adr/\n> 每个决定一个文件。\n")
+        self.assertEqual(self.status_of(repo, "T-D1"), "verified")
 
 
 class FingerprintTests(Base):

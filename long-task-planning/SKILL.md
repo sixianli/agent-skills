@@ -19,6 +19,7 @@ The model forgets; files and scripts do not. This skill keeps three things apart
 - [Light mode](#light-mode)
 - [Full mode files](#full-mode-files)
 - [Completion conditions](#completion-conditions)
+  - [Long-term decisions](#long-term-decisions)
   - [Documentation-only changes](#documentation-only-changes)
   - [Several projects in one repository](#several-projects-in-one-repository)
 - [Recording evidence](#recording-evidence)
@@ -59,8 +60,8 @@ If the project has a formatter or format check that covers JSON or Markdown (bio
 
 | File | Holds | Rules (enforced by `lint`) |
 | --- | --- | --- |
-| `goal.md` | The user's statements: `## G<n> <date> <source>` plus `> quote` | Append only, checked against git history. Only words the user said. A paraphrase uses source `转述：<where from>`. An option the user picked in a multiple-choice question uses source `用户选择`: quote the chosen option's label and description verbatim, with the question on a `问题：<question>` line above the quote. Give any short answer that is unclear on its own ("可以") a `问题：` line too; `context` shows question and answer together when there is room, and drops questions before goals. Append every new user statement about goals or decisions **before** acting on it |
-| `items.json` | Items: `id` (starts with `<P>-`), `title`, `goal_ref`, `done_when`, `added` (`by`, `on`, optional `why`), optional `withdrawn` | No status field. Never delete an item; to drop one set `withdrawn: {on, ref}` where `ref` is the `goal.md` entry with the user's decision. An item withdrawn from the start may leave `done_when` empty. Changing `done_when` or `withdrawn` requires a new line in `计划改动记录` that names the item |
+| `goal.md` | The user's statements: `## G<n> <date> <source>` plus `> quote` | Append only, checked against git history. Only words the user said. A paraphrase uses source `转述：<where from>`. An option the user picked in a multiple-choice question uses source `用户选择`: quote the chosen option's label and description verbatim, with the question on a `问题：<question>` line above the quote. Give any short answer that is unclear on its own ("可以") a `问题：` line too; `context` shows question and answer together when there is room, and drops questions before goals. Append every new user statement about goals or decisions **before** acting on it. Classify each entry in `decisions` in the same step; see [Long-term decisions](#long-term-decisions) |
+| `items.json` | Items: `id` (starts with `<P>-`), `title`, `goal_ref`, `done_when`, `added` (`by`, `on`, optional `why`), optional `withdrawn` | No status field. Never delete an item; to drop one set `withdrawn: {on, ref}` where `ref` is the `goal.md` entry with the user's decision. An item withdrawn from the start may leave `done_when` empty. Changing `done_when` or `withdrawn` requires a new line in `计划改动记录` that names the item. `decisions` maps every goal entry to `once` or `durable`; optional `decision_docs` lists the decision document prefixes (default `["docs/adr/"]`). See [Long-term decisions](#long-term-decisions) |
 | `plan.md` | `当前批次` (at most 3 items, each on a bullet starting with its ID, with approach and the evidence needed; items the same test run only verifies go on one bullet that does not start with an ID and do not count), `之后` (one line per item), and three append-only logs: `计划改动记录`, `意外和发现`, `决定` | Write what to do and what evidence is needed, never how far it has got: no checkboxes or progress words (已完成, 已提交, 已修, 已合并, 已推送, 已审核, 待验证, 进行中, ✅ …) outside the three logs |
 | `evidence.jsonl` | One JSON record per line | Written only by `$LT record`; never edit or move lines. Committed lines stay unchanged and in order; new lines may sit between them, which happens when another agent commits only its own lines. Each record's `time` must be readable: it decides which record is the latest |
 
@@ -74,13 +75,31 @@ New findings that do not serve this task's goal go to the project's backlog (for
 | --- | --- | --- |
 | `{"type":"test","tag":"R2-D1"}`, optional `"host"` | Every test file containing the literal `[R2-D1]` ran on the current fingerprint (on `host` if set), at least one tagged test passed, none failed | No tagged test yet → 未完成. A failure on the current code → 未完成 until fixed or retracted. Passed only on older code → 旧版本验证过. The tag appeared in earlier results but no file contains it now (renamed or deleted test) → 无法判断 |
 | `{"type":"test","file":"…","name":"…"}` | A test in that file whose reported name contains `name` passed on the current fingerprint | Use only for existing tests not yet tagged; add the tag the next time the test is edited. `name` must appear verbatim in the test file and in the reported name: for a title built from a template such as `it.each(…)("adds %s twice")`, use a part without placeholders (`adds`); `lint` refuses `%s`-style placeholders. Not in the file → 未完成, or 无法判断 if earlier results contained it (renamed, deleted, or written differently from the source) |
-| `{"type":"doc","path":"…","heading":"…"}` | The file, and the heading if given, exist | Missing → 未完成. Pair with a `command` check when the project has a document validator |
+| `{"type":"doc","path":"…","heading":"…"}`, optional `"quotes": "G9"` or `["G9","G10"]` | The file, and the heading if given, exist; each named goal entry's words appear verbatim in the file, ignoring whitespace and line breaks | Missing → 未完成. A named entry absent from `goal.md` → 无法判断. Pair with a `command` check when the project has a document validator |
 | `{"type":"review","by":"claude"}` | The latest review of the item (by that reviewer, by recorded time) approved it and the reviewed files are unchanged | Files changed since → 旧版本验证过; rejected or none → 未完成 |
 | `{"type":"user","ref":null,"question":"…"}` | `ref` names a `goal.md` entry holding the user's decision | `ref` null → 等你决定; `ref` missing from `goal.md` → 无法判断 |
 | `{"type":"command","run":"…"}`, optional `"host"` and `"ignore_test_exclude": true` | A record of exactly this command with exit code 0 on the current fingerprint; with `ignore_test_exclude`, a record kept current by `test_exclude` also counts | Use sparingly; prefer tagged tests. The switch is for commands that only read code and tests, and cannot be combined with `"scope": "environment"` |
 | `{"type":"command","run":"…","scope":"environment","host":"…","max_age_days":7}` | For the environment, not the code (a tool version on the test server). The latest record (by recorded time) of exactly this command on `host` has exit code 0 and was recorded at most `max_age_days` days ago; code changes do not matter | Older than that → 旧版本验证过; latest record failed → 未完成. Age counts from when the evidence was recorded. Record a run on another host with that host's fingerprint file like any remote result |
 
 Tag tests with the item ID in the title, for example `it("[R2-D1] 期限早于准备上限时归为执行期限", …)`. Renaming files or wording keeps the tag. A tag counts only in test files (`*.test.*`, `*.spec.*`, `test_*.py`, `*_test.py`, `*_test.go`, or under `test/`, `tests/`, `__tests__/`, `e2e/`, `spec/`), never in `.md` or `.txt`. Skipped or filtered-out tests never count as passed. Commits may end with an `Item: R2-D1` trailer for tracing, but a trailer never counts as evidence.
+
+### Long-term decisions
+
+Classify every `goal.md` entry in `items.json` under `decisions` in the same step you append it. Use `"once"` for a one-off approval, an answer to one question, or a requirement that only affects this task. Use `"durable"` for a decision or rule that keeps steering the project: a technology choice, a division of work, a process rule, or a lasting constraint. Say the classification in the reply ("G9 is a long-term rule and goes into an ADR" or "G9 is one-off") so the user can correct it at once.
+
+A `durable` entry must land in a formal document. Ask `document-governance` to create or supersede an ADR, and quote the user's words and date verbatim in its background, for example `用户原话，2026-10-21：…`. Do not cite the task directory or a G number as the only source: task files can be deleted, and G numbers are unique only inside one task. Then add an item whose `goal_ref` contains the entry and whose `done_when` has a `doc` check under a decision document prefix, with `quotes` naming that entry. The check passes only while the document still contains the quoted words.
+
+`decision_docs` lists the decision document path prefixes and defaults to `["docs/adr/"]`. When the project does not use `document-governance`, ask the user where decisions belong and set the list, for example `["AGENTS.md"]`, before you add the item.
+
+`lint` reports these problems:
+
+1. A `goal.md` entry without a classification.
+2. A `durable` entry that no active item references through a qualifying `doc` check.
+3. A `durable` entry changed to `once` or removed without a new line in `计划改动记录` that names it.
+4. The whole `decisions` key removed without a new line in `计划改动记录` that mentions `decisions`.
+5. A malformed `decisions` or `decision_docs` value.
+
+`status` and the session-start context show the first two problems as warnings. Tasks that never had a `decisions` key keep their old behaviour.
 
 ### Documentation-only changes
 
