@@ -12,7 +12,8 @@
       "done_when": [
         {
           "type": "test",
-          "tag": "S3-F21"
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "never_committed_alone"
         },
         {
           "type": "review",
@@ -35,7 +36,8 @@
       "done_when": [
         {
           "type": "test",
-          "tag": "S3-F22"
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "ignore_test_exclude"
         },
         {
           "type": "review",

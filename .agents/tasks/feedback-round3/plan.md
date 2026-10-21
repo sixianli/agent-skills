@@ -7,8 +7,8 @@
 
 ## 当前批次
 
-- S3-F21：交给 OpenCode（G2、G3）。记录测试时另存“去掉 test_exclude 路径之后的指纹”和当时的 test_exclude 列表；按提交判断放宽不通过时，用它判断；先写测试并留下失败输出，再改代码。证据：带 [S3-F21] 的测试，加我的审核
-- S3-F22：交给 OpenCode（G2、G3）。命令类检查加可选开关 ignore_test_exclude，开了就和测试类检查一样放宽，不写时行为不变；lint 检查开关的写法。证据：带 [S3-F22] 的测试，加我的审核
+- S3-F21：交给 OpenCode（G2、G3）。记录测试时另存“去掉 test_exclude 路径之后的指纹”和当时的 test_exclude 列表；按提交判断放宽不通过时，用它判断；先写测试并留下失败输出，再改代码。证据：test_longtask.py 里名字含 never_committed_alone 的测试，加我的审核
+- S3-F22：交给 OpenCode（G2、G3）。命令类检查加可选开关 ignore_test_exclude，开了就和测试类检查一样放宽，不写时行为不变；lint 检查开关的写法。证据：test_longtask.py 里名字含 ignore_test_exclude 的测试，加我的审核
 - 同一批新增的变异、SKILL.md 和 formats.md 的说明、验证记录 README 由 OpenCode 一并写好，由我审核；S3-R1 在最后一个提交上重跑整套检查
 
 ## 之后
@@ -21,6 +21,7 @@
 
 - 2026-10-21 18:00 建立任务。
 - 2026-10-21 18:01 按 G1 核实 F21–F24：F21 确认，F22 部分确认，F23 按 G4 暂缓，F24 说的原因被否认；本轮做 F21、F22，实现和测试按 G2、G3 交给 OpenCode。
+- 2026-10-21 18:02 S3-F21、S3-F22 的测试检查由标签改为“文件加名字片段”（never_committed_alone、ignore_test_exclude），因为 unittest 的测试名带不了 [S3-F21] 这类标签；检查内容不变。
 
 ## 意外和发现
 
