@@ -22,7 +22,15 @@ class GrokLaunchTests(unittest.TestCase):
         self.reply.write_text("# reply\n")
         self.args_file = self.root / "args.txt"
         fake = self.root / "fake-opencode"
-        fake.write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" > {self.args_file}\necho \'{TEXT}\'\n')
+        live = (
+            '{"data":[{"id":"grok-build-0.1","providerID":"xai","variants":[]},'
+            '{"id":"grok-4.7","providerID":"xai","variants":[{"id":"low"},{"id":"high"}]}]}'
+        )
+        fake.write_text(
+            "#!/bin/sh\n"
+            f'if [ "$1" = api ]; then case "$*" in *"GET /api/model"*) echo \'{live}\'; exit 0 ;; esac; fi\n'
+            f'printf "%s\\n" "$@" > {self.args_file}\necho \'{TEXT}\'\n'
+        )
         fake.chmod(0o755)
         self.env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_AUTO_RESUMES="0")
 

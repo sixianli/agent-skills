@@ -67,11 +67,23 @@ class Base(unittest.TestCase):
             subprocess.run(["kill", str(pid)], capture_output=True, check=False)
         self.tmp.cleanup()
 
-    def fake(self, body):
+    LIVE_MODELS = (
+        '{"data":[{"id":"model","providerID":"provider","variants":[{"id":"low"},{"id":"high"},{"id":"max"}]},'
+        '{"id":"plain","providerID":"provider","variants":[]},'
+        '{"id":"deepseek-v4.1-flash","providerID":"opencode-go","variants":[{"id":"low"},{"id":"high"},{"id":"max"}]},'
+        '{"id":"deepseek-v4.1-flash-free","providerID":"opencode","variants":[{"id":"low"},{"id":"high"}]}]}'
+    )
+
+    def fake(self, body, live_models=None):
         path = self.root / "fake-opencode"
+        listing = self.LIVE_MODELS if live_models is None else live_models
         path.write_text(
             "#!/bin/sh\n"
-            'case "$1" in serve) exec sleep 300 ;; api) exit 0 ;; esac\n' + body + "\n"
+            'case "$1" in serve) exec sleep 300 ;; api) case "$*" in *"GET /api/model"*) cat <<\'LIVE\'\n'
+            + listing
+            + "\nLIVE\n;; esac; exit 0 ;; esac\n"
+            + body
+            + "\n"
         )
         path.chmod(0o755)
         return path
@@ -226,6 +238,104 @@ class ModelAllowlistTests(Base):
         self.assertEqual(result.returncode, 2)
         self.assertIn("MODEL_LIST_MISSING", result.stderr)
         self.assertFalse(self.called.exists())
+
+
+class LiveVariantTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.called = self.root / "called"
+
+    def run_launch(self, *args, live_models=None):
+        fake = self.fake(f"touch {self.called}; echo '{TEXT}'", live_models=live_models)
+        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_SERVER_DIR=str(self.server_dir))
+        return subprocess.run(
+            ["bash", str(SCRIPTS / "oc-launch.sh"), *args],
+            cwd=self.root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+
+    def new(self, model, **kw):
+        return self.run_launch("new", str(self.brief), str(self.prefix), model, **kw)
+
+    def floor(self, text):
+        (self.root / ".opencode").mkdir(exist_ok=True)
+        (self.root / ".opencode" / "variant-floor.txt").write_text(text)
+
+    def assert_refused(self, result, message, code=2):
+        self.assertEqual(result.returncode, code, result.stderr)
+        self.assertIn(message, result.stderr)
+        self.assertFalse(self.called.exists())
+        self.assertFalse(Path(str(self.prefix) + ".pid").exists())
+
+    def test_prints_the_live_variants_and_accepts_a_listed_one(self):
+        result = self.new("provider/model#high")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("LIVE_VARIANTS model=provider/model variants=low,high,max\n", result.stdout)
+        self.assertTrue(self.called.exists())
+
+    def test_a_model_without_variants_launches_without_a_suffix(self):
+        result = self.new("provider/plain")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("LIVE_VARIANTS model=provider/plain variants=\n", result.stdout)
+
+    def test_refuses_a_variant_missing_from_the_live_list(self):
+        self.assert_refused(
+            self.new("provider/model#medium"),
+            "VARIANT_UNAVAILABLE: provider/model#medium; live variants: low,high,max",
+        )
+
+    def test_refuses_a_variant_on_a_model_without_variants(self):
+        self.assert_refused(self.new("provider/plain#high"), "VARIANT_UNAVAILABLE: provider/plain#high; live variants: none")
+
+    def test_refuses_a_model_the_server_does_not_list(self):
+        self.assert_refused(self.new("provider/other"), "MODEL_NOT_SERVED: provider/other is not in the server's model list")
+
+    def test_refuses_when_the_live_list_cannot_be_read(self):
+        self.assert_refused(self.new("provider/model#high", live_models="not json"), "VARIANT_LIST_UNAVAILABLE", code=3)
+
+    def test_resume_is_checked_too(self):
+        reply = self.root / "reply.md"
+        reply.write_text("go on\n")
+        result = self.run_launch("resume", "ses_x", str(reply), str(self.root / "stop.md"), str(self.prefix), "provider/model#medium")
+        self.assert_refused(result, "VARIANT_UNAVAILABLE: provider/model#medium; live variants: low,high,max")
+
+    def test_floor_refuses_a_lower_variant(self):
+        self.floor("# model floor\nprovider/model high\n")
+        self.assert_refused(
+            self.new("provider/model#low"),
+            "VARIANT_BELOW_FLOOR: provider/model#low is below the floor high; live variants: low,high,max",
+        )
+
+    def test_floor_refuses_a_missing_variant(self):
+        self.floor("provider/model high\n")
+        self.assert_refused(
+            self.new("provider/model"),
+            "VARIANT_BELOW_FLOOR: provider/model has no variant, floor high; live variants: low,high,max",
+        )
+
+    def test_floor_accepts_the_floor_and_higher(self):
+        self.floor("provider/model high\n")
+        self.assertEqual(self.new("provider/model#high").returncode, 0)
+        self.called.unlink()
+        subprocess.run(["rm", "-f", *[str(self.prefix) + s for s in (".jsonl", ".err", ".pid", ".rc")]], check=False)
+        self.assertEqual(self.new("provider/model#max").returncode, 0)
+
+    def test_floor_on_a_model_without_variants_is_noted_and_ignored(self):
+        self.floor("provider/plain high\n")
+        result = self.new("provider/plain")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("VARIANT_FLOOR_IGNORED model=provider/plain floor=high (the server lists no variants)\n", result.stdout)
+
+    def test_floor_not_in_the_live_list_is_refused(self):
+        self.floor("provider/model ultra\n")
+        self.assert_refused(
+            self.new("provider/model#max"),
+            "VARIANT_FLOOR_UNKNOWN: floor ultra for provider/model is not a live variant: low,high,max",
+        )
 
 
 class RequiredPluginTests(Base):

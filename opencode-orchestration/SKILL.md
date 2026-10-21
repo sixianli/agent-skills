@@ -184,9 +184,19 @@ now refuses a prefix whose directory is the current one (`run-01`,
 `OC_SERVER_DIR` points elsewhere.
 
 Pick a reasoning level with a variant suffix, `-m '<provider/model>#<variant>'`
-(for example `#high`), quoted so the shell leaves `#` alone. An unknown
-variant fails at once with a `provider.no-route` error "Variant unavailable",
-so a one-line test prompt confirms a variant exists before a batch uses it.
+(for example `#high`), quoted so the shell leaves `#` alone. The variants a
+model offers change with opencode releases, so never take them from a
+recorded list: `oc-launch.sh` asks the task's server (`GET /api/model`) at
+every start, prints `LIVE_VARIANTS model=<id> variants=<list>`, and refuses a
+variant that is not in the live list with `VARIANT_UNAVAILABLE` (a model the
+server does not list with `MODEL_NOT_SERVED`, an unreadable list with
+`VARIANT_LIST_UNAVAILABLE`); the refusal shows the live list to choose from.
+When a project sets a lowest allowed variant per model, it writes
+`.opencode/variant-floor.txt` (lines `<provider/model> <variant>`, or a file
+named in `OC_VARIANT_FLOOR`) in the launch directory, and the launcher refuses
+a lower or missing variant with `VARIANT_BELOW_FLOOR`, a floor that is not a
+live variant with `VARIANT_FLOOR_UNKNOWN`, and ignores the floor of a model
+whose live list is empty with a `VARIANT_FLOOR_IGNORED` line.
 Choose the variant per batch when its session starts, by difficulty: the
 higher level for causes that are unknown or may span layers, security,
 sandbox, storage or protocol code, unexplained or intermittent failures,
@@ -194,9 +204,9 @@ plan-first batches, and tasks that already failed once on the lower level;
 the lower level for edits the brief spells out, verification runs and
 evidence collection, documentation, cleanup and small test fixes whose
 approach the brief gives. Do not assume a middle level exists: on
-2026-10-15 neither DeepSeek V4.1 Flash model offered `#medium` (the Go one
-had `#low`, `#high`, `#max`; the free one `#low`, `#high`). A paid model
-may also charge for the probe prompt, so probe once and record the result.
+2026-10-21 (opencode v2.0.32) the DeepSeek and GLM models offered `#low`,
+`#high` and `#max` and no `#medium`, while on 2026-10-15 the free DeepSeek
+model had no `#max`; the launcher's live list is the only current answer.
 Keep the variant for the whole session unless the project allows changing
 it; to change it anyway, stop opencode between two tool calls (no test
 command running), then resume the same session with the new `-m`; the

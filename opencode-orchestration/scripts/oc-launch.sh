@@ -35,6 +35,18 @@ REQUIRED_PLUGIN_MISSING, a changed one with REQUIRED_PLUGIN_CHANGED, a line
 that is not a digest and a relative path with REQUIRED_PLUGIN_BAD_LINE, and a
 listing with no such line with REQUIRED_PLUGIN_LIST_EMPTY (nothing starts,
 exit code 2). Neither list is required when the file is absent.
+Before starting, the launcher asks the task's server for its model list
+(GET /api/model) and prints LIVE_VARIANTS model=<id> variants=<comma list>:
+the reasoning variants that exist right now, not a recorded snapshot. A model
+the server does not list refuses with MODEL_NOT_SERVED, a #variant that is
+not in the live list with VARIANT_UNAVAILABLE (exit code 2), and an unreadable
+list with VARIANT_LIST_UNAVAILABLE (exit code 3). When OC_VARIANT_FLOOR names
+a file, or .opencode/variant-floor.txt exists in the current directory, each
+line <provider/model> <variant> sets the lowest variant that model may start
+with: a lower or missing variant refuses with VARIANT_BELOW_FLOOR, a floor
+that is not a live variant with VARIANT_FLOOR_UNKNOWN (exit code 2), and a
+floor on a model whose live list is empty is ignored with a printed
+VARIANT_FLOOR_IGNORED line.
 The run's stop file is the resume argument, or for a new run the one path in
 the brief ending in stop.md or stop-N.md that does not exist yet (paths that
 exist are references to earlier runs); a brief naming none or several unwritten
@@ -170,6 +182,62 @@ bash "$script_dir/oc-server.sh" start "$server_dir" >&2 || { echo "the task's op
 server_url=$(cat "$server_dir/url")
 OPENCODE_PASSWORD=$(cat "$server_dir/password")
 export OPENCODE_PASSWORD
+
+floor_file=${OC_VARIANT_FLOOR:-}
+[ -n "$floor_file" ] || [ ! -f .opencode/variant-floor.txt ] || floor_file=.opencode/variant-floor.txt
+live_file=$(mktemp "${TMPDIR:-/tmp}/oc-live-models.XXXXXX")
+"$opencode_bin" api --server "$server_url" GET /api/model > "$live_file" 2>/dev/null
+variant_report=$(python3 -I - "$model" "$floor_file" "$live_file" <<'PY'
+import json
+import sys
+
+requested = sys.argv[1]
+floor_path = sys.argv[2]
+model_id, _, variant = requested.partition("#")
+try:
+    with open(sys.argv[3], encoding="utf-8") as live_listing:
+        listing = json.load(live_listing)
+    served = {f"{m['providerID']}/{m['id']}": [v["id"] for v in (m.get("variants") or [])] for m in listing["data"]}
+except Exception as error:
+    print(f"VARIANT_LIST_UNAVAILABLE: the server's model list could not be read ({type(error).__name__})")
+    sys.exit(3)
+if model_id not in served:
+    print(f"MODEL_NOT_SERVED: {model_id} is not in the server's model list")
+    sys.exit(2)
+live = served[model_id]
+shown = ",".join(live) if live else "none"
+if variant and variant not in live:
+    print(f"VARIANT_UNAVAILABLE: {requested}; live variants: {shown}")
+    sys.exit(2)
+floor = ""
+if floor_path:
+    for line in open(floor_path, encoding="utf-8"):
+        parts = line.split()
+        if len(parts) == 2 and not parts[0].startswith("#") and parts[0] == model_id:
+            floor = parts[1]
+notes = [f"LIVE_VARIANTS model={model_id} variants={','.join(live)}"]
+if floor and not live:
+    notes.append(f"VARIANT_FLOOR_IGNORED model={model_id} floor={floor} (the server lists no variants)")
+elif floor:
+    if floor not in live:
+        print(f"VARIANT_FLOOR_UNKNOWN: floor {floor} for {model_id} is not a live variant: {shown}")
+        sys.exit(2)
+    if not variant:
+        print(f"VARIANT_BELOW_FLOOR: {model_id} has no variant, floor {floor}; live variants: {shown}")
+        sys.exit(2)
+    if live.index(variant) < live.index(floor):
+        print(f"VARIANT_BELOW_FLOOR: {requested} is below the floor {floor}; live variants: {shown}")
+        sys.exit(2)
+print("\n".join(notes))
+PY
+)
+variant_rc=$?
+rm -f "$live_file"
+if [ "$variant_rc" -ne 0 ]; then
+  echo "$variant_report" >&2
+  exit "$variant_rc"
+fi
+echo "$variant_report"
 
 nohup bash "$script_dir/oc-run.sh" "$prefix" "$stop" "$model" "$server_url" "${OC_AUTO_RESUMES:-2}" "$opencode_bin" "$1" --server "$server_url" "${@:2}" > /dev/null 2>&1 &
 echo $! > "$prefix.pid"

@@ -46,7 +46,10 @@ case "$cmd" in
     for a in "$@"; do line="$line $a"; done
     printf '%s pw_len=%s\n' "$line" "${#OPENCODE_PASSWORD}" >> "$log"
     if [ -n "$FAKE_API_FAIL" ]; then echo "api failed" >&2; exit 1; fi
-    echo '{"data":{}}'
+    case "$line" in
+      *"GET /api/model"*) echo '{"data":[{"id":"model","providerID":"provider","variants":[{"id":"low"},{"id":"high"},{"id":"max"}]}]}' ;;
+      *) echo '{"data":{}}' ;;
+    esac
     ;;
   run)
     line="run"
