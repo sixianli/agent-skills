@@ -7,14 +7,13 @@
 
 ## 当前批次
 
-- S3-F21：交给 OpenCode（G2、G3）。记录测试时另存“去掉 test_exclude 路径之后的指纹”和当时的 test_exclude 列表；按提交判断放宽不通过时，用它判断；先写测试并留下失败输出，再改代码。证据：test_longtask.py 里名字含 never_committed_alone 的测试，加我的审核
-- S3-F22：交给 OpenCode（G2、G3）。命令类检查加可选开关 ignore_test_exclude，开了就和测试类检查一样放宽，不写时行为不变；lint 检查开关的写法。证据：test_longtask.py 里名字含 ignore_test_exclude 的测试，加我的审核
-- 同一批新增的变异、SKILL.md 和 formats.md 的说明、验证记录 README 由 OpenCode 一并写好，由我审核；S3-R1 在最后一个提交上重跑整套检查
+- S3-F23：交给 OpenCode（G2、G5 的免费模型）。items.json 加 decisions（每条原话 once 或 durable）和可选的 decision_docs；durable 的原话必须被一个条目引用，条目里有 doc 检查，路径在决策文档目录下，并用 quotes 核对 ADR 原样含有原话；lint 拦住没分类、没文档条目、无记录地把 durable 改回 once；init 默认把 G1 记为 once。先写测试并留下失败输出，再改代码。证据：test_longtask.py 里名字含 durable_decision 的测试，加我的审核
+- 同一批的变异、SKILL.md 和 formats.md 的说明、验证记录 README 由 OpenCode 一并写好；S3-R1 在最后一个提交上重跑
 
 ## 之后
 
 - S3-R1：整套检查通过，文档写明新规则
-- S3-R2：FEEDBACK.md 补“已处理”“暂缓”“复现”，更新本仓库记忆
+- S3-R2：FEEDBACK.md 补 F21–F23 的“已处理”和 F24 的“复现”，更新本仓库记忆
 - 请用户验收；用户说可以关闭后在 goal.md 追加 CLOSED
 
 ## 计划改动记录
@@ -23,6 +22,7 @@
 - 2026-10-21 18:01 按 G1 核实 F21–F24：F21 确认，F22 部分确认，F23 按 G4 暂缓，F24 说的原因被否认；本轮做 F21、F22，实现和测试按 G2、G3 交给 OpenCode。
 - 2026-10-21 18:02 S3-F21、S3-F22 的测试检查由标签改为“文件加名字片段”（never_committed_alone、ignore_test_exclude），因为 unittest 的测试名带不了 [S3-F21] 这类标签；检查内容不变。
 - 2026-10-21 18:42 按 G5 把交给 OpenCode 的模型改为 opencode/deepseek-v4.1-flash-free：付费模型试跑返回 402（账号余额不足），没有产出；S3-F21、S3-F22 的范围和完成条件不变。
+- 2026-10-21 19:38 按 G6 把 F23 从暂缓（G4）改回本轮，按 G7 把“ADR 回指 G 编号”改为“ADR 原样引用原话”，按 G8 加条目 S3-F23 并放进当前批次；S3-R2 的标题随之改为包含 F23。status 显示 S3-F21、S3-F22、S3-R1 当前版本已验证，S3-R2 未完成。
 
 ## 意外和发现
 
@@ -33,3 +33,5 @@
 
 - 2026-10-21 F21 先按提交判断、不通过再用新字段判断，不替换现有逻辑，因为现有测试和说明文字依赖按提交判断时给出的提交号；记录没有新字段（旧记录、别的机器上算的指纹）时行为不变。
 - 2026-10-21 本轮在 .agents/local/worktrees/ 下的独立工作副本里做，检查全部通过并提交后才快进合并到主目录（用户 2026-10-03 的决定，见 feedback-round2 的 G7）。
+- 2026-10-21 F23 的 lint 严格程度用户没有选，按方案推荐取“报错拦住”：没分类的原话、没有文档条目的长期决定都让 lint 失败；ADR 本身可以晚写，对应条目在写好之前显示未完成。
+- 2026-10-21 feedback-round3 自己暂不启用 decisions：agent-skills 仓库没有 docs/adr，放长期决定的位置要用户另定。

@@ -93,7 +93,7 @@
     },
     {
       "id": "S3-R2",
-      "title": "FEEDBACK.md 的 F21、F22 补“已处理”，F23 记暂缓，F24 记复现；本仓库记忆更新",
+      "title": "FEEDBACK.md 的 F21、F22、F23 补“已处理”，F24 记复现；本仓库记忆更新",
       "goal_ref": [
         "G1",
         "G4"
@@ -108,6 +108,31 @@
         "by": "claude",
         "on": "2026-10-21",
         "why": "收尾"
+      }
+    },
+    {
+      "id": "S3-F23",
+      "title": "原话按 once / durable 分类；长期决定必须落到原样引用原话的 ADR，lint 拦住遗漏",
+      "goal_ref": [
+        "G6",
+        "G7",
+        "G8"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "durable_decision"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-21",
+        "why": "FEEDBACK F23；G6 推翻 G4 的暂缓，G8 批准方案"
       }
     }
   ],
