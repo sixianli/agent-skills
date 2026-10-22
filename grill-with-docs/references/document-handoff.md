@@ -1,6 +1,6 @@
 # Hand Off Project Documents to Document Governance
 
-Load the installed `document-governance` entrypoint, then its SOP and applicable
+Load the `document-governance` skill by name, then its SOP and applicable
 workflow references. Apply its existing adoption, scope, and repository-rule
 checks. The user's request to run this documented interview explicitly selects
 Document Governance for the captured documents; it does not authorize migration
@@ -46,10 +46,11 @@ accepted, and let Document Governance update the reciprocal `supersedes` and
 ## Verification and return to interview
 
 Have Document Governance inspect the written files and run its validator using
-the resolved installed script path:
+the absolute path of its script, which is `scripts/validate_docs.py` inside the
+`document-governance` skill's directory:
 
 ```text
-python3 <document-governance-dir>/scripts/validate_docs.py <project-root> --strict
+python3 <document-governance skill directory>/scripts/validate_docs.py <project-root> --strict
 ```
 
 Use its migration-friendly audit only during initial adoption; use strict mode

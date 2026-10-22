@@ -88,7 +88,18 @@
       "done_when": [
         {
           "type": "test",
-          "tag": "HA-2"
+          "file": "scripts/tests/test_validate_all.py",
+          "name": "harness_only_text_is_rejected"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_validate_all.py",
+          "name": "harness_specific_skill_is_exempt"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_validate_all.py",
+          "name": "unknown_harness_value_is_rejected"
         },
         {
           "type": "command",
@@ -117,7 +128,33 @@
       "done_when": [
         {
           "type": "test",
-          "tag": "HA-3"
+          "file": "scripts/tests/test_install_links.py",
+          "name": "install_links_only_the_named_skills"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_install_links.py",
+          "name": "copy_is_moved_to_backup_and_replaced_by_a_link"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_install_links.py",
+          "name": "migrate_keeps_the_installed_set"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_install_links.py",
+          "name": "check_reports_copies_broken_links_and_conflicting_duplicates"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_install_links.py",
+          "name": "warns_when_a_harness_specific_skill_goes_elsewhere"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_install_links.py",
+          "name": "entries_outside_the_repository_are_never_touched"
         },
         {
           "type": "command",

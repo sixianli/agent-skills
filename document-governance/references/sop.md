@@ -36,12 +36,12 @@ ADR supersession, and SOURCE-path rules.
 | Runbook         | `docs/runbooks/topic-runbook.md`                  | Operate, deploy, debug, recover            | Product requirements or feature rationale |
 | Idea            | `docs/ideas/IDEA-*.md`                            | A durable insight and its thinking context | A commitment to implement                 |
 | Backlog Item    | `docs/backlog/BL-*.md`                            | Future work, priority, state, and outcome  | File-level execution steps                |
-| Codex Lessons   | `docs/lessons.md`                                 | Repeated Codex mistakes and prevention     | Status, one-off issues, future work       |
+| Agent Lessons   | `docs/lessons.md`                                 | Repeated agent mistakes and prevention     | Status, one-off issues, future work       |
 | Archive         | `docs/archive/specs/`, `docs/archive/plans/`, `docs/archive/runbooks/` | Closed execution and Runbook history | Active source-of-truth content |
 
 Do not create or maintain `docs/TODO.md`; Backlog is the only durable future-work
-inventory. Maintain `docs/lessons.md` only for mistakes Codex makes frequently
-or repeatedly and the explicit rules that prevent recurrence. Do not add
+inventory. Maintain `docs/lessons.md` only for mistakes coding agents make
+frequently or repeatedly and the explicit rules that prevent recurrence. Do not add
 project status, general knowledge, one-off incidents, or future work there.
 
 Recognize existing `docs/archive/adr/` documents for backward compatibility,
@@ -170,7 +170,7 @@ authoritative document rather than blindly trusting stale prose.
 | Archived Runbook | `YYYY-MM-DD-{stable-runbook-name}.md`; legacy undated names remain readable |
 | Idea            | `IDEA-YYYYMMDD-NNN-short-title.md` under `docs/ideas/`           |
 | Backlog         | `BL-YYYYMMDD-NNN-short-title.md` under `docs/backlog/`           |
-| Codex Lessons   | `docs/lessons.md`                                                |
+| Agent Lessons   | `docs/lessons.md`                                                |
 
 ```text
 docs/

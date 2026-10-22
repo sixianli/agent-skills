@@ -11,7 +11,7 @@ Use this skill for a user-supplied URL and a local video deliverable. The target
 
 1. Identify the intended video. For a post with several media items, download each requested item at its own best resolution. For a feed, playlist, or page with several unrelated videos, ask which item or bounded set the user wants before a bulk download.
 2. Check for `yt-dlp` and `ffprobe` (`ffprobe` comes with FFmpeg). Install missing local dependencies as part of an authorized download when appropriate; on macOS, `brew install yt-dlp ffmpeg` is one option. Report what was installed. Keep `yt-dlp` current when a supported site has stopped working.
-3. First run the bundled helper in inspection mode. It asks yt-dlp for candidate formats without downloading and chooses by `width × height`, then frame rate and reported bitrate for ties. It rejects unknown dimensions when several formats may compete. A lone direct video file may be downloaded first and measured afterward:
+3. First run the bundled helper in inspection mode. In the commands below, `<skill-dir>` is this skill's directory, the directory that contains this `SKILL.md`; the agent harness reports it when it loads the skill. It asks yt-dlp for candidate formats without downloading and chooses by `width × height`, then frame rate and reported bitrate for ties. It rejects unknown dimensions when several formats may compete. A lone direct video file may be downloaded first and measured afterward:
 
    ```bash
    python3 <skill-dir>/scripts/download.py --inspect '<URL>'

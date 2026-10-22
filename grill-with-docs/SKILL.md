@@ -11,9 +11,11 @@ concept boundaries, concrete counterexamples, and ADR selection.
 
 ## One interview, one document owner
 
-Resolve `grill-me` and `document-governance` from the active skill inventory and
-read their actual `SKILL.md` files. Do not assume a tool named `Skill`, a shared
-installation parent, or a `CODEX_SKILL_DIR` environment variable. Follow
+Load the `grill-me` and `document-governance` skills by name, the way the
+current agent harness loads skills, and follow their loaded instructions. If the
+harness cannot load a skill by name, find it in the harness's skill list and read
+its `SKILL.md`. Do not guess installation paths or read copies from another
+agent's skill directory. Follow
 `grill-me`'s bundled upstream interview as the single interview workflow.
 
 **Document Governance owns every project-document mutation in this workflow.**

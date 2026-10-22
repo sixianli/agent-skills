@@ -97,7 +97,7 @@ with any such finding must report `ok: false` and return exit code 1.
   failures. Use `scripts/idea_backlog.py review` to surface them.
 - The validator can enforce the location and frontmatter shape of
   `docs/lessons.md`, but it cannot prove that an entry represents a repeated
-  Codex mistake. Review that semantic boundary manually.
+  coding-agent mistake. Review that semantic boundary manually.
 - Fully validate active Runbooks using the shared `runbook.py` contract logic.
   For archived Runbooks, validate historical location, status, type, and
   relationships but do not recompute old hashes against current sources.

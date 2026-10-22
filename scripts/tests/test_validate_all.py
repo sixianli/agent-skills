@@ -73,5 +73,77 @@ class SkillStructureTests(unittest.TestCase):
         self.assert_valid(make_skill(frontmatter, "```text\n[TODO: write steps]\n```\n"))
 
 
+HARNESS_ONLY_SNIPPETS = (
+    ("Run ${CLAUDE_SKILL_DIR}/scripts/build.py.", "CLAUDE_SKILL_DIR"),
+    ("Read CODEX_SKILL_DIR/references/notes.md.", "CODEX_SKILL_DIR"),
+    ("Set allow_implicit_invocation: true.", "allow_implicit_invocation"),
+    ("Set disable-model-invocation: true.", "disable-model-invocation"),
+    ("Use the Skill tool to load it.", "Skill tool"),
+)
+
+
+def make_repo_skill(repo_root: Path, body_line: str, reference_line: str) -> dict:
+    skill_dir = repo_root / "demo-skill"
+    (skill_dir / "references").mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: demo-skill\ndescription: Demo skill.\n---\n\n```text\n"
+        f"{body_line}\n```\n",
+        encoding="utf-8",
+    )
+    (skill_dir / "references" / "note.md").write_text(
+        f"# Notes\n\n{reference_line}\n", encoding="utf-8"
+    )
+    return {"name": "demo-skill", "skill_dir": "demo-skill"}
+
+
+class HarnessWordingTests(unittest.TestCase):
+    def test_harness_only_text_is_rejected(self):
+        for line, fragment in HARNESS_ONLY_SNIPPETS:
+            with (
+                self.subTest(fragment=fragment),
+                tempfile.TemporaryDirectory() as root,
+            ):
+                repo_root = Path(root)
+                entry = make_repo_skill(repo_root, line, line)
+                errors = validate_all.harness_wording_errors(entry, repo_root)
+                self.assertEqual(len(errors), 2)
+                self.assertTrue(errors[0].startswith("demo-skill/SKILL.md:7: "))
+                self.assertIn(f"harness-only text '{fragment}'", errors[0])
+                self.assertTrue(
+                    errors[0].endswith(
+                        "; write it so any agent can follow it, or mark the skill "
+                        'with "harness" in skills.json'
+                    )
+                )
+                self.assertTrue(
+                    errors[1].startswith("demo-skill/references/note.md:3: ")
+                )
+                self.assertIn(f"harness-only text '{fragment}'", errors[1])
+
+    def test_harness_specific_skill_is_exempt(self):
+        with tempfile.TemporaryDirectory() as root:
+            repo_root = Path(root)
+            entry = make_repo_skill(
+                repo_root,
+                HARNESS_ONLY_SNIPPETS[0][0],
+                HARNESS_ONLY_SNIPPETS[1][0],
+            )
+            entry["harness"] = "claude-code"
+            self.assertEqual(validate_all.harness_wording_errors(entry, repo_root), [])
+
+    def test_unknown_harness_value_is_rejected(self):
+        with tempfile.TemporaryDirectory() as root:
+            repo_root = Path(root)
+            entry = make_repo_skill(
+                repo_root,
+                HARNESS_ONLY_SNIPPETS[0][0],
+                HARNESS_ONLY_SNIPPETS[1][0],
+            )
+            entry["harness"] = "vscode"
+            errors = validate_all.harness_wording_errors(entry, repo_root)
+            self.assertEqual(len(errors), 1)
+            self.assertIn("vscode", errors[0])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -36,9 +36,10 @@ This skill governs only project documentation that has explicitly adopted its ru
    consistent within the same change set.
 6. Supersede ADRs in place within `docs/adr/`; never archive ADRs. Archive Specs and Plans only after
    closure. Keep only active Runbooks in `docs/runbooks/` and use the dedicated Runbook archive modes.
-7. Resolve the directory of the currently enabled skill from the source path provided by the skill inventory or runtime framework. Do not assume
-   `CODEX_SKILL_DIR` exists. Before running scripts bundled with the skill, confirm that Python 3.10 or later is
-   available via `python3`, then invoke the scripts using the resolved absolute path.
+7. Every `scripts/`, `references/`, and `assets/` path in this file is relative to this skill's directory, the
+   directory that contains this `SKILL.md` (the agent harness reports it when it loads the skill), not to the project.
+   Before running scripts bundled with the skill, confirm that Python 3.10 or later is available via `python3`, then
+   invoke them by absolute path, for example `python3 <skill-dir>/scripts/validate_docs.py <project-root> --strict`.
 8. Use a migration-friendly validation mode for audits during initial adoption of this system. Use `--strict` for governed projects,
    CI, and completion checks; resolve all errors before claiming that structural validation has passed.
 9. Report which documents were updated and intentionally left unchanged, which checks were skipped, any unresolved drift,
@@ -49,7 +50,7 @@ This skill governs only project documentation that has explicitly adopted its ru
 
 ## Non-Negotiable Rules
 
-* Keep `policy.allow_implicit_invocation: true` while honoring the adoption conditions and scope boundaries in this file.
+* Keep this skill available for automatic invocation, and do not add harness settings that disable it, while honoring the adoption conditions and scope boundaries in this file.
 * Do not silently rewrite decisions, context, options, or consequences already recorded in an ADR. Follow the
   supersession workflow in `references/workflows.md`.
 * Keep superseded ADRs in `docs/adr/`, keep lifecycle fields consistent, and maintain bidirectional
@@ -59,7 +60,7 @@ This skill governs only project documentation that has explicitly adopted its ru
 * Treat the Backlog as a persistent work list. Do not invent Backlog items merely to justify
   a temporary status report.
 * Do not create or maintain `docs/TODO.md`; all persistent future work belongs in the Backlog.
-* `docs/lessons.md` records only mistakes that Codex makes frequently or repeatedly, along with explicit rules
+* `docs/lessons.md` records only mistakes that coding agents make frequently or repeatedly, along with explicit rules
   that prevent the same class of mistake from recurring. Do not record one-off issues, project state, or general knowledge there.
 * Do not create or maintain a separate project-root state cache. Derive state from the current repository, documentation, tests, artifacts, and
   runtime evidence.

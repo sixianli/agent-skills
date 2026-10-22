@@ -21,6 +21,14 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = REPO_ROOT / "skills.json"
 MAX_SKILL_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 1024
+HARNESSES = ("claude-code", "codex", "opencode")
+HARNESS_ONLY_LITERALS = (
+    "CLAUDE_SKILL_DIR",
+    "CODEX_SKILL_DIR",
+    "allow_implicit_invocation",
+    "disable-model-invocation",
+)
+HARNESS_ONLY_PATTERN = re.compile(r"\bSkill tool\b")
 
 
 def load_manifest() -> dict[str, Any]:
@@ -126,6 +134,51 @@ def skill_structure_error(skill_dir: Path) -> str | None:
     )
 
 
+def harness_text_error(path: Path, line_number: int, text: str) -> str:
+    return (
+        f"{path}:{line_number}: harness-only text '{text}'; "
+        'write it so any agent can follow it, or mark the skill with '
+        '"harness" in skills.json'
+    )
+
+
+def harness_wording_errors(skill: dict[str, Any], repo_root: Path) -> list[str]:
+    harness = skill.get("harness")
+    if harness is not None:
+        if harness not in HARNESSES:
+            return [
+                (
+                    f"Unknown harness '{harness}' for skill '{skill.get('name')}'; "
+                    f"expected one of {', '.join(HARNESSES)}"
+                )
+            ]
+        return []
+
+    skill_dir = repo_root / skill["skill_dir"]
+    paths = [skill_dir / "SKILL.md"]
+    references = skill_dir / "references"
+    if references.is_dir():
+        paths.extend(sorted(references.rglob("*.md")))
+
+    errors: list[str] = []
+    for path in paths:
+        if not path.is_file():
+            continue
+        relative = path.relative_to(repo_root)
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), start=1
+        ):
+            for literal in HARNESS_ONLY_LITERALS:
+                if literal in line:
+                    errors.append(harness_text_error(relative, line_number, literal))
+            match = HARNESS_ONLY_PATTERN.search(line)
+            if match:
+                errors.append(
+                    harness_text_error(relative, line_number, match.group(0))
+                )
+    return errors
+
+
 def main() -> int:
     """执行所有 skill 校验并汇总结果。
 
@@ -152,6 +205,15 @@ def main() -> int:
             failures.append(f"{name}: structure")
         else:
             print("Skill is valid!", flush=True)
+
+        print(f"\n== {name}: harness wording ==", flush=True)
+        wording_errors = harness_wording_errors(skill, REPO_ROOT)
+        if wording_errors:
+            for wording_error in wording_errors:
+                print(wording_error, flush=True)
+            failures.append(f"{name}: harness wording")
+        else:
+            print("Harness wording is fine.", flush=True)
 
         for check in skill.get("checks", []):
             check_name = check["name"]

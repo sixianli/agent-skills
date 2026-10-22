@@ -12,7 +12,7 @@ rollback, and conflict handling.
 - [Runbook Lifecycle and Execution](#runbook-lifecycle-and-execution)
 - [Rollback](#rollback)
 - [Ideas and Backlog](#ideas-and-backlog)
-- [Codex Lessons](#codex-lessons)
+- [Agent Lessons](#agent-lessons)
 - [Conflict Handling](#conflict-handling)
 
 ## New Feature Workflow
@@ -141,10 +141,10 @@ Live-State Preflight, evidence, mutation-boundary, and archive rules.
 - See `references/idea-backlog-workflow.md` for capture quality, transitions,
   review behavior, and closure evidence.
 
-## Codex Lessons
+## Agent Lessons
 
-Maintain `docs/lessons.md` only when evidence shows that Codex frequently or
-repeatedly makes the same mistake. Each lesson must describe the recurring
+Maintain `docs/lessons.md` only when evidence shows that coding agents
+frequently or repeatedly make the same mistake. Each lesson must describe the recurring
 pattern, why it matters, and a concrete prevention rule. Do not add project
 status, general knowledge, one-off incidents, or future work. Put future work
 in Backlog instead.
