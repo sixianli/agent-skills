@@ -210,6 +210,20 @@ class CharacterTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("2:10:", result.stdout)
 
+    def test_zero_width_space_is_reported_without_shifting_later_columns(self) -> None:
+        result = run_check(
+            diagram(
+                """
+                +------+
+                | a\u200bbcd |
+                +------+
+                """
+            )
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("zero-width character U+200B", result.stdout)
+        self.assertEqual(positions(result.stdout), [(2, 4)])
+
 
 class WidthTests(unittest.TestCase):
     def test_line_wider_than_80_columns_is_rejected(self) -> None:
