@@ -272,7 +272,7 @@
       "package_dir": "shoshin",
       "readme": "shoshin/README.md",
       "skill_dir": "shoshin/skills/reflect",
-      "description": "Review the current task when the user requests a retrospective. Use judgment, tooling, and blind-spot lenses through Codex native subagents; distinguish missed skill triggers from execution and guidance defects, then route evidenced improvements to concrete edits or structural safeguards.",
+      "description": "Review the current task when the user requests a retrospective. Use judgment, tooling, and blind-spot lenses through the host's own subagents; distinguish missed skill triggers from execution and guidance defects, then route evidenced improvements to concrete edits or structural safeguards.",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []
@@ -381,7 +381,21 @@
             "blog-workflow/tests"
           ]
         }
-      ]
+      ],
+      "harness_files": {
+        "SKILL.md": [
+          "claude-code",
+          "codex"
+        ],
+        "scripts/thread_transcript.py": [
+          "claude-code",
+          "codex"
+        ],
+        "tests/test_thread_transcript.py": [
+          "claude-code",
+          "codex"
+        ]
+      }
     },
     {
       "name": "video-download",
@@ -473,7 +487,13 @@
             "human-writing-zh/tests"
           ]
         }
-      ]
+      ],
+      "harness_files": {
+        "tests/verification/2026-10-06-import/README.md": [
+          "claude-code",
+          "codex"
+        ]
+      }
     },
     {
       "name": "long-task-planning",
@@ -522,7 +542,21 @@
             "long-task-planning/tests"
           ]
         }
-      ]
+      ],
+      "harness_files": {
+        "tests/verification/2026-10-02-feedback/README.md": [
+          "claude-code",
+          "codex"
+        ],
+        "tests/verification/2026-10-02/README.md": [
+          "claude-code",
+          "codex"
+        ],
+        "tests/verification/2026-10-03-feedback/README.md": [
+          "claude-code",
+          "codex"
+        ]
+      }
     },
     {
       "name": "codex-orchestration",
@@ -693,7 +727,13 @@
             "codebuddy-orchestration/tests"
           ]
         }
-      ]
+      ],
+      "harness_files": {
+        "scripts/cb-delegate.sh": [
+          "claude-code",
+          "codex"
+        ]
+      }
     },
     {
       "name": "readable-output",
@@ -745,7 +785,27 @@
             "readable-output/tests"
           ]
         }
-      ]
+      ],
+      "harness_files": {
+        "tests/codex_session_e2e.py": [
+          "codex"
+        ],
+        "tests/plugin_session_e2e.py": [
+          "claude-code"
+        ],
+        "tests/test_check_chinese_reply.py": [
+          "claude-code",
+          "codex"
+        ],
+        "tests/verification/2026-10-02/README.md": [
+          "claude-code",
+          "codex"
+        ],
+        "tests/verification/2026-10-20/README.md": [
+          "claude-code",
+          "codex"
+        ]
+      }
     },
     {
       "name": "ssh-access",

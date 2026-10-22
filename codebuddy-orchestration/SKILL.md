@@ -177,8 +177,8 @@ whatever the allow list says. Reads are therefore guarded in three layers,
 as in the opencode-orchestration skill: the brief and the worker rules say
 what to read; deny rules stop reads of credential stores (`~/.ssh`,
 `~/.aws`, `~/.azure`, `~/.gnupg`, `~/.config`, `~/.docker`, `~/.kube`,
-`~/.password-store`, `~/Library/Keychains`, the CodeBuddy, Claude and Codex
-home folders, `~/.netrc`, `~/.npmrc`, `~/.pypirc`, `~/.git-credentials`)
+`~/.password-store`, `~/Library/Keychains`, the home folders of CodeBuddy and
+the other agent harnesses listed in `scripts/cb-delegate.sh`, `~/.netrc`, `~/.npmrc`, `~/.pypirc`, `~/.git-credentials`)
 and every `--deny` rule; and the report lists every outside read for
 review. The `Grep` tool is removed because it ignores path rules; the worker
 searches with `git grep`, which stays inside the repository, and

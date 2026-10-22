@@ -53,7 +53,7 @@ https://styleguide.mailchimp.com/voice-and-tone/
 参考其区分相对稳定的声音与随场景变化的语气，以及不勉强制造幽默的原则。
 本包没有模仿 Mailchimp 品牌人格，而是为用户的样稿保留位置。
 
-### S07 — OpenAI: Build skills
+### S07 — OpenAI Codex: Build skills
 
 入口：https://developers.openai.com/codex/skills/
 本次解析跳转：https://learn.chatgpt.com/docs/build-skills

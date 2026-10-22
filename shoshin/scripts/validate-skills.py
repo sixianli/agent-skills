@@ -9,13 +9,20 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
-import os
 import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 import yaml
+
+validate_all_path = Path(__file__).resolve().parents[2] / "scripts/validate_all.py"
+validate_all_spec = importlib.util.spec_from_file_location("shoshin_validate_all", validate_all_path)
+if validate_all_spec is None or validate_all_spec.loader is None:
+    raise ImportError(f"Cannot load structure validator: {validate_all_path}")
+validate_all = importlib.util.module_from_spec(validate_all_spec)
+validate_all_spec.loader.exec_module(validate_all)
+skill_structure_error = validate_all.skill_structure_error
 
 EXCLUDED_SKILLS = {
     "arena", "unslop", "bro", "swarm", "recall", "no-comments", "make-bot-ui",
@@ -52,24 +59,15 @@ def anchors(text: str) -> set[str]:
     return found
 
 
-def load_validator(path: Path):
-    spec = importlib.util.spec_from_file_location("skill_creator_validator", path)
-    if spec is None or spec.loader is None:
-        raise ValueError(f"Cannot load validator: {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.validate_skill
-
-
-def validate(root: Path, quick_validate, external: list[Path] | None = None) -> list[str]:
+def validate(root: Path, external: list[Path] | None = None) -> list[str]:
     errors: list[str] = []
     owners: dict[str, Path] = {}
     local = sorted(p.parent for p in root.glob("*/SKILL.md"))
     if not local:
         return [f"No skills found: {root}"]
     for folder in local + (external or []):
-        ok, message = quick_validate(folder)
-        if not ok:
+        message = skill_structure_error(folder)
+        if message is not None:
             errors.append(f"{folder}: {message}")
             continue
         doc = (folder / "SKILL.md").read_text(encoding="utf-8")
@@ -106,7 +104,6 @@ def validate(root: Path, quick_validate, external: list[Path] | None = None) -> 
                     errors.append(f"{path}: undefined reference {key}")
                 else:
                     hrefs.append(definitions[key])
-            # Shortcut references only have meaning when a definition exists.
             for label in re.findall(r"(?<!!)\[([^\]\n]+)\](?![\[(])", body):
                 if label.strip().casefold() in definitions:
                     hrefs.append(definitions[label.strip().casefold()])
@@ -119,7 +116,6 @@ def validate(root: Path, quick_validate, external: list[Path] | None = None) -> 
                     errors.append(f"{path}: nonportable reference {href}")
                     continue
                 relative = unquote(url.path)
-                # Cross-skill references always originate at the skill root.
                 if path.name == "SKILL.md" and relative.startswith("../"):
                     parts = Path(relative).parts
                     if parts[1] in EXCLUDED_SKILLS:
@@ -146,11 +142,10 @@ def validate(root: Path, quick_validate, external: list[Path] | None = None) -> 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skills-root", type=Path, default=Path(__file__).resolve().parents[1] / "skills")
-    parser.add_argument("--validator", type=Path, default=Path(os.environ.get("CODEX_SKILL_VALIDATOR", str(Path.home() / ".codex/skills/.system/skill-creator/scripts/quick_validate.py"))))
     parser.add_argument("--external-skill", action="append", type=Path, default=[])
     args = parser.parse_args()
     try:
-        errors = validate(args.skills_root, load_validator(args.validator), args.external_skill)
+        errors = validate(args.skills_root, args.external_skill)
     except (OSError, ValueError, ImportError, yaml.YAMLError) as exc:
         print(f"Validation unavailable: {exc}", file=sys.stderr)
         return 1

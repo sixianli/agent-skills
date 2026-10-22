@@ -1,7 +1,7 @@
 """管理 Document Governance 的 Idea 与 Backlog 记录。
 
 脚本只处理确定性的文件操作：创建、查询和状态转换。
-内容提炼仍由调用该 skill 的 Codex 完成。
+内容提炼仍由调用该 skill 的 agent 完成。
 """
 
 from __future__ import annotations

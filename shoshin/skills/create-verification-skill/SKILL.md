@@ -5,7 +5,7 @@ description: "Generate and exercise a project-local verification skill and featu
 
 # create-verification-skill
 
-Start with an authorized target project, the user paths to verify, and available control tools. Write output to the target project's `.agents/skills/verify-<app>/`, never to the shared Shoshin source. Use the currently discovered skill-creator to author and validate it. If unavailable, report the capability gap rather than pretending to have used it.
+Start with an authorized target project, the user paths to verify, and available control tools. Write output as a skill folder named `verify-<app>` inside the target project, never to the shared Shoshin source. Each harness loads project skills from its own directory, so decide the location: reuse the directory where the project already keeps skills; otherwise use the project skill directory of the harness the user will run the verification with, confirmed from that harness's current documentation or by checking that it discovers the skill. If several harnesses will use it, or the location is still unclear, ask the user before writing. Report the chosen location and why. Use the currently discovered skill-creator to author and validate it. If unavailable, report the capability gap rather than pretending to have used it.
 
 ## Investigate the project
 

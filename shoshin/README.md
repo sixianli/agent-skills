@@ -1,13 +1,13 @@
 # Shoshin
 
-Shoshin adapts PStack's methods for understanding, designing, verifying, and explaining code into Codex skills.
-Maintain source in this package. Personal installation copies and generated project verification skills have separate owners.
+Shoshin adapts PStack's methods for understanding, designing, verifying, and explaining code into agent skills that any coding agent can follow, whichever agent harness loads them.
+Maintain source in this package. Its content is fixed at the current version and is compared with newer PStack releases only when the user explicitly asks ([ADR 0002](docs/adr/0002-harness-neutral-shoshin.md)). Generated project verification skills belong to their projects.
 
 ## Current delivery scope
 
 The source contains 16 skills (15 leaf skills and a lightweight entrypoint), seven cross-skill workflow references, an executable resource validator, and a decision-log helper.
 Source implementation is complete. The user explicitly stopped the real-project pilot and requested source completion, so behavioral, full UI, and post-installation acceptance remain incomplete. The full Plan has not passed.
-The entrypoint `skills/shoshin/SKILL.md` selects leaf skills and workflows as needed. After installation and host discovery, invoke it explicitly with `$shoshin`.
+The entrypoint `skills/shoshin/SKILL.md` selects leaf skills and workflows as needed. After installation and host discovery, invoke it explicitly by its name, `shoshin`, in whatever way the host names a skill.
 Its description also permits implicit selection for substantive engineering goals needing workflow choice or multiple methods. Simple requests and sufficient directly chosen skills do not need the entrypoint. Initial selection, downstream routing and actual task results are separate acceptance questions.
 The [Plan](docs/execution/plans/2026-09-08-shoshin-plan.md) owns the complete execution record, passed checks, and remaining work.
 
@@ -35,7 +35,7 @@ Their absence limits the corresponding authoring or governance steps. Browser, t
 
 ## Checks
 
-Use Python 3.10+ with the existing skill-creator validator and its PyYAML dependency:
+Use Python 3.10+ with PyYAML:
 
 ```bash
 python3 shoshin/scripts/validate-skills.py
@@ -43,9 +43,8 @@ python3 -m unittest discover -s shoshin/tests -v
 python3 scripts/validate_all.py
 ```
 
-Set `CODEX_SKILL_VALIDATOR` or `--validator` to select the current quick_validate.py.
 Use `--skills-root` for an isolated layout and repeat `--external-skill` for externally discovered paths.
-The validator reuses quick_validate and adds checks for name collisions, owner boundaries, internal Markdown resources, sections, and declared cross-skill links.
+The validator reuses the repository's SKILL.md structure check (`skill_structure_error` in `scripts/validate_all.py`) and adds checks for name collisions, owner boundaries, internal Markdown resources, sections, and declared cross-skill links.
 It is not a full Markdown renderer and does not prove triggers, semantics, tool permissions, or application behavior.
 The root `skills.json` registers all 16 skills. Aggregate checks run package structure checks, script tests, and Python quality checks; they do not establish behavioral acceptance.
 
@@ -55,22 +54,19 @@ Historical execution reports and application transcripts are retained only in pr
 
 ## Installation boundaries
 
-The personal target is `~/.agents/skills/<skill-name>/`. Install only when authorized and disclose outstanding behavioral acceptance beforehand.
-Inventory name collisions, compare directories, and retain recoverable sources. Update only content established as belonging to this package; do not overwrite unrelated user skills with the same name.
-Copy complete skill directories, including references, scripts, agents, and LICENSE, not just the entrypoint.
-Then verify discovery and references in an authorized fresh task. Copying files or passing isolated-layout checks does not replace host installation acceptance.
-Personal installation is updated only under task-specific authorization; the Plan records verified targets and remaining host acceptance. Installation does not implicitly write configuration.
+Install only the skills the user names, as symbolic links made by the repository's `scripts/install_links.py`; the repository's `mission.md` describes the procedure. Each harness reads skills from its own directory, and the install script, not this package, knows those directories. Disclose outstanding behavioral acceptance before installing.
+Do not copy skill directories: a copy stops following this source. Do not overwrite unrelated user skills with the same name.
+Then verify discovery and references in an authorized fresh task. Passing isolated-layout checks does not replace host installation acceptance. Installation does not implicitly write configuration.
 
-Generated artifacts belong to the target project's `.agents/skills/verify-<app>/`. Do not maintain source backward from personal installation copies.
+Generated verification skills belong to the target project, never to this package. create-verification-skill decides where in the project they go, because each harness loads project skills from its own directory.
 A historical pilot was canceled by the user. Its task-owned, unchanged verification artifacts were removed; this does not establish full real-application or production acceptance. The private application is not a dependency or reusable example in this package.
 
 ## Sources, language, and license
 
 The user selected MIT. See [LICENSE](LICENSE) and [upstream attribution](THIRD_PARTY_NOTICES.md).
-The permitted PStack source is pinned to the 0.15.0 baseline. The Spec records dispositions; detailed historical source inventories are local-only records.
+The permitted PStack source is pinned to the 0.15.0 baseline, and Shoshin does not follow later upstream changes unless the user explicitly asks. The Spec records dispositions; detailed historical source inventories are local-only records.
 That snapshot is source evidence, not a runtime registry. Do not import designs or code from other migration projects.
 
 This package's source prose is maintained in English only. This does not require English responses or generated documents. Communication, including teach explanations, defaults to Simplified Chinese unless the user requests another language. Historical user statements and narrative evidence are English translations, not verbatim English transcripts. Private application reports, identities and external directory locators are not distributed. The Plan preserves historical source decisions and acceptance limits; privacy edits do not claim to have removed previously published Git history. Multilingual routing requests likewise use JSON Unicode escapes to retain exact Chinese test inputs; other fixtures retain their English text and Unicode boundary coverage. Decode requests before evaluating them.
 
-The format was checked against [OpenAI Build skills](https://learn.chatgpt.com/docs/build-skills) and
-[Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents). Effective tool schemas remain authoritative at execution time.
+Each skill is a folder whose `SKILL.md` has `name` and `description` frontmatter, the layout coding agent harnesses commonly load. Files for one harness only, such as `agents/openai.yaml`, are optional extras; the skills work without them. The tools actually available at execution time remain authoritative.

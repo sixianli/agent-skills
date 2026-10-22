@@ -1,6 +1,6 @@
 ---
 name: reflect
-description: "Review the current task when the user requests a retrospective. Use judgment, tooling, and blind-spot lenses through Codex native subagents; distinguish missed skill triggers from execution and guidance defects, then route evidenced improvements to concrete edits or structural safeguards."
+description: "Review the current task when the user requests a retrospective. Use judgment, tooling, and blind-spot lenses through the host's own subagents; distinguish missed skill triggers from execution and guidance defects, then route evidenced improvements to concrete edits or structural safeguards."
 ---
 
 # reflect
@@ -15,9 +15,9 @@ Identify the skills and tools actually used and, where observable, the skill cat
 
 ## 2. Review through three lenses
 
-For a substantive retrospective, create three Codex native subagents, one per lens: Judgment, Tooling, and Divergent (blind spots). Use the current host's native spawn/message/wait capabilities; do not build a runtime, launch a separate CLI or service, or create user-facing tasks. Inherit model settings. Run the three reviewers in parallel when capacity permits, otherwise in bounded waves. The primary agent synthesizes; no fourth synthesizer agent or recursive delegation is needed.
+For a substantive retrospective, create three subagents with the current host's own subagent feature, one per lens: Judgment, Tooling, and Divergent (blind spots). Use the current host's native spawn/message/wait capabilities; do not build a runtime, launch a separate CLI or service, or create user-facing tasks. Inherit model settings. Run the three reviewers in parallel when capacity permits, otherwise in bounded waves. The primary agent synthesizes; no fourth synthesizer agent or recursive delegation is needed.
 
-Read [reviewer instructions](references/reviewer-instructions.md), and give each reviewer the shared contract, its assigned lens, the same evidence version, relevant constraints, and a bounded read scope. Explicitly disable inherited conversation history when the native API supports it (for spawn_agent with fork_turns, use "none"), then supply the necessary evidence in the launch message. Do not seed reviewers with the primary agent's conclusions or each other's findings, including through inherited history in later waves. If history inheritance cannot be controlled, disclose it and do not claim an unprimed review. Reviewers make no edits, commits, external writes, or further agents; these instructions do not themselves establish permission isolation.
+Read [reviewer instructions](references/reviewer-instructions.md), and give each reviewer the shared contract, its assigned lens, the same evidence version, relevant constraints, and a bounded read scope. Explicitly disable inherited conversation history when the host's subagent feature supports it, then supply the necessary evidence in the launch message. Do not seed reviewers with the primary agent's conclusions or each other's findings, including through inherited history in later waves. If history inheritance cannot be controlled, disclose it and do not claim an unprimed review. Reviewers make no edits, commits, external writes, or further agents; these instructions do not themselves establish permission isolation.
 
 If native delegation is unavailable, forbidden, or explicitly excluded by the user, report that limit and cover the three lenses directly. If a reviewer fails, identify the uncovered lens and complete it directly where possible; do not invent an independent result. Small or trivial material does not require three agents merely because reflect was mentioned.
 

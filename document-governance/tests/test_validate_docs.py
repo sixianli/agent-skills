@@ -437,7 +437,7 @@ class ValidateDocsTests(unittest.TestCase):
 
         self.write_document(
             "docs/lessons.md",
-            "# Codex Lessons\n\n## Repeated mistake\n\n- Prevention rule: verify first.",
+            "# Agent Lessons\n\n## Repeated mistake\n\n- Prevention rule: verify first.",
             document_type="lessons",
         )
 

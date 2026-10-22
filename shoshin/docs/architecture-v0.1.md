@@ -19,10 +19,10 @@ Each SKILL.md can be reviewed through an explicit source path. It contains the t
 
 - Shared source: shoshin/skills; maintain it only there.
 - Host capabilities: tools, permissions, skill discovery, and actual user authorization; the package does not replace them.
-- Author validation: validate-skills.py reuses current quick_validate.py and checks declared resources, owners, and sections; it does not execute skills.
+- Author validation: validate-skills.py reuses the repository's SKILL.md structure check and checks declared resources, owners, and sections; it does not execute skills.
 - Deterministic runtime helper: show-me-your-work/scripts/log.sh appends TSV through one writer, protecting the existing header and escaping cells.
-- Project-generated artifacts: the target project's .agents/skills/verify-<app>, maintained with its code and actual control tools.
-- Personal installation target: ~/.agents/skills; not installed in this run.
+- Project-generated artifacts: a verify-<app> skill inside the target project, at the location create-verification-skill chooses for the harness that runs it, maintained with its code and actual control tools.
+- Installation: symbolic links made by the repository's install script into each harness's own skill directory, only for the skills the user names.
 
 ## Data Model
 
@@ -38,7 +38,7 @@ The shoshin entrypoint is implicitly discoverable for substantive repository goa
 
 Explanations and reviews use independent leaf skills. Complex work uses figure-it-out's A-E method: frame the result and risks, deliver a reviewable workflow and pre-change baseline, run and verify per-unit experiments, record decisions during execution, and validate the real result. Long, multi-phase, high-risk or later-reviewed runs use show-me-your-work's canonical TSV. Before final acceptance, recurring corrections become implemented and verified structural safeguards without a separate approval request or reflect invocation. High-risk design choices receive deeper analysis, with architect for material tradeoffs and no arena dependency.
 
-Reflect handles substantive retrospectives through three Codex native reviewers (Judgment, Tooling, Divergent), with primary-agent evidence checks and synthesis. It separates skill selection failures from body defects, reads targets before accepting edits, and routes changes by behavioral impact. Reviewers have no custom runtime or persistent state. Unavailable native delegation is disclosed and handled directly; proposals, mechanisms and rejections retain actual application and verification status.
+Reflect handles substantive retrospectives through three reviewers created with the host's own subagent feature (Judgment, Tooling, Divergent), with primary-agent evidence checks and synthesis. It separates skill selection failures from body defects, reads targets before accepting edits, and routes changes by behavioral impact. Reviewers have no custom runtime or persistent state. Unavailable native delegation is disclosed and handled directly; proposals, mechanisms and rejections retain actual application and verification status.
 
 Verification generation requires real user paths, read-only checks of the expected target, self-contained proof rules in the generated skill, preserved evidence, and cleanup of owned resources. Its feature map records shared baselines and per-entrypoint action/command/result recipes with artifact attribution and explicit skip status. Control methods follow the actual application surface; optional helpers are exercised using their documented invocation. The worked map example teaches the method without supplying purported real-project commands. Maintenance requires bidirectional coverage checks and recovery after failure. Workflow text does not automatically create persistent tasks or remote delivery.
 
@@ -52,5 +52,6 @@ A limited CLI pilot was run during implementation; its private application detai
 ## Decision Links
 
 - [SOURCE: docs/adr/0001-shoshin-package-identity.md]
+- [SOURCE: docs/adr/0002-harness-neutral-shoshin.md]
 - [SOURCE: docs/execution/specs/2026-09-08-shoshin-design.md]
 - [SOURCE: docs/execution/plans/2026-09-08-shoshin-plan.md]

@@ -23,7 +23,8 @@
 | `<检出目录>` | 测试机上的代码目录 | `/srv/test/round2/repo` |
 | `<证据目录>` | 检出目录之外，放指纹文件和测试报告的目录 | `/srv/test/round2/evidence/run-1` |
 | `<测试命令>` | 跑测试的命令原文，要能输出 JSON 或 JUnit XML 报告（JUnit XML 是多数测试工具都能输出的通用报告格式） | `npx vitest run --reporter=json --outputFile=<证据目录>/unit.json` |
-| `<本机脚本>` | 本机的 `longtask.py` | `~/.claude/skills/long-task-planning/scripts/longtask.py` |
+| `<执行人>` | 跑测试的那个 agent 的名字，记进证据的 `by` 字段 | `helper-agent` |
+| `<本机脚本>` | 本机的 `longtask.py`：本 skill 目录（`SKILL.md` 所在的目录，agent 加载 skill 时会告诉它）下的 `scripts/longtask.py`，写绝对路径 | `<skill 目录>/scripts/longtask.py` |
 
 ## 可直接贴进简报的步骤
 
@@ -40,7 +41,7 @@
    - 让测试命令自己跑完再停，不要中途终止：记录证据需要完整报告。
    - 有失败也保留报告，照实记录，不重跑、不挑结果。
 4. 把 `<证据目录>` 里的 fp.json 和报告带回本机，逐份记录（JUnit 报告把 `--vitest` 换成 `--junit`）：
-   `python3 <本机脚本> record --vitest <报告> --fingerprint-file <fp.json> --by codex --ran "<测试命令>"`
+   `python3 <本机脚本> record --vitest <报告> --fingerprint-file <fp.json> --by <执行人> --ran "<测试命令>"`
 5. 在停止文件里列出每条记录的证据编号，即 `record` 输出里的 `E…`。不要改任务目录里的 goal.md、items.json、plan.md。
 ```
 
@@ -56,6 +57,6 @@
 
 在测试机上跑的命令检查（完成条件里 `"type": "command"` 并写了 `host`）也用同一个指纹文件记录：
 
-`python3 <本机脚本> record --command "<命令原文>" --exit-code <退出码> --fingerprint-file <fp.json> --by codex`
+`python3 <本机脚本> record --command "<命令原文>" --exit-code <退出码> --fingerprint-file <fp.json> --by <执行人>`
 
 带 `"scope": "environment"` 的环境检查只看主机和记录时间，和代码版本无关，但记录时同样要给指纹文件，因为主机名从指纹文件里读。

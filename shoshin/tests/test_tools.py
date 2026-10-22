@@ -3,6 +3,7 @@ import csv
 import importlib.util
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,8 +12,25 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('shoshin_validation', ROOT / 'scripts/validate-skills.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
-VALIDATOR = Path(os.environ.get('CODEX_SKILL_VALIDATOR', str(Path.home() / '.codex/skills/.system/skill-creator/scripts/quick_validate.py')))
-QUICK = module.load_validator(VALIDATOR)
+
+
+class HarnessIndependenceTests(unittest.TestCase):
+    def test_validator_runs_without_any_harness_install(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        validator = repo_root / 'shoshin/scripts/validate-skills.py'
+        env = os.environ.copy()
+        env.pop('CODEX_SKILL_VALIDATOR', None)
+        with tempfile.TemporaryDirectory() as home:
+            env['HOME'] = home
+            result = subprocess.run(
+                [sys.executable, str(validator)],
+                cwd=repo_root,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 class ReferenceTests(unittest.TestCase):
@@ -28,7 +46,7 @@ class ReferenceTests(unittest.TestCase):
         return path
 
     def errors(self, external=None):
-        return module.validate(self.root, QUICK, external)
+        return module.validate(self.root, external)
 
     def test_resources_and_sections(self):
         a = self.skill('alpha', '[method](references/method.md#naïve-method)')

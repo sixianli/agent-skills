@@ -327,8 +327,8 @@ Files: skills/shoshin/SKILL.md, agents/openai.yaml. Originally required verified
 ### P4-03: Post-authorization installation acceptance
 
 - [ ] Preserve prior content or recoverable sources and update only targets established as Shoshin-owned, not unrelated skills.
-- [ ] Install to ~/.agents/skills/ using the confirmed method; do not maintain source backward from that copy.
-- [ ] Verify discovery, explicit/implicit triggers, resources, and dependencies in a user-authorized fresh Codex task. Do not create a separate user task without permission merely to test.
+- [ ] Install only the skills the user names, as symbolic links made by the repository's `scripts/install_links.py`; do not copy skill folders (ADR 0002).
+- [ ] Verify discovery, explicit/implicit triggers, resources, and dependencies in a user-authorized fresh task in each harness that will load the skills. Do not create a separate user task without permission merely to test.
 - [ ] Prove no absolute-path dependency in a layout without source-repository access. Personal installation success does not establish usability in every project.
 - [ ] Report version, target directories, actual installation checks, and unfinished work.
 

@@ -5,7 +5,7 @@ description: "Maintain an existing project verification skill and feature map th
 
 # maintain-verification-skill
 
-Locate the target project's `.agents/skills/verify-*/SKILL.md` or the user-supplied path. Resolve multiple candidates before proceeding. If none exists, point to create-verification-skill rather than inventing a maintenance target.
+Use the path the user supplies. Otherwise search the target project for `verify-*/SKILL.md`, starting with the project skill directories its harnesses load and then the rest of the project, skipping dependencies and build output. Resolve multiple candidates before proceeding. If none exists, point to create-verification-skill rather than inventing a maintenance target.
 
 Edit only the target verification skill's own SKILL.md, features, and helpers. Do not change product implementation or rewrite a product regression as the new correct behavior.
 

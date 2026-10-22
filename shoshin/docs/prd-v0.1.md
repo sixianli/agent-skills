@@ -11,19 +11,19 @@ date: "2026-09-08"
 
 ## Goals
 
-Adapt PStack's engineering methods into a Codex skill package that stays curious, understands before acting, and tests judgments against evidence. Improve code understanding, design, changes, verification, technical communication, and retrospectives without copying Cursor's entire runtime and orchestration system.
+Adapt PStack's engineering methods into a skill package that any agent harness can load, that stays curious, understands before acting, and tests judgments against evidence. Improve code understanding, design, changes, verification, technical communication, and retrospectives without copying Cursor's entire runtime and orchestration system.
 
 This document records user-confirmed requirements from the conversation and is authoritative for product scope. The ADR fixes the package name and location, the Spec defines the technical design, and the Plan defines implementation order. Completing these documents does not mean the skills are implemented or installation is authorized.
 
 ## Target Users
 
-The primary user develops multiple projects with Codex and values explanations of mechanisms, architecture and ownership, real reproductions, behavior preservation, explicit evidence, and proportionate autonomy. Communication defaults to Simplified Chinese unless the user requests another language; retain technical terms that improve precision. English-only applies to package source text, not to the language of responses or generated documents. In particular, teach adapts PStack's English-output instruction to Simplified Chinese.
+The primary user develops multiple projects with AI coding agents in more than one agent harness and values explanations of mechanisms, architecture and ownership, real reproductions, behavior preservation, explicit evidence, and proportionate autonomy. Communication defaults to Simplified Chinese unless the user requests another language; retain technical terms that improve precision. English-only applies to package source text, not to the language of responses or generated documents. In particular, teach adapts PStack's English-output instruction to Simplified Chinese.
 
 ## Scope
 
 ### Included
 
-- R01: Use the name **Shoshin** and directory identifier `shoshin` to maintain Codex skill source in one place.
+- R01: Use the name **Shoshin** and directory identifier `shoshin` to maintain the skill source in one place. Since 2026-10-22 the package is harness-agnostic and fixed at its current content; see ADR 0002 [SOURCE: docs/adr/0002-harness-neutral-shoshin.md].
 - R02: Provide code-mechanism explanation, design-rationale investigation, teaching, and change-impact analysis.
 - R03: Provide meaningful regression verification and generation and maintenance of project verification skills. Compilation, static reading, and agent reports cannot replace real behavior evidence.
 - R04: Provide TypeScript practices, independent code review, conservative comment review, and technical writing.
@@ -66,7 +66,7 @@ Excluding PR workflows does not prevent ordinary Git or GitHub use in future tas
 - R23: Restore figure-it-out's auditable A-E workflow: framing with rough scale, blockers and risk-based rigor; a reviewable workflow and pre-change verification baseline before implementation; per-unit hypotheses, expected evidence, actual results and keep/revert decisions; a log selected before execution and updated as decisions land for long, multi-phase, high-risk or later-reviewed work; and final delivery of the workflow, rigor rationale, log path, acceptance evidence and gaps. Reuse existing approval and adequate verification tools. Basis: the user's 2026-09-09 review annotations accepted these restorations.
 - R24: Directly implement and verify structural safeguards for recurring corrections during figure-it-out execution, without a separate approval request or retrospective invocation. Strengthen reasoning before high-risk design decisions; do not enable arena. Basis: the user's 2026-09-09 annotations explicitly requested complete migration of the safeguard action and deeper design reasoning while arena is disabled. Effective host permission controls and explicit user stopping points remain applicable.
 
-- R25: For substantive reflect retrospectives, use three Codex native subagents for Judgment, Tooling and Divergent lenses, with primary-agent synthesis and no separate runtime or user-facing tasks. Restore evidence-based trigger/body diagnosis, target-skill reading, durable action-changing proposals, routing by behavioral impact, and per-item disposition. Existing authorization governs edits and backlog writes. Basis: the user approved the seven review annotations on 2026-09-10 and specifically selected native three-lens delegation. This is a scoped exception to R22; other skills keep its general delegation policy.
+- R25: For substantive reflect retrospectives, use three subagents created with the host harness's own subagent feature for Judgment, Tooling and Divergent lenses, with primary-agent synthesis and no separate runtime or user-facing tasks. Restore evidence-based trigger/body diagnosis, target-skill reading, durable action-changing proposals, routing by behavioral impact, and per-item disposition. Existing authorization governs edits and backlog writes. Basis: the user approved the seven review annotations on 2026-09-10 and specifically selected native three-lens delegation. This is a scoped exception to R22; other skills keep its general delegation policy. ADR 0002 replaced the original Codex-only wording on 2026-10-22.
 
 - R26: Restore create-verification-skill's read-only target diagnosis, self-contained proof rules in generated output, shared feature-map baselines and reporting conventions, entrypoint-specific action/command/result recipes with a worked example, surface-appropriate controls, and documented, exercised helper invocations. Basis: the user's 2026-09-10 annotations approved these six restorations and preserving deliberate Codex adaptations instead of literal copying. Keep project-local ownership, current invocation policy, actual identified coverage rather than a fixed feature quota, and existing recovery improvements. Example commands are teaching material, never proof of a real run.
 

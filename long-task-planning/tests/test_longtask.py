@@ -182,7 +182,7 @@ class Base(unittest.TestCase):
     def record_vitest(self, repo, results, *extra):
         report = self.report_path()
         vitest_report(report, results)
-        self.ok(self.cli(repo, "record", "--vitest", str(report), "--by", "codex", *extra))
+        self.ok(self.cli(repo, "record", "--vitest", str(report), "--by", "helper-agent", *extra))
         return self.records(repo)[-1]
 
     def fingerprint(self, repo, *args):
@@ -664,7 +664,7 @@ class RecordTests(Base):
         vitest_report(report, self.passing(self.repo))
         fp_file = self.report_path("fp.json")
         fp_file.write_text(json.dumps({"fingerprint": "unknown", "commit": "abc1234", "host": "cloud"}), encoding="utf-8")
-        result = self.cli(self.repo, "record", "--vitest", str(report), "--fingerprint-file", str(fp_file), "--by", "codex")
+        result = self.cli(self.repo, "record", "--vitest", str(report), "--fingerprint-file", str(fp_file), "--by", "helper-agent")
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("缺少字段：dirty", result.stderr)
         self.assertIn("必需字段是 fingerprint、commit、dirty", result.stderr)
@@ -684,7 +684,7 @@ class RecordTests(Base):
         self.assertEqual(record["counts"], {"passed": 2, "failed": 1, "skipped": 1})
         self.assertEqual(record["tags"]["T-A1"], {"passed": 1, "failed": 1, "files": ["test/app.test.ts"]})
         self.assertEqual(record["host"], "cloud")
-        self.assertEqual(record["by"], "codex")
+        self.assertEqual(record["by"], "helper-agent")
         self.assertEqual(len(record["artifacts"]), 1)
         self.assertEqual(len(record["artifacts"][0]["sha256"]), 64)
 
@@ -1519,7 +1519,7 @@ class FindTestsTests(Base):
         ])
         self.assertIn("“parses”同时对应报告里这个文件的 2 个测试", result.stderr)
         self.init_task(self.repo, [item(f"T-S{n}", [check]) for n, check in enumerate(checks, 1)])
-        self.ok(self.cli(self.repo, "record", "--vitest", str(report), "--by", "codex"))
+        self.ok(self.cli(self.repo, "record", "--vitest", str(report), "--by", "helper-agent"))
         data = self.status(self.repo)[1]
         self.assertEqual([self.item_of(data, f"T-S{n}")["status"] for n in (1, 2, 3)], ["verified"] * 3)
 
@@ -1535,7 +1535,7 @@ class FindTestsTests(Base):
         self.assertEqual([check["name"] for check in checks], ["allows", "rejects", "keeps running after a retry"])
         self.assertIn("“allows”同时对应报告里这个文件的 2 个测试", result.stderr)
         self.init_task(self.repo, [item(f"T-S{n}", [check]) for n, check in enumerate(checks, 1)])
-        self.ok(self.cli(self.repo, "record", "--vitest", str(report), "--by", "codex"))
+        self.ok(self.cli(self.repo, "record", "--vitest", str(report), "--by", "helper-agent"))
         data = self.status(self.repo)[1]
         self.assertEqual([self.item_of(data, f"T-S{n}")["status"] for n in (1, 2, 3)], ["verified", "verified", "not_done"])
 
@@ -1618,11 +1618,11 @@ class LintTests(Base):
 
     def test_evidence_lines_inserted_between_committed_lines_pass(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
-        first = self.record_command("codex")
+        first = self.record_command("helper-agent")
         self.commit_all(self.repo, "first evidence")
         other = self.record_command("claude")
-        own = self.record_command("codex")
-        self.commit_lines([first, own], "codex commits only its own line")
+        own = self.record_command("helper-agent")
+        self.commit_lines([first, own], "helper agent commits only its own line")
         code, output = self.lint(self.repo)
         self.assertEqual(code, 0, output)
         self.commit_all(self.repo, "claude commits its line")
@@ -1632,7 +1632,7 @@ class LintTests(Base):
 
     def test_evidence_reordered_or_removed_committed_lines_fail(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
-        lines = [self.record_command("codex") for _ in range(3)]
+        lines = [self.record_command("helper-agent") for _ in range(3)]
         self.commit_all(self.repo, "evidence")
         path = self.repo / TASK / "evidence.jsonl"
         for name, changed in (("swapped", [lines[1], lines[0], lines[2]]), ("removed", [lines[0], lines[2]]),
@@ -1896,15 +1896,15 @@ class ContextHookTests(Base):
     def test_symlinked_install_reports_the_install_path(self):
         repo = self.make_repo()
         self.init_task(repo, [item("T-A1", [tag_check("T-A1")])])
-        skills = self.root / "home" / ".claude" / "skills"
+        skills = self.root / "home" / "agent-home" / "skills"
         skills.mkdir(parents=True)
         (skills / "long-task-planning").symlink_to(SCRIPT.parents[1], target_is_directory=True)
         installed = skills / "long-task-planning" / "scripts" / "longtask.py"
         result = subprocess.run([sys.executable, str(installed), "context"], cwd=repo, env=self.env,
                                 capture_output=True, text=True, timeout=120, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("`python3 ~/.claude/skills/long-task-planning/scripts/longtask.py status`", result.stdout)
-        self.assertIn("先读 ~/.claude/skills/long-task-planning/SKILL.md", result.stdout)
+        self.assertIn("`python3 ~/agent-home/skills/long-task-planning/scripts/longtask.py status`", result.stdout)
+        self.assertIn("先读 ~/agent-home/skills/long-task-planning/SKILL.md", result.stdout)
         self.assertNotIn(str(SCRIPT.parents[1]), result.stdout)
 
     def test_context_stays_within_budget(self):

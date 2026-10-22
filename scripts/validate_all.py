@@ -9,6 +9,7 @@ frontmatter 包含额外字段，例如 Claude Code 使用的 `argument-hint`。
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -29,6 +30,16 @@ HARNESS_ONLY_LITERALS = (
     "disable-model-invocation",
 )
 HARNESS_ONLY_PATTERN = re.compile(r"\bSkill tool\b")
+HARNESS_PATTERN = re.compile(
+    r"Claude Code|\bCodex\b|(?<![\w-])codex(?![\w-])|"
+    r"(?<![\w-])opencode(?![\w-])|\bOpenCode\b|~/\.claude|~/\.codex|"
+    r"~/\.agents|\.config/opencode|\.claude/skills|\.agents/skills|"
+    r"\.codex/|CLAUDE_[A-Z_]+|CODEX_[A-Z_]+"
+)
+MARKDOWN_HEADING_PATTERN = re.compile(r"^[ \t]{0,3}#{1,6}(?:[ \t]+|$)(.*)$")
+MARKDOWN_FENCE_PATTERN = re.compile(
+    r"^[ \t]*(?:(?:[-+*]|\d+[.)])[ \t]+)?(`{3,}|~{3,})(.*)$"
+)
 
 
 def load_manifest() -> dict[str, Any]:
@@ -137,9 +148,124 @@ def skill_structure_error(skill_dir: Path) -> str | None:
 def harness_text_error(path: Path, line_number: int, text: str) -> str:
     return (
         f"{path}:{line_number}: harness-only text '{text}'; "
-        'write it so any agent can follow it, or mark the skill with '
-        '"harness" in skills.json'
+        "place it in an agent-named Markdown section or register this file in "
+        'skills.json "harness_files" when it is agent-specific; write it so '
+        'any agent can follow it, or mark the skill with "harness" in skills.json'
     )
+
+
+def harnesses_for_match(text: str) -> set[str]:
+    if text in {"~/.agents", ".agents/skills"}:
+        return {"codex", "opencode"}
+    if text in {"Claude Code", "~/.claude", ".claude/skills"} or text.startswith(
+        "CLAUDE_"
+    ):
+        return {"claude-code"}
+    if text in {"Codex", "codex", "~/.codex", ".codex/"} or text.startswith(
+        "CODEX_"
+    ):
+        return {"codex"}
+    if text in {"OpenCode", "opencode", ".config/opencode"}:
+        return {"opencode"}
+    raise ValueError(f"Unsupported harness match: {text}")
+
+
+def harness_file_registrations(
+    skill: dict[str, Any], skill_dir: Path
+) -> tuple[dict[str, set[str]], list[str]]:
+    if "harness_files" not in skill:
+        return {}, []
+
+    harness_files = skill["harness_files"]
+    if not isinstance(harness_files, dict):
+        return {}, [
+            (
+                f"{skill.get('name')}: harness_files must map relative file paths "
+                "to non-empty lists of known agent names"
+            )
+        ]
+
+    registrations: dict[str, set[str]] = {}
+    errors: list[str] = []
+    for relative_path, agents in harness_files.items():
+        if not isinstance(relative_path, str) or not relative_path:
+            errors.append(
+                f"{skill.get('name')}: harness_files path '{relative_path}' "
+                "must be a relative file path under the skill directory"
+            )
+            continue
+        candidate = Path(relative_path)
+        if candidate.is_absolute() or ".." in candidate.parts:
+            errors.append(
+                f"{skill.get('name')}: harness_files path '{relative_path}' "
+                "must be a relative file path under the skill directory"
+            )
+            continue
+        if not isinstance(agents, list) or not agents or any(
+            not isinstance(agent, str) or agent not in HARNESSES
+            for agent in agents
+        ):
+            errors.append(
+                f"{skill.get('name')}: harness_files entry '{relative_path}' "
+                f"must contain a non-empty list of names from {', '.join(HARNESSES)}"
+            )
+            continue
+
+        if not (skill_dir / candidate).is_file():
+            errors.append(
+                f"{skill.get('name')}: harness_files entry '{relative_path}' "
+                "does not name an existing file"
+            )
+            continue
+        registrations[candidate.as_posix()] = set(agents)
+    return registrations, errors
+
+
+def tracked_skill_files(
+    skill: dict[str, Any], repo_root: Path
+) -> tuple[list[Path], list[str]]:
+    skill_dir = Path(skill["skill_dir"])
+    pathspecs = [
+        (skill_dir / "SKILL.md").as_posix(),
+        *(
+            (skill_dir / directory).as_posix()
+            for directory in ("references", "scripts", "tests")
+        ),
+    ]
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), "ls-files", "-z", "--", *pathspecs],
+            check=False,
+            capture_output=True,
+        )
+    except OSError as error:
+        return [], [f"{skill.get('name')}: cannot list tracked skill files: {error}"]
+
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        return [], [
+            f"{skill.get('name')}: cannot list tracked skill files"
+            + (f": {detail}" if detail else "")
+        ]
+
+    return [
+        repo_root / os.fsdecode(relative_path)
+        for relative_path in result.stdout.split(b"\0")
+        if relative_path
+    ], []
+
+
+def legacy_harness_only_errors(
+    path: Path, line_number: int, line: str
+) -> list[str]:
+    errors = []
+    for literal in HARNESS_ONLY_LITERALS:
+        if literal in line and HARNESS_PATTERN.fullmatch(literal) is None:
+            errors.append(harness_text_error(path, line_number, literal))
+    match = HARNESS_ONLY_PATTERN.search(line)
+    if match:
+        errors.append(harness_text_error(path, line_number, match.group(0)))
+    return errors
 
 
 def harness_wording_errors(skill: dict[str, Any], repo_root: Path) -> list[str]:
@@ -155,27 +281,70 @@ def harness_wording_errors(skill: dict[str, Any], repo_root: Path) -> list[str]:
         return []
 
     skill_dir = repo_root / skill["skill_dir"]
-    paths = [skill_dir / "SKILL.md"]
-    references = skill_dir / "references"
-    if references.is_dir():
-        paths.extend(sorted(references.rglob("*.md")))
-
-    errors: list[str] = []
+    registrations, errors = harness_file_registrations(skill, skill_dir)
+    paths, scan_errors = tracked_skill_files(skill, repo_root)
+    errors.extend(scan_errors)
     for path in paths:
-        if not path.is_file():
+        if not path.is_file() or path.is_symlink():
             continue
+        content = path.read_bytes()
+        if b"\0" in content:
+            continue
+        try:
+            lines = content.decode("utf-8").splitlines()
+        except UnicodeDecodeError:
+            continue
+
         relative = path.relative_to(repo_root)
-        for line_number, line in enumerate(
-            path.read_text(encoding="utf-8").splitlines(), start=1
-        ):
-            for literal in HARNESS_ONLY_LITERALS:
-                if literal in line:
-                    errors.append(harness_text_error(relative, line_number, literal))
-            match = HARNESS_ONLY_PATTERN.search(line)
-            if match:
-                errors.append(
-                    harness_text_error(relative, line_number, match.group(0))
-                )
+        relative_to_skill = path.relative_to(skill_dir).as_posix()
+        registered_agents = registrations.get(relative_to_skill)
+        is_markdown = path.suffix.lower() == ".md"
+        heading_has_harness = False
+        fence_marker = None
+        fence_length = 0
+        frontmatter_active = is_markdown and bool(lines) and lines[0].strip() == "---"
+        for line_number, line in enumerate(lines, start=1):
+            line_in_frontmatter = frontmatter_active
+            if line_in_frontmatter and line_number > 1 and line.strip() == "---":
+                frontmatter_active = False
+            fence = (
+                MARKDOWN_FENCE_PATTERN.match(line)
+                if is_markdown and not line_in_frontmatter
+                else None
+            )
+            inside_fence = fence_marker is not None
+            if fence:
+                marker = fence.group(1)
+                if fence_marker is None:
+                    fence_marker = marker[0]
+                    fence_length = len(marker)
+                elif (
+                    marker[0] == fence_marker
+                    and len(marker) >= fence_length
+                    and not fence.group(2).strip()
+                ):
+                    fence_marker = None
+                    fence_length = 0
+                inside_fence = True
+
+            heading = (
+                MARKDOWN_HEADING_PATTERN.match(line)
+                if is_markdown and not line_in_frontmatter and not inside_fence
+                else None
+            )
+            if heading:
+                heading_has_harness = bool(HARNESS_PATTERN.search(heading.group(1)))
+
+            pattern_matches = list(HARNESS_PATTERN.finditer(line))
+            for match in pattern_matches:
+                text = match.group(0)
+                if registered_agents is not None:
+                    if harnesses_for_match(text).isdisjoint(registered_agents):
+                        errors.append(harness_text_error(relative, line_number, text))
+                elif not (is_markdown and heading_has_harness):
+                    errors.append(harness_text_error(relative, line_number, text))
+
+            errors.extend(legacy_harness_only_errors(relative, line_number, line))
     return errors
 
 

@@ -76,11 +76,26 @@ Drawing rules:
 2. Lead the page with the conclusion. Put the evidence next to each claim: `file:line`, command output, test names. Label inferred or unverified claims visibly. Never invent data to fill the page. Write the page in the user's language.
 3. Publish it with the Artifact tool. In the response, give the returned URL as a Markdown link with one sentence on what the page shows, for example `[登录流程排查](https://claude.ai/...)：每一步请求和失败点`. The response still states the conclusion in text.
 4. The page is disposable. Do not commit it to a repository unless the user asks. To update it, edit the same file and publish again; the URL stays the same.
-5. When no Artifact tool is available, for example in Codex, write the file, give its absolute path, and say that no link could be made.
+5. When the harness has no Artifact tool, write the file, give its absolute path, and say that no link could be made.
 
 ## 5. Check that replies are in Chinese
 
-When the user requires every reply in Chinese, a written rule is not enough: replies drift into English after long stretches of English tool work, briefs, or documents. `scripts/check_chinese_reply.py` finds English prose in replies. In Claude Code it runs as hooks that this folder ships as a plugin:
+When the user requires every reply in Chinese, a written rule is not enough: replies drift into English after long stretches of English tool work, briefs, or documents. `scripts/check_chinese_reply.py` finds English prose in replies, and each harness runs it as hooks, commands the harness runs at fixed moments.
+
+The hooks cannot take back text already shown. They make every slip visible at once and get it restated.
+
+Only English sentences are reported, not English names and terms. A stretch of a line without Chinese characters counts as English when it has at least three words, one of them a common English function word such as `the` or `to`, and also looks like a sentence:
+
+- it starts with a capital letter and ends with `.`, `!` or `?` (a leading list number or bullet is ignored), or
+- it contains a word that only sentences use: an auxiliary verb (`is`, `will`, `can` …), a subject pronoun (`I`, `we`, `it` …), `let`, `please`, `now`, `then`, or a question word (`what`, `how` …), or
+- it has at least four words, two function words and a verb ending in `-ing` or `-ed`, or
+- it has at least six words and two function words.
+
+So terms such as `ai agent`, `LLM as a judge`, `human in the loop` and `state of the art` pass inside a Chinese sentence. Words joined by hyphens count as one word (`LLM-as-a-judge`), and a title-case name without a final `.`, `!` or `?` passes (`Attention Is All You Need`). Code blocks, inline code, `>` quote lines, quoted text, Markdown links, and anything containing `/` are skipped. So put commands and identifiers in backticks, and put English that must be quoted in a code block or a `>` line. To check a draft or a document, run `python3 <skill-dir>/scripts/check_chinese_reply.py check <file>`, or pass `-` for standard input.
+
+### In Claude Code
+
+It runs as hooks that this folder ships as a plugin:
 
 | Hook event | Command | Effect |
 | --- | --- | --- |
@@ -97,17 +112,6 @@ The hooks are declared in `hooks/hooks.json`, next to the plugin manifest `.clau
 - **Upgrading from manual hooks**: remove any `check_chinese_reply.py` entries from `settings.json` first, or every check runs twice.
 
 Hooks that run inside a subagent are skipped, because the user does not see a subagent's text.
-
-The hooks cannot take back text already shown. They make every slip visible at once and get it restated.
-
-Only English sentences are reported, not English names and terms. A stretch of a line without Chinese characters counts as English when it has at least three words, one of them a common English function word such as `the` or `to`, and also looks like a sentence:
-
-- it starts with a capital letter and ends with `.`, `!` or `?` (a leading list number or bullet is ignored), or
-- it contains a word that only sentences use: an auxiliary verb (`is`, `will`, `can` …), a subject pronoun (`I`, `we`, `it` …), `let`, `please`, `now`, `then`, or a question word (`what`, `how` …), or
-- it has at least four words, two function words and a verb ending in `-ing` or `-ed`, or
-- it has at least six words and two function words.
-
-So terms such as `ai agent`, `LLM as a judge`, `human in the loop` and `state of the art` pass inside a Chinese sentence. Words joined by hyphens count as one word (`LLM-as-a-judge`), and a title-case name without a final `.`, `!` or `?` passes (`Attention Is All You Need`). Code blocks, inline code, `>` quote lines, quoted text, Markdown links, and anything containing `/` are skipped. So put commands and identifiers in backticks, and put English that must be quoted in a code block or a `>` line. To check a draft or a document, run `python3 <skill-dir>/scripts/check_chinese_reply.py check <file>`, or pass `-` for standard input.
 
 To check the installed plugin in a real session, run `python3 <skill-dir>/tests/plugin_session_e2e.py`. It starts `claude -p` with a prompt that asks for English, checks that the session loaded the plugin and that the `Stop` hook made Claude restate the reply in Chinese, and keeps the stream and a summary under `tests/verification/<date>/local/`. It uses the network and costs one short model call.
 

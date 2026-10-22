@@ -1,6 +1,6 @@
 ---
 name: long-task-planning
-description: Keeps a long-running coding task's goal, plan and done/not-done state from drifting. Use at the start of every hands-on task to pick light or full mode, and in full mode whenever you plan, replan, delegate to Codex or another agent, record test evidence, report progress or declare completion. Light mode is the default and costs nothing; full mode applies when the goal is open-ended ("fix every bug found", "until launch"), there are more than 3 separately verified acceptance items, the task continues one already in full mode, or the user asks; light mode upgrades after a compaction with unfinished work or when scope or difficulty grows. Delegating a bounded batch to another agent does not by itself make a task long.
+description: Keeps a long-running coding task's goal, plan and done/not-done state from drifting. Use at the start of every hands-on task to pick light or full mode, and in full mode whenever you plan, replan, delegate to another agent, record test evidence, report progress or declare completion. Light mode is the default and costs nothing; full mode applies when the goal is open-ended ("fix every bug found", "until launch"), there are more than 3 separately verified acceptance items, the task continues one already in full mode, or the user asks; light mode upgrades after a compaction with unfinished work or when scope or difficulty grows. Delegating a bounded batch to another agent does not by itself make a task long.
 ---
 
 # Long Task Planning
@@ -11,7 +11,7 @@ The model forgets; files and scripts do not. This skill keeps three things apart
 - **The plan** holds intentions only: which items, in which batch, why (`items.json`, `plan.md`).
 - **Done or not** is never written by hand. `longtask.py status` computes it every time from **evidence**: records of which checks passed on which code, each bound to a code content fingerprint (a hash of every file git sees, including uncommitted changes, excluding the task directory). When the code changes, old evidence stops applying by itself.
 
-`$LT` below means `python3 ~/.claude/skills/long-task-planning/scripts/longtask.py` (Python 3.10+, standard library only). File formats are in [references/formats.md](references/formats.md).
+`$LT` below means `python3 <skill-dir>/scripts/longtask.py`, where `<skill-dir>` is the directory that contains this `SKILL.md` (the agent harness reports it when it loads the skill); use the absolute path. The script needs Python 3.10+ and only the standard library. File formats are in [references/formats.md](references/formats.md).
 
 ## Contents
 
@@ -26,7 +26,7 @@ The model forgets; files and scripts do not. This skill keeps three things apart
 - [Reading state](#reading-state)
 - [Replanning](#replanning)
 - [Completion gate and closing](#completion-gate-and-closing)
-- [Working with Codex and other agents](#working-with-codex-and-other-agents)
+- [Working with other agents](#working-with-other-agents)
 - [Upgrading from light mode](#upgrading-from-light-mode)
 - [Hooks](#hooks)
 - [Commands](#commands)
@@ -41,11 +41,11 @@ The question is whether the work, before it is done, will change session or go t
 3. It continues a task that is already in full mode: a task directory for this goal exists and is not closed.
 4. The user asks for it.
 
-Delegating work to Codex, opencode or another agent is not a fact by itself: a bounded batch (one deliverable, about two hours, one brief and one stop file) stays in light mode, and the brief and stop file in the project's handoff directory are its record. A delegated batch is full mode only when one of the four facts hits, for example when it is one item of a task already in full mode. If unsure whether a fact hits, count it as a hit. For hands-on tasks (code, configuration, debugging) state the mode and the facts that hit in one line at the start, for example `模式：完整（第 1 条：目标是“一经发现的 bug 都修掉”）` or `模式：轻量（一次交付，交给 opencode 的一个批次）`. Skip this for pure questions.
+Delegating work to another agent is not a fact by itself: a bounded batch (one deliverable, about two hours, one brief and one stop file) stays in light mode, and the brief and stop file in the project's handoff directory are its record. A delegated batch is full mode only when one of the four facts hits, for example when it is one item of a task already in full mode. If unsure whether a fact hits, count it as a hit. For hands-on tasks (code, configuration, debugging) state the mode and the facts that hit in one line at the start, for example `模式：完整（第 1 条：目标是“一经发现的 bug 都修掉”）` or `模式：轻量（一次交付，交给另一个 agent 的一个批次）`. Skip this for pure questions.
 
 ## Light mode
 
-- Keep the steps in the session todo tool (Claude Code todos, Codex `update_plan`). The first todo quotes the user's goal verbatim.
+- Keep the steps in the harness's own todo or plan tool. The first todo quotes the user's goal verbatim.
 - Before saying it is done, show the verification output.
 - No task files. A delegated batch keeps its brief and stop file in the project's handoff directory; that is its record.
 - Upgrade immediately, never downgrade, when:
@@ -162,7 +162,7 @@ When the user asks to see the status, send `$LT status --brief`: one summary lin
 
 ## Replanning
 
-Replan only at these points: session start and after compaction; at the end of each batch or when a Codex stop file arrives; on a surprise (a test exposes a new defect, a premise is disproved, the user gives a new decision); before declaring completion. Do not edit the plan after every small step. Each time, follow the same seven steps:
+Replan only at these points: session start and after compaction; at the end of each batch or when a delegated agent's stop file arrives; on a surprise (a test exposes a new defect, a premise is disproved, the user gives a new decision); before declaring completion. Do not edit the plan after every small step. Each time, follow the same seven steps:
 
 1. Re-read the user's words in `goal.md`.
 2. Run `status`.
@@ -181,15 +181,19 @@ Then run `$LT lint` and commit the task directory.
 - Write the final report from the `status` output, not from memory. Say what the item list cannot prove, for example that an open-ended search found everything.
 - After the user accepts, append `## CLOSED <date> 用户原话` with their acceptance quoted. The task becomes inactive and the hooks stop injecting it.
 
-## Working with Codex and other agents
+## Working with other agents
 
-`codex-orchestration` covers how to talk to Codex (briefs, stop files, replies, sessions). This skill covers what the goal is, what the plan is, and whether it is done.
+An orchestration skill for the agent you delegate to covers how to talk to it (briefs, stop files, replies, sessions). This skill covers what the goal is, what the plan is, and whether it is done.
 
-- Each brief names the batch's item IDs and copies their `done_when`. Launch through `codex-orchestration`'s launcher, which runs `$LT check-brief <brief>` first. The batch is the bullets in the brief's `范围` section (a heading containing 范围, down to the next heading of the same or higher level) that start with an item ID; a backtick before the ID is fine. The check refuses the brief when that list is empty, holds more than 3 items, or names a withdrawn item, and when an unknown ID appears anywhere. A withdrawn ID mentioned elsewhere, for example to say its old changes must not be revived, only prints a warning.
-- The agent records its own test evidence with `record --by codex` and lists the evidence IDs in its stop file.
+- Each brief names the batch's item IDs and copies their `done_when`. Run `$LT check-brief <brief>` before launching; an orchestration skill's launcher may run it for you. The batch is the bullets in the brief's `范围` section (a heading containing 范围, down to the next heading of the same or higher level) that start with an item ID; a backtick before the ID is fine. The check refuses the brief when that list is empty, holds more than 3 items, or names a withdrawn item, and when an unknown ID appears anywhere. A withdrawn ID mentioned elsewhere, for example to say its old changes must not be revived, only prints a warning.
+- The agent records its own test evidence with `record --by <its name>` and lists the evidence IDs in its stop file.
 - When a brief or reply says to stop on a failure, write "let the running test command finish, then stop". Evidence needs the complete report; an agent once read "stop on any failure" as "kill it" and the other test projects produced no report. Ask for an immediate stop only when continuing would do harm, and say so explicitly.
 - When reviewing, run `status` first, verify the evidence yourself, then record the review with `record --review`.
 - The orchestration state file keeps process facts only (session id, terminal tab, next stop file, background wait id). Progress lives only in `status`.
+
+### Orchestration skills for Codex and opencode
+
+This repository's `codex-orchestration` and `opencode-orchestration` let Claude Code delegate to Codex and to opencode. Their launchers run `$LT check-brief <brief>` first.
 
 ## Upgrading from light mode
 
@@ -200,11 +204,19 @@ Then run `$LT lint` and commit the task directory.
 
 ## Hooks
 
-- Claude Code (`~/.claude/settings.json`) and Codex (`~/.codex/hooks.json`) run `$LT hook` at session start, resume, clear and after compaction. Codex runs it only after the user trusts it in `/hooks`.
+- Install `$LT hook` as a hook that the harness runs at session start, resume, clear and after compaction; the subsections below give the steps for each harness that has been checked.
 - With an active task the hook injects, within 1,600 characters, the goal quotes (G1 first, the rest by date), the computed status, the problem items, the current batch and the latest plan change. Without one it prints nothing, except a one-line reminder after compaction or resume to check whether the work needs full mode.
 - If the injected text reports an error, run `lint` and fix the task files before continuing.
-- The injected rules name the script and SKILL.md by the path the hook started, so an install that is a symlink to a source repository shows `~/.claude/skills/long-task-planning/…`, not the repository path.
+- The injected rules name the script and SKILL.md by the path the hook started, so an install that is a symlink to a source repository shows the installed link's path, not the repository path.
 - There is deliberately no Stop hook: it would fight stop files and waiting for user authorization.
+
+### In Claude Code
+
+Add a `SessionStart` hook that runs `python3 <skill-dir>/scripts/longtask.py hook` to `~/.claude/settings.json`.
+
+### In Codex
+
+Add a `SessionStart` hook that runs `python3 <skill-dir>/scripts/longtask.py hook` to `~/.codex/hooks.json`. Codex runs it only after the user trusts it in `/hooks`.
 
 ## Commands
 

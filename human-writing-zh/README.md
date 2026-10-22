@@ -8,55 +8,40 @@
 不依赖 API key、外部服务或联网；可选检查脚本需要 Python 3.9+，只用标准库。
 它不是 AI 检测器，不承诺绕过检测，也不能让缺乏事实素材的文章凭空变得可信。
 
-## 安装到 Codex（推荐）
+## 安装
 
-解压 ZIP 后，把**整个 human-writing-zh 文件夹**放入：
-
-```text
-~/.agents/skills/human-writing-zh/
-```
-
-在解压目录的上一级运行以下命令。目标已存在时拒绝覆盖；请先自行比较、备份或删除旧版本。
+在本仓库的主目录运行 `scripts/install_links.py`，给要用的 agent harness（运行 agent 的工具）建一个指向仓库里这个文件夹的符号链接（类似快捷方式）。不要复制文件夹：复制的那份不会跟着仓库更新。`--harness` 可选 `claude-code`、`codex`、`opencode`，每个要用的 harness 各运行一次，例如：
 
 ```bash
-mkdir -p "$HOME/.agents/skills"
-if [ -e "$HOME/.agents/skills/human-writing-zh" ] || [ -L "$HOME/.agents/skills/human-writing-zh" ]; then
-  printf '%s\n' '目标已存在，请先备份并处理旧版本。'
-else
-  cp -R human-writing-zh "$HOME/.agents/skills/"
-fi
+python3 scripts/install_links.py install --harness codex human-writing-zh
 ```
 
-只对某个项目启用：把整个文件夹放到该项目根目录的 `.agents/skills/` 下。
-同一个宿主通常选择全局或项目安装之一，避免重复技能。
-Codex 中输入 `$human-writing-zh` 调用，或在 `/skills` 中查找。
-如果新技能未出现，重新启动 Codex 会话。此安装方法依据来源 S07 核对，未在你的机器执行。
+脚本知道每个 harness 读 skill 的目录；目标位置已有同名的拷贝时，它把拷贝挪进备份目录，不删除任何东西。装好后用 `python3 scripts/install_links.py check` 检查有没有拷贝、断掉的链接或重复安装。完整的安装规则见仓库根目录的 `mission.md`。
 
-## Claude Code
+装好后，在新会话里按名字调用这个 skill。各 harness 的调用写法不同。下面两种写法来自各自的官方文档（来源编号见 `references/sources.md`），没有在本机实际运行验证。
 
-将同一个完整目录放到：
+### Codex
 
-```text
-~/.claude/skills/human-writing-zh/
-```
+输入 `$human-writing-zh` 调用，或在 `/skills` 中查找；新技能没出现时，重新启动 Codex 会话。依据来源 S07。
 
-项目级安装则使用 `<项目>/.claude/skills/human-writing-zh/`。
-调用：
+### Claude Code
+
+输入 `/human-writing-zh` 加任务内容，例如：
 
 ```text
 /human-writing-zh 请改写下面的文章，保留事实与原意，只输出成稿。
 ```
 
-安装到本地 Claude Code 不会自动安装到网页、Cowork 或远程环境。
-路径与调用依据来源 S08。其他支持 Agent Skills 的宿主，可按其自身文档放入完整目录；
-本包不保证其安装路径、工具可用性或端到端兼容性已经验证。
+安装到本地 Claude Code 不会自动安装到网页、Cowork 或远程环境。依据来源 S08。
+
+其他支持 skill 文件夹的 harness，按它自己的文档调用；本包不保证在那里的工具可用性或端到端兼容性已经验证。
 
 ## 直接用
 
 ### 改写已有文章
 
 ```text
-$human-writing-zh
+用 human-writing-zh 这个 skill：
 
 把下面的文章去掉 AI 味，写得自然、有活人感。
 保留事实、数字、条件、引用和我的立场。
@@ -68,7 +53,7 @@ $human-writing-zh
 ### 从素材写技术文章
 
 ```text
-$human-writing-zh
+用 human-writing-zh 这个 skill：
 
 根据下列素材写一篇面向后端工程师的中文技术文章，约 1500 字。
 写清机制、实际限制和取舍，语言自然，可以有判断，但不要假装我实测过。
@@ -80,7 +65,7 @@ $human-writing-zh
 ### 校准自己的声音
 
 ```text
-$human-writing-zh
+用 human-writing-zh 这个 skill：
 
 先根据下面 3 段我自己写过的文章提取暂定文风，再改写最后那篇原稿。
 不要把样稿中的经历或事实写进新文章。
@@ -93,7 +78,7 @@ $human-writing-zh
 ### 只诊断
 
 ```text
-$human-writing-zh
+用 human-writing-zh 这个 skill：
 
 task: review
 指出这篇文章哪里有机器腔，引用对应原句并给修改方向。不要整篇重写。
@@ -102,7 +87,7 @@ task: review
 ```
 
 `task` 等字段是给 Agent 的自然语言约定，不是终端命令行选项。
-Claude Code 使用同样的任务内容，把开头换成 `/human-writing-zh` 即可。
+下面几个例子开头的“用 human-writing-zh 这个 skill”，可以换成所用 harness 的调用写法，例如 Codex 的 `$human-writing-zh`、Claude Code 的 `/human-writing-zh`。
 
 ## 默认做什么
 

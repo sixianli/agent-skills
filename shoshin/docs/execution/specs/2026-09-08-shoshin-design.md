@@ -10,7 +10,7 @@ date: "2026-09-08"
 
 ## Goal
 
-Adapt the confirmed PStack methods into Codex skills and lightweight workflow references. Preserve real evidence, clear responsibilities, and authorization boundaries while removing Cursor-specific runtime assumptions and explicitly excluded features.
+Adapt the confirmed PStack methods into harness-agnostic skills and lightweight workflow references. Preserve real evidence, clear responsibilities, and authorization boundaries while removing Cursor-specific runtime assumptions and explicitly excluded features.
 
 This is the design baseline for the discussed requirements, not a claim of installation or runtime capability. Source for 16 skills exists; see the Plan for acceptance progress. The entire package cannot yet be declared installed. The user authorized writing the Spec and Plan together from confirmed decisions; do not ask again about the same scope. Deferred choices do not become accepted decisions here.
 
@@ -52,7 +52,7 @@ Shoshin uses existing tools for confirmed skills and workflows. This run adds no
 | AC07 | Given an installed skill set with the source directory inaccessible, entrypoints, dependencies, and references still resolve without hardcoded repository paths |
 | AC14 | Given a task the primary agent can reliably complete, complexity or decomposability does not cause default delegation. Any delegation explains expected benefits against extra token costs and bounds context, output, and agent count. Without usage data, do not invent savings |
 | AC08 | Given multiple subagents and a failed or uncovered task, the primary agent reports it explicitly; majority success does not establish complete coverage |
-| AC09 | Given ordinary Codex subagent review when other upstream model families are unavailable, describe actual independence without claiming cross-family equivalence |
+| AC09 | Given ordinary subagent review in the host harness when other upstream model families are unavailable, describe actual independence without claiming cross-family equivalence |
 | AC10 | Given the source inventory, the migration audit assigns all 50 skill entrypoints and 23 Playbooks a disposition, without implicit dependencies on excluded or deferred items |
 | AC11 | Given performance or visual comparisons with inconsistent baselines, workloads, or environments, do not claim improvement or parity or treat threshold changes as fixes |
 | AC13 | Given any adapted content, its source traces only to the specified cursor-plugins/pstack directory, never pstack-codex directly or through intermediate material |
@@ -127,7 +127,7 @@ This is a conditional design, not proven performance. Original paths are relativ
 | blast-radius | blast-radius/SKILL.md step 6: arena for broad changes | Do not invoke arena by diff size. Independent contracts or critical assumptions may merit review; the primary agent owns overall risk judgment |
 | interrogate | interrogate/SKILL.md: one reviewer per configured model | Independent review needs a clear question and verifiable criteria. No fixed multi-model vote; majority opinion does not replace evidence |
 | architect | architect/SKILL.md Phase B: arena candidates, at least two structures | The primary agent can compare designs. Significant unresolved tradeoffs may merit independent design/review; arena stays deferred |
-| reflect | reflect/SKILL.md: three reviewers plus a synthesizer | Under R25, use three Codex native reviewers, one per Judgment/Tooling/Divergent lens; the primary agent synthesizes. No fourth agent, custom runtime or user-facing tasks. Bound concurrency and report unavailable review |
+| reflect | reflect/SKILL.md: three reviewers plus a synthesizer | Under R25, use three reviewers created with the host harness's own subagent feature, one per Judgment/Tooling/Divergent lens; the primary agent synthesizes. No fourth agent, custom runtime or user-facing tasks. Bound concurrency and report unavailable review |
 | automate-me | automate-me/SKILL.md: parallel historical slices | Analyze large user-selected history in self-contained excerpts; the primary agent checks conflicts and scope across them. Small inputs stay direct; no fixed three agents by week count |
 | maintain-verification-skill | maintain-verification-skill/SKILL.md: one read-only reader per feature, one live session | Delegate sufficiently large independent feature groups, not every feature mechanically. Keep one operator for shared instances |
 | create-verification-skill | create-verification-skill/SKILL.md: discover startup, controls, observations, and isolation; no fixed tree | Keep generation and execution context with the primary agent. Delegate broad feature investigation only under the above criteria |
@@ -184,7 +184,7 @@ Resolve cross-skill references by name through host discovery, then read the ret
 | automate-me | Selected cross-conversation material and rules → stable preferences and rule proposals | skill-creator as needed; distinguish preferences, one-offs, conflicts; no unrelated scans or automatic memory/configuration writes; apply only when authorized |
 | shoshin | User task → necessary workflow and evidenced delivery | Implement last; select skills as needed, no extra layer for simple tasks or automatic sticky mode |
 
-Reflect uses three native reviewers and primary-agent synthesis under R25; trivial material or unavailable delegation is handled directly with the review limits stated. Separate reviewer contexts and interrogate's independent judgment do not establish model-family diversity. Without actual read-only tool isolation, do not claim isolation. Current Codex delegation and permission rules govern; do not invent a platform rule that readonly removes all MCP access.
+Reflect uses three native reviewers and primary-agent synthesis under R25; trivial material or unavailable delegation is handled directly with the review limits stated. Separate reviewer contexts and interrogate's independent judgment do not establish model-family diversity. Without actual read-only tool isolation, do not claim isolation. The host harness's current delegation and permission rules govern; do not invent a platform rule that readonly removes all MCP access.
 
 ### Entrypoint selection and routing contract
 
@@ -200,7 +200,7 @@ Evaluate three levels separately: description selection, loaded-skill routing an
 
 ### Reflect retrospective contract
 
-R25 restores the three complementary lenses using Codex native delegation only. Reviewers receive the same identified transcript or labeled partial digest, scope, constraints and available catalog evidence; they perform bounded read-only review without recursion or shared writes. Explicitly disable inherited history where supported and supply the bounded evidence directly, preventing earlier conclusions from entering later waves; disclose uncontrollable history inheritance. Run in parallel when capacity permits, otherwise in waves. The primary agent verifies raw evidence and synthesizes; no extra runtime, service or separate user task is created. Native capability failures are reported and directly covered where possible without pretending independence. [SOURCE: docs/prd-v0.1.md#additional-confirmation]
+R25 restores the three complementary lenses using only the host harness's own delegation. Reviewers receive the same identified transcript or labeled partial digest, scope, constraints and available catalog evidence; they perform bounded read-only review without recursion or shared writes. Explicitly disable inherited history where supported and supply the bounded evidence directly, preventing earlier conclusions from entering later waves; disclose uncontrollable history inheritance. Run in parallel when capacity permits, otherwise in waves. The primary agent verifies raw evidence and synthesizes; no extra runtime, service or separate user task is created. Native capability failures are reported and directly covered where possible without pretending independence. [SOURCE: docs/prd-v0.1.md#additional-confirmation]
 
 Separate confirmed missed triggers from body defects and unavailable capabilities. Read the actual target and necessary references before accepting a body edit; distinguish absent, ambiguous, buried and ignored guidance. Require durable, recognizable triggers and concrete changed actions, reject incidental details and duplicate guidance, and preserve counterevidence. Reviewer agreement is not proof.
 
@@ -428,6 +428,6 @@ Behavioral checks cover ordinary cases, explicit non-triggers, missing dependenc
 
 Project-level verification originally required real code and executable paths. During implementation on 2026-09-08, the user explicitly canceled the sample application pilot and requested source completion. Outstanding real-project acceptance remains open without blocking that source delivery. Generated skills must actually run; maintenance must cover declared features; performance/visual claims need comparable baselines. Resume the canceled pilot only with new real-project scope authorization, and never mark practical acceptance passed without evidence.
 
-After authorized installation, use a fresh Codex task to check discovery, explicit/implicit triggers, internal references, and cross-skill dependencies. Successful file copying is insufficient. The initial documentation phase checked only document structure and consistency; see the Plan for actual source-implementation verification.
+After authorized installation, use a fresh task in each harness that will load the skills to check discovery, explicit/implicit triggers, internal references, and cross-skill dependencies. Successful file copying is insufficient. The initial documentation phase checked only document structure and consistency; see the Plan for actual source-implementation verification.
 
 The two disposition tables in this Spec are the design authority for final source review. Compare actual files and test evidence against them without adding an independent manual state cache.

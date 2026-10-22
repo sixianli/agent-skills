@@ -1,0 +1,238 @@
+{
+  "task": "shoshin-neutral",
+  "prefix": "SN",
+  "decisions": {
+    "G1": "once",
+    "G2": "durable",
+    "G3": "once",
+    "G4": "durable",
+    "G5": "durable",
+    "G6": "once",
+    "G7": "once",
+    "G8": "once",
+    "G9": "once",
+    "G10": "once",
+    "G11": "once",
+    "G12": "once",
+    "G13": "durable",
+    "G14": "once"
+  },
+  "items": [
+    {
+      "id": "SN-1",
+      "title": "mission.md 记下：shoshin 固定在当前内容、只在用户明确要求时同步 PStack；不绑定任何 harness；agent 名字和目录只能写在标题点名 agent 的小节，检查覆盖脚本和测试",
+      "goal_ref": [
+        "G2",
+        "G4",
+        "G5",
+        "G13"
+      ],
+      "done_when": [
+        {
+          "type": "doc",
+          "path": "mission.md",
+          "quotes": [
+            "G2",
+            "G4"
+          ]
+        },
+        {
+          "type": "doc",
+          "path": "mission.md",
+          "heading": "和 agent harness 无关",
+          "quotes": "G5"
+        },
+        {
+          "type": "doc",
+          "path": "mission.md",
+          "heading": "和 agent harness 无关",
+          "quotes": "G13"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "SN-2",
+      "title": "shoshin 校验脚本和测试改用仓库自己的结构检查（validate_all.skill_structure_error），去掉 CODEX_SKILL_VALIDATOR 和 ~/.codex 默认路径；HOME 指向空目录时照样通过",
+      "goal_ref": [
+        "G4",
+        "G8",
+        "G11"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "shoshin/tests/test_tools.py",
+          "name": "test_validator_runs_without_any_harness_install"
+        },
+        {
+          "type": "command",
+          "run": "python3 shoshin/scripts/validate-skills.py"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "SN-3",
+      "title": "shoshin 正文不点名任何 agent：reflect 不再写 Codex native subagents；两个验证 skill 自己判断生成和维护的位置；README、路由用例和评审标准改成不绑定 agent 的写法",
+      "goal_ref": [
+        "G1",
+        "G3",
+        "G10",
+        "G11"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "SN-4",
+      "title": "long-task-planning 的 $LT 和 remote-evidence.md 改成 skill 所在目录下的 scripts/longtask.py；document-governance/scripts/idea_backlog.py 不再把 Codex 当成唯一调用方",
+      "goal_ref": [
+        "G6",
+        "G10"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "SN-5",
+      "title": "新的 harness 措辞检查：agent 名字和目录只能出现在标题点名 agent 的小节里，或在 skills.json 的 harness_files 登记过的文件里；范围扩大到 scripts 和 tests；仓库里现有的命中全部改掉或登记",
+      "goal_ref": [
+        "G5",
+        "G13"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "scripts/tests/test_validate_all.py",
+          "name": "test_agent_name_outside_agent_section_is_reported"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_validate_all.py",
+          "name": "test_agent_name_under_agent_heading_passes"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_validate_all.py",
+          "name": "test_unregistered_script_naming_an_agent_is_reported"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_validate_all.py",
+          "name": "test_registered_file_naming_another_agent_is_reported"
+        },
+        {
+          "type": "test",
+          "file": "scripts/tests/test_validate_all.py",
+          "name": "test_registered_file_that_does_not_exist_is_reported"
+        },
+        {
+          "type": "command",
+          "run": "UV_OFFLINE=1 uv run --no-project --with pyyaml python scripts/validate_all.py",
+          "ignore_test_exclude": true
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "SN-6",
+      "title": "新 ADR 替代 shoshin ADR 0001：shoshin 是和 harness 无关的通用工程 skill 包，内容固定在当前版本",
+      "goal_ref": [
+        "G1",
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "doc",
+          "path": "shoshin/docs/adr/0002-harness-neutral-shoshin.md",
+          "quotes": [
+            "G1",
+            "G2"
+          ]
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "SN-7",
+      "title": "整个仓库的检查通过",
+      "goal_ref": [
+        "G11"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "UV_OFFLINE=1 uv run --no-project --with pyyaml python scripts/validate_all.py",
+          "ignore_test_exclude": true
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "SN-8",
+      "title": "human-writing-zh/README.md 的安装说明改成用 install_links.py 建链接，不再教复制",
+      "goal_ref": [
+        "G14"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    }
+  ],
+  "decision_docs": [
+    "mission.md",
+    "shoshin/docs/adr/"
+  ],
+  "fingerprint": {
+    "include": [
+      "mission.md",
+      "skills.json",
+      "scripts/",
+      "shoshin/",
+      "long-task-planning/",
+      "document-governance/",
+      "readable-output/",
+      "human-writing-zh/",
+      "blog-workflow/"
+    ]
+  }
+}
