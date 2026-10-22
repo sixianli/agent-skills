@@ -29,5 +29,6 @@
 - 2026-10-22 更正上一条：上一条照搬了 opencode 文档，没有在本机核实，是误判。本机 opencode 2.0.32 的 530 个会话、33 种说明组合里只加载过项目目录的 AGENTS.md，从没加载过 ~/.claude/CLAUDE.md；空目录里的测试会话也只有 core/codemode、core/skill-guidance、core/date、core/environment。也就是 opencode 一直没有拿到全局说明。放一个临时的 ~/.config/opencode/AGENTS.md 后，会话多出 core/instructions，不用工具就答出了文件里的测试词，文件随后删除。以后关于 harness 行为的说法，先用本机运行结果核实再写进计划。
 - 2026-10-22 Codex 配置的模型 gpt-6.1-sol 不在 codex debug models 列出的可用模型里，codex exec 直接报 400；测试改用 -m gpt-6-luna，不改用户配置。codex debug prompt-input 能打印模型收到的完整输入，用来确定性地检查全局说明有没有进去。
 - 2026-10-22 旧 ~/.codex/AGENTS.md 有三处内容 CLAUDE.md 里没有：要求每次回复前加载 readable-output；Codex 被委派任务时不改任务的 goal.md、items.json、plan.md 并用 record --by codex 记证据；自动维护项目验证 skill（maintain-verification-skill）的规则。按 G14 以 CLAUDE.md 为准，这三处会丢，先问用户。
+- 2026-10-22 第 0 步三个前提，都用本机运行结果核实：Claude Code 2.1.302 加载 skill 时在内容前写 `Base directory for this skill: <目录>`（claude -p 只开 Skill 工具加载 video-download 得到）；Codex 0.159.3 的模型输入列出 skill 根目录 r0=~/.codex/skills、r1=~/.agents/skills，每个 skill 带 `(file: r1/<名字>/SKILL.md)`，所以两个目录都读，也告诉模型路径。正文写“相对于本 SKILL.md 所在目录”两边都能用；安装脚本查重复时要把 Codex 的两个目录当成同一个 agent。
 
 ## 决定
