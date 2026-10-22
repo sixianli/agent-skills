@@ -159,3 +159,9 @@
 问题：主文件里加一行指向这条规则（使用中发现的问题记到 skill 目录的 FEEDBACK.md），以及放开 FEEDBACK.md 的写权限
 
 > 同意
+
+## G27 2026-10-22 用户选择
+
+问题：Codex 的 readable-output 硬性机制按方案 A 做吗？
+
+> 按方案 A 做：Stop 检查加 SessionStart 提示，写进 SKILL.md 和 ~/.codex/hooks.json，代码和测试交给 opencode。

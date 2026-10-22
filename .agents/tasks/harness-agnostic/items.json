@@ -27,7 +27,8 @@
     "G23": "once",
     "G24": "once",
     "G25": "once",
-    "G26": "once"
+    "G26": "once",
+    "G27": "once"
   },
   "items": [
     {
@@ -320,13 +321,49 @@
       "title": "Codex 里 readable-output 有硬性的加载方式，不只靠全局说明",
       "goal_ref": [
         "G21",
-        "G25"
+        "G25",
+        "G27"
       ],
       "done_when": [
         {
+          "type": "test",
+          "file": "readable-output/tests/test_check_chinese_reply.py",
+          "name": "start_tells_the_agent_to_read_the_skill_file"
+        },
+        {
+          "type": "test",
+          "file": "readable-output/tests/test_check_chinese_reply.py",
+          "name": "stop_blocks_an_english_codex_reply"
+        },
+        {
+          "type": "test",
+          "file": "readable-output/tests/test_check_chinese_reply.py",
+          "name": "stop_lets_a_chinese_codex_reply_end"
+        },
+        {
+          "type": "command",
+          "run": "python3 readable-output/tests/codex_session_e2e.py"
+        },
+        {
+          "type": "command",
+          "run": "UV_OFFLINE=1 uv run --no-project --with pyyaml python scripts/validate_all.py",
+          "ignore_test_exclude": true
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        },
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/codex-hooks-installed.sh",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        },
+        {
           "type": "user",
-          "ref": null,
-          "question": "Codex 的硬性机制方案查清后，由用户确认做法"
+          "ref": "G27",
+          "question": "Codex 的 readable-output 硬性机制按方案 A 做吗？"
         }
       ],
       "added": {
@@ -348,7 +385,8 @@
       "document-governance/",
       "grill-with-docs/",
       "video-download/",
-      "shoshin/README.md"
+      "shoshin/README.md",
+      "readable-output/"
     ]
   }
 }
