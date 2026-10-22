@@ -249,7 +249,7 @@ cmd_doctor() {
   fi
   echo "raw output: $tmp/raw"
   echo
-  echo "NEXT: compare your WorkBuddy credit balance before/after this smoke test."
+  echo "NEXT: compare the credit balance of the account codebuddy is logged in to, before/after this smoke test."
   echo "      If credits dropped, the model is not free for this account — set CB_MODEL or stop."
 }
 

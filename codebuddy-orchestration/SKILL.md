@@ -59,8 +59,8 @@ the CLI is installed and logged in, prints the model ids that
 test in `$CB_HOME/doctor` that prints the result's keys, cost and
 structured output; the raw output stays there. If the CLI is missing, not logged
 in, rejects the model id, or prints no JSON, stop and tell the user. Ask the
-user to compare their WorkBuddy credit balance before and after the smoke
-test when the model is supposed to be free.
+user to compare the credit balance of the account the CLI is logged in to
+before and after the smoke test when the model is supposed to be free.
 
 ## Workflow
 
@@ -75,7 +75,9 @@ test when the model is supposed to be free.
    run read-only git commands, including `git grep` for search. Allow each
    command the acceptance needs with its own `--allow`, as narrowly as
    possible, for example
-   `--allow 'Bash(./mvnw:*)'` or `--allow 'Bash(npm test:*)'`. Never allow
+   `--allow 'Bash(./mvnw:*)'` or `--allow 'Bash(npm test:*)'`. A rule matches
+   the whole command from its first word, so write each acceptance command as
+   one plain command without `cd`, pipes or `&&`. Never allow
    `Bash` or `Bash(*)`. Add `--deny 'Read(<absolute path or ~/path>/**)'`
    for every place the project or the user forbids, for example production
    configuration or another project's checkout (see
@@ -232,6 +234,10 @@ rounds.
     argument, as the script does.
   - Path rules need absolute paths or `~/` paths: `Write(./**)` matched
     nothing.
+  - `Bash(python3 -m unittest:*)` denied the worker's
+    `cd <worktree> && python3 -m unittest ... | tail` although the allowed
+    command was inside it. The worker rules therefore require running
+    acceptance commands exactly as written.
   - `Read`, `Grep` and `Glob` run without being on the allow list. A
     `Read(<dir>/**)` deny rule stops `Read` only: `Grep` still printed the
     denied file's content, and `Grep(<dir>/**)` deny rules were ignored. A
