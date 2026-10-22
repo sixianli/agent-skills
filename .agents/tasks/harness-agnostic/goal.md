@@ -165,3 +165,7 @@
 问题：Codex 的 readable-output 硬性机制按方案 A 做吗？
 
 > 按方案 A 做：Stop 检查加 SessionStart 提示，写进 SKILL.md 和 ~/.codex/hooks.json，代码和测试交给 opencode。
+
+## CLOSED 2026-10-22 用户原话
+
+> 验收通过，关闭 harness-agnostic 这个长任务。
