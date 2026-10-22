@@ -642,6 +642,60 @@
       "harness": "claude-code"
     },
     {
+      "name": "codebuddy-orchestration",
+      "package_dir": "codebuddy-orchestration",
+      "readme": "codebuddy-orchestration/SKILL.md",
+      "skill_dir": "codebuddy-orchestration",
+      "description": "Delegate a well-scoped coding subtask to the local CodeBuddy Code CLI (the engine behind WorkBuddy) in an isolated git worktree, then verify scope and acceptance and land the change unstaged.",
+      "implicit_invocation": true,
+      "has_tests": true,
+      "checks": [
+        {
+          "name": "shell-syntax",
+          "command": [
+            "bash",
+            "-n",
+            "codebuddy-orchestration/scripts/cb-delegate.sh"
+          ]
+        },
+        {
+          "name": "py-compile",
+          "command": [
+            "python3",
+            "-m",
+            "py_compile",
+            "codebuddy-orchestration/tests/test_cb_delegate.py"
+          ]
+        },
+        {
+          "name": "unittest",
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "codebuddy-orchestration/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ]
+        },
+        {
+          "name": "ruff",
+          "command": [
+            "uv",
+            "run",
+            "--with",
+            "ruff",
+            "ruff",
+            "check",
+            "codebuddy-orchestration/tests"
+          ]
+        }
+      ]
+    },
+    {
       "name": "readable-output",
       "package_dir": "readable-output",
       "readme": "readable-output/SKILL.md",

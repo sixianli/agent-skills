@@ -1,0 +1,290 @@
+import json
+import os
+import subprocess
+import tempfile
+import textwrap
+import time
+import unittest
+from pathlib import Path
+
+SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "cb-delegate.sh"
+
+STUB = textwrap.dedent(
+    r"""
+    #!/usr/bin/env bash
+    if [ "$1" = "--version" ]; then echo "0.0.0-stub"; exit 0; fi
+    if [ "$1" = "--help" ]; then echo "--model <id> deepseek-v4.1-flash hy3"; exit 0; fi
+    cat >/dev/null
+    RESULT='{"type":"result","session_id":"sess-1","total_cost_usd":0,"is_error":false,"num_turns":3,"result":"","structured_output":{"status":"done","summary":"stub","files_changed":["src/order/A.java"],"commands_run":[],"acceptance_passed":true,"open_issues":[]}}'
+    printf '%s\n' "$@" >"$STUB_ARGS"
+    env | grep '^CODEBUDDY_' | sort >"$STUB_ENV"
+    case "${STUB_MODE:-inscope}" in
+      inscope)  mkdir -p src/order; echo "class A {}" > src/order/A.java ;;
+      outscope) mkdir -p src/order; echo "class A {}" > src/order/A.java; echo x > build.gradle ;;
+      rename)   mkdir -p src/order; git mv README.md src/order/README.md ;;
+      commit)   mkdir -p src/order; echo c > src/order/C.java; git add -A
+                git -c user.name=stub -c user.email=stub@example.com commit -qm stub ;;
+      hang)     sleep 30 & echo $! > "$STUB_CHILD"; wait ;;
+      nojson)   echo "Error: not logged in" >&2; exit 3 ;;
+      noresult) echo '[{"type":"message","role":"user"}]'; exit 0 ;;
+      object)   printf '%s\n' "$RESULT"; exit 0 ;;
+      probe)    call() { printf '{"type":"function_call","callId":"%s","name":"%s","arguments":%s},' "$1" "$2" "$(jq -cn --argjson a "$3" '$a|tostring')"
+                         printf '{"type":"function_call_result","callId":"%s","name":"%s","status":"%s","output":{}},' "$1" "$2" "$4"; }
+                printf '[{"type":"message","role":"user"},'
+                call c1 Read "{\"file_path\":\"$PWD/README.md\"}" completed
+                call c2 Read '{"file_path":"/etc/hosts"}' completed
+                call c3 Read '{"file_path":"../../secret.txt"}' incomplete
+                call c4 Write '{"file_path":"/tmp/x","content":"x"}' incomplete
+                call c5 Glob '{"pattern":"**/*.java"}' completed
+                call c6 Glob '{"pattern":"*.txt","path":"/var"}' completed
+                call c7 Bash '{"command":"git status","description":"s"}' completed
+                printf '%s]\n' "$RESULT"; exit 0 ;;
+    esac
+    printf '[{"type":"message","role":"user"},{"type":"function_call","name":"StructuredOutput"},%s]\n' "$RESULT"
+    """
+).lstrip()
+
+BRIEF = textwrap.dedent(
+    """
+    # Task: stub
+
+    ## Allowed paths
+    - src/order/*   # comment is ignored
+    - `README.md`
+
+    ## Acceptance
+    - true
+    """
+).lstrip()
+
+
+class CbDelegateTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.repo = root / "repo"
+        self.repo.mkdir()
+        self.stub = root / "codebuddy"
+        self.stub.write_text(STUB)
+        self.stub.chmod(0o755)
+        self.brief = root / "brief.md"
+        self.brief.write_text(BRIEF)
+        self.home = root / "cb-home"
+        self.env = {
+            **os.environ,
+            "CB_BIN": str(self.stub),
+            "CB_HOME": str(self.home),
+            "STUB_ARGS": str(root / "args"),
+            "STUB_CHILD": str(root / "child.pid"),
+            "STUB_ENV": str(root / "env"),
+            "GIT_AUTHOR_NAME": "test",
+            "GIT_AUTHOR_EMAIL": "test@example.com",
+            "GIT_COMMITTER_NAME": "test",
+            "GIT_COMMITTER_EMAIL": "test@example.com",
+        }
+        self.git("init", "-q")
+        (self.repo / "README.md").write_text("hi\n")
+        self.git("add", "README.md")
+        self.git("commit", "-qm", "init")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def git(self, *args):
+        return subprocess.run(
+            ["git", *args], cwd=self.repo, env=self.env, check=True, capture_output=True, text=True
+        ).stdout
+
+    def cb(self, *args, mode="inscope", **extra_env):
+        env = {**self.env, "STUB_MODE": mode, **extra_env}
+        return subprocess.run(
+            ["bash", str(SCRIPT), *args], cwd=self.repo, env=env, capture_output=True, text=True, timeout=60, check=False
+        )
+
+    def worktree(self, task_id):
+        return next(self.home.glob(f"*/{task_id}/wt"))
+
+    def ledger(self):
+        return [json.loads(line) for line in (self.home / "ledger.jsonl").read_text().splitlines()]
+
+    def test_start_check_land_clean(self):
+        start = self.cb("start", "t1", str(self.brief), "--allow", "Bash(./mvnw:*)", "--deny", "Read(/opt/private/**)")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertIn('"status": "done"', start.stdout)
+        self.assertIn("?? src/order/A.java", start.stdout)
+
+        args = Path(self.env["STUB_ARGS"]).read_text().splitlines()
+        self.assertEqual(args[args.index("--permission-mode") + 1], "dontAsk")
+        allowed = args[args.index("--allowedTools") + 1 : args.index("--disallowedTools")]
+        denied = args[args.index("--disallowedTools") + 1 : args.index("--max-turns")]
+        wt = self.worktree("t1").resolve()
+        self.assertIn("Bash(./mvnw:*)", allowed)
+        self.assertIn("Bash(git status:*)", allowed)
+        self.assertIn(f"Write({wt}/**)", allowed)
+        self.assertIn(f"Edit({wt}/**)", allowed)
+        self.assertNotIn("Write", allowed)
+        self.assertNotIn("Edit", allowed)
+        self.assertIn("Bash(git commit:*)", denied)
+        self.assertIn("Bash(git grep:*)", allowed)
+        self.assertIn("Grep", denied)
+        self.assertIn("Read(~/.ssh/**)", denied)
+        self.assertIn("Bash(git grep --no-index:*)", denied)
+        self.assertIn("Bash(git diff --no-index:*)", denied)
+        self.assertIn("Read(/opt/private/**)", denied)
+        self.assertIn("WebFetch", denied)
+        self.assertFalse(any("," in rule for rule in allowed + denied))
+        self.assertNotIn("--fallback-model", args)
+        worker_env = Path(self.env["STUB_ENV"]).read_text().splitlines()
+        self.assertIn("CODEBUDDY_CODE_DISABLE_AUTO_MEMORY=1", worker_env)
+        self.assertIn("CODEBUDDY_DISABLE_AUTO_MEMORY=1", worker_env)
+        self.assertIn("CODEBUDDY_CODE_DISABLE_BACKGROUND_TASKS=1", worker_env)
+        self.assertEqual(self.ledger()[0]["cost_usd"], 0)
+        self.assertIn('"session_id": "sess-1"', start.stdout)
+
+        check = self.cb("check", "t1")
+        self.assertEqual(check.returncode, 0, check.stdout)
+        self.assertIn("SCOPE PASS", check.stdout)
+
+        land = self.cb("land", "t1")
+        self.assertEqual(land.returncode, 0, land.stderr)
+        self.assertEqual(self.git("status", "--porcelain", "-uall"), "?? src/order/A.java\n")
+        self.assertEqual(self.git("diff", "--cached", "--name-only"), "")
+
+        clean = self.cb("clean", "t1")
+        self.assertEqual(clean.returncode, 0, clean.stderr)
+        self.assertNotIn("wt", self.git("worktree", "list"))
+        self.assertEqual([entry["event"] for entry in self.ledger()], ["run", "landed"])
+
+    def test_out_of_scope_change_blocks_landing(self):
+        self.cb("start", "t2", str(self.brief), mode="outscope")
+        check = self.cb("check", "t2")
+        self.assertEqual(check.returncode, 1)
+        self.assertIn("OUT   build.gradle", check.stdout)
+        land = self.cb("land", "t2")
+        self.assertNotEqual(land.returncode, 0)
+        self.assertEqual(self.git("status", "--porcelain"), "")
+
+    def test_rename_checks_both_paths(self):
+        narrow = self.brief.parent / "narrow.md"
+        narrow.write_text(BRIEF.replace("- `README.md`\n", ""))
+        self.cb("start", "t3", str(narrow), mode="rename")
+        check = self.cb("check", "t3")
+        self.assertEqual(check.returncode, 1)
+        self.assertIn("ok    src/order/README.md", check.stdout)
+        self.assertIn("OUT   README.md", check.stdout)
+
+    def test_worker_commit_is_detected(self):
+        self.cb("start", "t4", str(self.brief), mode="commit")
+        check = self.cb("check", "t4")
+        self.assertEqual(check.returncode, 1)
+        self.assertIn("worker moved HEAD", check.stdout)
+
+    def test_missing_json_shows_stderr_and_logs_run(self):
+        start = self.cb("start", "t5", str(self.brief), mode="nojson")
+        self.assertIn("exit 3", start.stdout)
+        self.assertIn("Error: not logged in", start.stdout)
+        self.assertEqual(self.ledger()[-1]["exit_code"], 3)
+        self.assertIsNone(self.ledger()[-1]["cost_usd"])
+
+    def test_single_result_object_is_accepted(self):
+        start = self.cb("start", "t10", str(self.brief), mode="object")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertIn('"summary": "stub"', start.stdout)
+        self.assertEqual((self.worktree("t10").parent / "session_id").read_text(), "sess-1")
+
+    def test_doctor_reads_structured_output_without_memory(self):
+        doctor = self.cb("doctor")
+        self.assertEqual(doctor.returncode, 0, doctor.stderr)
+        self.assertIn('"summary": "stub"', doctor.stdout)
+        self.assertNotIn("no JSON output", doctor.stdout)
+        self.assertIn("CODEBUDDY_CODE_DISABLE_AUTO_MEMORY=1", Path(self.env["STUB_ENV"]).read_text())
+
+    def test_output_without_result_is_reported_as_invalid(self):
+        start = self.cb("start", "t9", str(self.brief), mode="noresult")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertIn("worker produced no valid JSON", start.stdout)
+        self.assertIsNone(self.ledger()[-1]["cost_usd"])
+        self.assertIn("no valid JSON", self.cb("status", "t9").stdout)
+
+    def test_builtin_watchdog_stops_worker_and_children(self):
+        began = time.monotonic()
+        start = self.cb("start", "t6", str(self.brief), mode="hang", CB_TIMEOUT="3", CB_TIMEOUT_IMPL="builtin")
+        self.assertLess(time.monotonic() - began, 20)
+        self.assertIn("exit 124", start.stdout)
+        self.assertIn("TIMED OUT", start.stdout)
+        child = int(Path(self.env["STUB_CHILD"]).read_text())
+        time.sleep(0.2)
+        with self.assertRaises(ProcessLookupError):
+            os.kill(child, 0)
+
+    def test_outside_tool_calls_are_listed(self):
+        start = self.cb("start", "t11", str(self.brief), mode="probe")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        outside = start.stdout.split("-- tool calls outside the worktree:")[1].split("-- shell commands:")[0]
+        self.assertEqual(
+            outside.strip().splitlines(),
+            ["ok      Read /etc/hosts", "failed  Read ../../secret.txt", "failed  Write /tmp/x", "ok      Glob /var"],
+        )
+        shell = start.stdout.split("-- shell commands:")[1].split("-- worktree changes")[0]
+        self.assertEqual(shell.strip().splitlines(), ["ok      git status"])
+        self.assertIn("ok      Read /etc/hosts", self.cb("status", "t11").stdout)
+
+    def test_resume_limit(self):
+        self.cb("start", "t7", str(self.brief), "--deny", "Read(/opt/private/**)")
+        feedback = self.brief.parent / "feedback.md"
+        feedback.write_text("fix it\n")
+        for _ in range(2):
+            self.assertEqual(self.cb("resume", "t7", str(feedback)).returncode, 0)
+        args = Path(self.env["STUB_ARGS"]).read_text().splitlines()
+        self.assertEqual(args[args.index("--resume") + 1], "sess-1")
+        self.assertIn("Read(/opt/private/**)", args)
+        third = self.cb("resume", "t7", str(feedback))
+        self.assertNotEqual(third.returncode, 0)
+        self.assertIn("resume limit reached", third.stderr)
+
+    def test_model_must_be_on_allowed_list(self):
+        refused = self.cb("start", "m1", str(self.brief), CB_MODEL="paid-model")
+        self.assertEqual(refused.returncode, 2)
+        self.assertIn("MODEL_NOT_ALLOWED: paid-model", refused.stderr)
+        self.assertFalse(Path(self.env["STUB_ARGS"]).exists())
+        self.assertFalse(list(self.home.glob("*/m1")))
+        self.assertIn("MODEL_NOT_ALLOWED", self.cb("doctor", CB_MODEL="paid-model").stderr)
+        self.assertFalse(Path(self.env["STUB_ARGS"]).exists())
+
+        self.home.mkdir(parents=True, exist_ok=True)
+        (self.home / "allowed-models.txt").write_text("# free models\nhy3  \n\n")
+        self.assertEqual(self.cb("start", "m2", str(self.brief), CB_MODEL="hy3").returncode, 0)
+        args = Path(self.env["STUB_ARGS"]).read_text().splitlines()
+        self.assertEqual(args[args.index("--model") + 1], "hy3")
+        self.assertIn("MODEL_NOT_ALLOWED", self.cb("start", "m3", str(self.brief)).stderr)
+
+        feedback = self.brief.parent / "feedback.md"
+        feedback.write_text("fix it\n")
+        resumed = self.cb("resume", "m2", str(feedback), CB_MODEL="paid-model")
+        self.assertEqual(resumed.returncode, 2)
+        self.assertIn("MODEL_NOT_ALLOWED", resumed.stderr)
+
+        missing = self.cb("start", "m4", str(self.brief), CB_ALLOWED_MODELS=str(self.home / "nope.txt"))
+        self.assertEqual(missing.returncode, 2)
+        self.assertIn("MODEL_LIST_MISSING", missing.stderr)
+
+    def test_guards(self):
+        no_scope = self.brief.parent / "no-scope.md"
+        no_scope.write_text("# Task\n\n## Goal\n")
+        self.assertIn("no '## Allowed paths'", self.cb("start", "t8", str(no_scope)).stderr)
+        self.assertIn("invalid task id", self.cb("start", "Bad", str(self.brief)).stderr)
+
+        (self.repo / "README.md").write_text("dirty\n")
+        start = self.cb("start", "t9", str(self.brief))
+        self.assertIn("will NOT see them", start.stderr)
+        self.assertIn("already exists", self.cb("start", "t9", str(self.brief)).stderr)
+
+        refused = self.cb("clean", "t9")
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertTrue(self.worktree("t9").is_dir())
+        self.assertEqual(self.cb("clean", "t9", "--discard").returncode, 0)
+        self.assertEqual(self.ledger()[-1]["event"], "discarded")
+
+
+if __name__ == "__main__":
+    unittest.main()
