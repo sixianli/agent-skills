@@ -21,7 +21,10 @@
     "G17": "once",
     "G18": "durable",
     "G19": "durable",
-    "G20": "durable"
+    "G20": "durable",
+    "G21": "durable",
+    "G22": "once",
+    "G23": "once"
   },
   "items": [
     {
@@ -40,7 +43,8 @@
         "G13",
         "G18",
         "G19",
-        "G20"
+        "G20",
+        "G21"
       ],
       "done_when": [
         {
@@ -59,7 +63,8 @@
             "G13",
             "G18",
             "G19",
-            "G20"
+            "G20",
+            "G21"
           ]
         },
         {
@@ -198,6 +203,13 @@
         {
           "type": "command",
           "run": "bash .agents/local/harness-checks/global-read.sh opencode",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        },
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/global-read.sh codex-prompt",
           "scope": "environment",
           "host": "mac",
           "max_age_days": 7

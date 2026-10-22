@@ -20,9 +20,14 @@
 
 - 2026-10-22 14:40 建立任务。
 - 2026-10-22 建立 HA-1 至 HA-5（G1-G20）；status 共 5 项未完成。第一批 HA-5、HA-1：用户要求把全局说明“好好测试一下”。
+- 2026-10-22 G21-G23：旧 AGENTS.md 的三处独有内容都不进主文件，主文件与 ~/.claude/CLAUDE.md 一致；G21 是长期规则（skill 装进别的 harness 时要带硬性加载方式），HA-1 的 done_when 加上引用 G21。status 仍是 5 项未完成。
+- 2026-10-22 HA-5 的 done_when 加一条 codex-prompt 检查：用 codex debug prompt-input 确认主文件进了模型输入，不依赖模型回答。
 
 ## 意外和发现
 
 - 2026-10-22 AGENTS.md 标准只规定项目里的位置，没有全局位置；opencode 没有自己的全局 AGENTS.md 时会改读 ~/.claude/CLAUDE.md，所以 CLAUDE.md 只剩一行导入会让 opencode 丢掉全局规则，要给它单独建链接。
+- 2026-10-22 更正上一条：上一条照搬了 opencode 文档，没有在本机核实，是误判。本机 opencode 2.0.32 的 530 个会话、33 种说明组合里只加载过项目目录的 AGENTS.md，从没加载过 ~/.claude/CLAUDE.md；空目录里的测试会话也只有 core/codemode、core/skill-guidance、core/date、core/environment。也就是 opencode 一直没有拿到全局说明。放一个临时的 ~/.config/opencode/AGENTS.md 后，会话多出 core/instructions，不用工具就答出了文件里的测试词，文件随后删除。以后关于 harness 行为的说法，先用本机运行结果核实再写进计划。
+- 2026-10-22 Codex 配置的模型 gpt-6.1-sol 不在 codex debug models 列出的可用模型里，codex exec 直接报 400；测试改用 -m gpt-6-luna，不改用户配置。codex debug prompt-input 能打印模型收到的完整输入，用来确定性地检查全局说明有没有进去。
+- 2026-10-22 旧 ~/.codex/AGENTS.md 有三处内容 CLAUDE.md 里没有：要求每次回复前加载 readable-output；Codex 被委派任务时不改任务的 goal.md、items.json、plan.md 并用 record --by codex 记证据；自动维护项目验证 skill（maintain-verification-skill）的规则。按 G14 以 CLAUDE.md 为准，这三处会丢，先问用户。
 
 ## 决定
