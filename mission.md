@@ -77,6 +77,10 @@ agent harness 指运行 agent 的那套工具，它负责加载 skill，并给 a
 
    > 可以
 
+4. 目前只有 Claude Code 写 `FEEDBACK.md`：它的写权限已经放开；Codex 和 opencode 不配写权限，也不要求它们记反馈。2026-10-22，关于“Codex 和 opencode 没有 FEEDBACK.md 的写权限”，用户原话：
+
+   > 这个不管，feedback只用claude来做，暂时这么定
+
 ## 本机的全局说明
 
 全局说明是 agent 在每个项目里都会读到的那份说明。AGENTS.md 标准（由 Linux 基金会下的 Agentic AI Foundation 维护）只规定了项目里的 `AGENTS.md` 放在哪，没有规定全局说明放在哪，各个 harness 各有各的位置。所以全局说明只维护一份主文件，每个 harness 用它自己支持的方式读到它：
