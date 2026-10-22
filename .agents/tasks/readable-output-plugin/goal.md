@@ -11,3 +11,7 @@
 ## G2 2026-10-20 用户原话
 
 > 请确保只准确的拦截完整英语语句而不是英语专用名词（例如 ai agent 活着 llm as judge 等专用名词）
+
+## CLOSED 2026-10-22 用户原话
+
+> 旧提交里的邮箱保持现状，readable-output-plugin 和 privacy-generalization 都验收通过，结案。
