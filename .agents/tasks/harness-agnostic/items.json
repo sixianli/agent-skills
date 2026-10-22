@@ -200,6 +200,13 @@
           "scope": "environment",
           "host": "mac",
           "max_age_days": 7
+        },
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/skill-load.sh opencode",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
         }
       ],
       "added": {

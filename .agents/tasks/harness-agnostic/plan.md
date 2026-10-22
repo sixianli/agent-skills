@@ -23,6 +23,7 @@
 - 2026-10-22 G21-G23：旧 AGENTS.md 的三处独有内容都不进主文件，主文件与 ~/.claude/CLAUDE.md 一致；G21 是长期规则（skill 装进别的 harness 时要带硬性加载方式），HA-1 的 done_when 加上引用 G21。status 仍是 5 项未完成。
 - 2026-10-22 HA-5 的 done_when 加一条 codex-prompt 检查：用 codex debug prompt-input 确认主文件进了模型输入，不依赖模型回答。
 - 2026-10-22 HA-2、HA-3 的 test 检查从标签改成 file+name：unittest 的测试名是方法名，写不进 [HA-2] 这种标签；方法名在任务书里定好。
+- 2026-10-22 HA-4 的 done_when 加一条 opencode 的 skill 加载检查：opencode 读 ~/.claude/skills 和 ~/.agents/skills，迁移同样影响它。
 
 ## 意外和发现
 
@@ -32,5 +33,6 @@
 - 2026-10-22 旧 ~/.codex/AGENTS.md 有三处内容 CLAUDE.md 里没有：要求每次回复前加载 readable-output；Codex 被委派任务时不改任务的 goal.md、items.json、plan.md 并用 record --by codex 记证据；自动维护项目验证 skill（maintain-verification-skill）的规则。按 G14 以 CLAUDE.md 为准，这三处会丢，先问用户。
 - 2026-10-22 第 0 步三个前提，都用本机运行结果核实：Claude Code 2.1.302 加载 skill 时在内容前写 `Base directory for this skill: <目录>`（claude -p 只开 Skill 工具加载 video-download 得到）；Codex 0.159.3 的模型输入列出 skill 根目录 r0=~/.codex/skills、r1=~/.agents/skills，每个 skill 带 `(file: r1/<名字>/SKILL.md)`，所以两个目录都读，也告诉模型路径。正文写“相对于本 SKILL.md 所在目录”两边都能用；安装脚本查重复时要把 Codex 的两个目录当成同一个 agent。
 - 2026-10-22 opencode 2.0.32 自己也列出 skill：读 ~/.claude/skills（含 synced/ 下的内置 skill）和 ~/.agents/skills，不读 ~/.codex/skills（只在那里的 agent-browser、playwright 不在它的列表里）；两处都有的同名 skill 它只列一个。安装脚本要把 opencode 当成读这两个目录的 agent；同名的两个链接指向同一个仓库目录不算问题，拷贝和指向不同地方才算。
+- 2026-10-22 第一次接续 opencode 时，第一轮的进程在写完停止文件后还没退出（没有 .rc），接续就发出去了。两个运行的事件编号完全相同，说明只有一个 agent 在工作，没有冲突；以后接续前先等 <前缀>.rc 出现。
 
 ## 决定
