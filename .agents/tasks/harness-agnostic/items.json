@@ -1,0 +1,228 @@
+{
+  "task": "harness-agnostic",
+  "prefix": "HA",
+  "decisions": {
+    "G1": "durable",
+    "G2": "durable",
+    "G3": "once",
+    "G4": "durable",
+    "G5": "durable",
+    "G6": "durable",
+    "G7": "durable",
+    "G8": "durable",
+    "G9": "once",
+    "G10": "durable",
+    "G11": "durable",
+    "G12": "once",
+    "G13": "durable",
+    "G14": "once",
+    "G15": "once",
+    "G16": "once",
+    "G17": "once",
+    "G18": "durable",
+    "G19": "durable",
+    "G20": "durable"
+  },
+  "items": [
+    {
+      "id": "HA-1",
+      "title": "mission.md 原样记下全部长期决定：harness 无关、SOP、唯一源头、按指定安装、修改与生效、harness 字段、全局说明、反馈、第三方 skill",
+      "goal_ref": [
+        "G1",
+        "G2",
+        "G4",
+        "G5",
+        "G6",
+        "G7",
+        "G8",
+        "G10",
+        "G11",
+        "G13",
+        "G18",
+        "G19",
+        "G20"
+      ],
+      "done_when": [
+        {
+          "type": "doc",
+          "path": "mission.md",
+          "quotes": [
+            "G1",
+            "G2",
+            "G4",
+            "G5",
+            "G6",
+            "G7",
+            "G8",
+            "G10",
+            "G11",
+            "G13",
+            "G18",
+            "G19",
+            "G20"
+          ]
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "HA-2",
+      "title": "document-governance、grill-with-docs、video-download 正文改成任何 agent 都能照做；skills.json 标出为某个 harness 定制的 skill；README 安装改成按指定建链接；校验拦住正文里只属于某个 harness 的写法",
+      "goal_ref": [
+        "G1",
+        "G6",
+        "G11"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "tag": "HA-2"
+        },
+        {
+          "type": "command",
+          "run": "UV_OFFLINE=1 uv run --no-project --with pyyaml python scripts/validate_all.py",
+          "ignore_test_exclude": true
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "HA-3",
+      "title": "安装脚本：列出每个 agent 装了哪些、是链接还是拷贝；按明确名字安装；把拷贝换成链接且不改变装了哪些；check 报出拷贝、断链、重复；不删任何东西",
+      "goal_ref": [
+        "G4",
+        "G5",
+        "G10",
+        "G11"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "tag": "HA-3"
+        },
+        {
+          "type": "command",
+          "run": "UV_OFFLINE=1 uv run --no-project --with pyyaml python scripts/validate_all.py",
+          "ignore_test_exclude": true
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "HA-4",
+      "title": "本机 Claude Code 和 Codex 里来自本仓库的 skill 拷贝都换成链接（博客那个和私人 skill 除外），旧拷贝在备份目录；每个 agent 新会话能列出并加载",
+      "goal_ref": [
+        "G3",
+        "G10",
+        "G17"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "python3 scripts/install_links.py check",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        },
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/skill-load.sh claude",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        },
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/skill-load.sh codex",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "HA-5",
+      "title": "全局说明只有一份主文件 ~/.agents/AGENTS.md（内容以原 ~/.claude/CLAUDE.md 为准）；Codex、opencode 用链接，Claude Code 用 @ 导入；三个 agent 新会话都能读到主文件内容",
+      "goal_ref": [
+        "G13",
+        "G14",
+        "G18"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/global-links.sh",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        },
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/global-read.sh claude",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        },
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/global-read.sh codex",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        },
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/global-read.sh opencode",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    }
+  ],
+  "decision_docs": [
+    "mission.md"
+  ],
+  "fingerprint": {
+    "include": [
+      "mission.md",
+      "README.md",
+      "skills.json",
+      ".gitignore",
+      "scripts/",
+      "document-governance/",
+      "grill-with-docs/",
+      "video-download/",
+      "shoshin/README.md"
+    ]
+  }
+}
