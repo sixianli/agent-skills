@@ -81,3 +81,7 @@
 问题：范围外发现的一处：human-writing-zh/README.md 还在教人把整个文件夹复制到 ~/.agents/skills，跟“只建链接”的规则冲突。README 不在这次检查范围内，你也没批这一处，所以我没改，收尾时再一起问你。
 
 > 改！
+
+## CLOSED 2026-10-22 用户原话
+
+> 验收通过，结案 shoshin-neutral。
