@@ -24,7 +24,10 @@
     "G20": "durable",
     "G21": "durable",
     "G22": "once",
-    "G23": "once"
+    "G23": "once",
+    "G24": "once",
+    "G25": "once",
+    "G26": "once"
   },
   "items": [
     {
@@ -257,6 +260,73 @@
           "scope": "environment",
           "host": "mac",
           "max_age_days": 7
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "HA-6",
+      "title": "Codex 默认模型改成 gpt-6-luna，不带 -m 也能正常运行",
+      "goal_ref": [
+        "G24"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/codex-default-model.sh",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "HA-7",
+      "title": "主文件写明使用 skill 时发现的问题记到该 skill 目录的 FEEDBACK.md；Claude Code 在别的项目里追加 FEEDBACK.md 不用逐次批准",
+      "goal_ref": [
+        "G19",
+        "G26"
+      ],
+      "done_when": [
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/global-read.sh claude",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        },
+        {
+          "type": "command",
+          "run": "bash .agents/local/harness-checks/feedback-write.sh claude",
+          "scope": "environment",
+          "host": "mac",
+          "max_age_days": 7
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-22"
+      }
+    },
+    {
+      "id": "HA-8",
+      "title": "Codex 里 readable-output 有硬性的加载方式，不只靠全局说明",
+      "goal_ref": [
+        "G21",
+        "G25"
+      ],
+      "done_when": [
+        {
+          "type": "user",
+          "ref": null,
+          "question": "Codex 的硬性机制方案查清后，由用户确认做法"
         }
       ],
       "added": {

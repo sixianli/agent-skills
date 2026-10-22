@@ -24,6 +24,7 @@
 - 2026-10-22 HA-5 的 done_when 加一条 codex-prompt 检查：用 codex debug prompt-input 确认主文件进了模型输入，不依赖模型回答。
 - 2026-10-22 HA-2、HA-3 的 test 检查从标签改成 file+name：unittest 的测试名是方法名，写不进 [HA-2] 这种标签；方法名在任务书里定好。
 - 2026-10-22 HA-4 的 done_when 加一条 opencode 的 skill 加载检查：opencode 读 ~/.claude/skills 和 ~/.agents/skills，迁移同样影响它。
+- 2026-10-22 G24-G26：加 HA-6（Codex 默认模型）、HA-7（反馈规则进主文件和写权限）、HA-8（Codex 的 readable-output 硬性机制，先查清 Codex 能做什么再定 done_when）。status 前 5 项当前版本已验证。
 
 ## 意外和发现
 
