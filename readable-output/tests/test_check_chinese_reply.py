@@ -1,4 +1,6 @@
 import json
+import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -201,6 +203,44 @@ class HookTests(unittest.TestCase):
         }
         return self.hook("ask", payload)
 
+    def codex_start(self):
+        return {
+            "session_id": "s1",
+            "transcript_path": None,
+            "cwd": str(SKILL_DIR),
+            "hook_event_name": "SessionStart",
+            "model": "gpt-6-luna",
+            "permission_mode": "default",
+            "source": "startup",
+        }
+
+    def codex_stop(self, message):
+        return {
+            "session_id": "s1",
+            "turn_id": "t1",
+            "transcript_path": None,
+            "cwd": str(SKILL_DIR),
+            "hook_event_name": "Stop",
+            "model": "gpt-6-luna",
+            "permission_mode": "default",
+            "stop_hook_active": False,
+            "last_assistant_message": message,
+        }
+
+    def skill_file_named_in(self, text):
+        for token in re.findall(r"\S*SKILL\.md", text):
+            candidate = Path(token.strip("`'\".,;:()<>"))
+            if candidate.is_file():
+                return candidate
+        self.fail(f"no existing SKILL.md path in {text!r}")
+
+    def test_start_tells_the_agent_to_read_the_skill_file(self) -> None:
+        output = self.hook("start", self.codex_start())
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["hookEventName"], "SessionStart")
+        named = self.skill_file_named_in(specific["additionalContext"])
+        self.assertTrue(os.path.samefile(named, SKILL_DIR / "SKILL.md"))
+
     def test_batch_reports_english_shown_before_the_tool_calls_once(self) -> None:
         self.display("s1", "先看日志。")
         self.display("s1", REPRODUCED_SENTENCE)
@@ -243,6 +283,20 @@ class HookTests(unittest.TestCase):
         self.display("s1", "Now running the tests.")
         output = self.stop("s1", "Now running the tests.")
         self.assertEqual(output["reason"].count("Now running the tests."), 1)
+
+    def test_stop_blocks_an_english_codex_reply(self) -> None:
+        sentence = "A clear daytime sky is blue because air scatters blue light the most."
+        output = self.hook("stop", self.codex_stop(sentence))
+        self.assertEqual(output["decision"], "block")
+        self.assertIn(sentence, output["reason"])
+
+    def test_stop_lets_a_chinese_codex_reply_end(self) -> None:
+        result = run(
+            ["stop", "--state-dir", str(self.state)],
+            json.dumps(self.codex_stop("晴天的天空是蓝色的，因为空气对蓝光的散射最强。")),
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
 
     def test_ask_denies_english_question_text(self) -> None:
         output = self.ask(

@@ -110,3 +110,50 @@ Only English sentences are reported, not English names and terms. A stretch of a
 So terms such as `ai agent`, `LLM as a judge`, `human in the loop` and `state of the art` pass inside a Chinese sentence. Words joined by hyphens count as one word (`LLM-as-a-judge`), and a title-case name without a final `.`, `!` or `?` passes (`Attention Is All You Need`). Code blocks, inline code, `>` quote lines, quoted text, Markdown links, and anything containing `/` are skipped. So put commands and identifiers in backticks, and put English that must be quoted in a code block or a `>` line. To check a draft or a document, run `python3 <skill-dir>/scripts/check_chinese_reply.py check <file>`, or pass `-` for standard input.
 
 To check the installed plugin in a real session, run `python3 <skill-dir>/tests/plugin_session_e2e.py`. It starts `claude -p` with a prompt that asks for English, checks that the session loaded the plugin and that the `Stop` hook made Claude restate the reply in Chinese, and keeps the stream and a summary under `tests/verification/<date>/local/`. It uses the network and costs one short model call.
+
+### In Codex
+
+Codex runs the same script through two hooks declared in `~/.codex/hooks.json`:
+
+| Hook event | Matcher | Command | Effect |
+| --- | --- | --- | --- |
+| `SessionStart` | `startup\|resume\|clear\|compact` | `start` | Tells the agent to read this `SKILL.md` before its first reply and to follow it for the rest of the session. |
+| `Stop` | not used | `stop` | Checks the last reply. English blocks the stop until the agent restates it in Chinese. |
+
+**Install**: the agent that installs this skill merges these two entries into `~/.codex/hooks.json` and keeps the entries already in the file. Write the absolute path of `<skill-dir>/scripts/check_chinese_reply.py` in `command`, and give `--state-dir` the absolute path of `<home>/.codex/reply-language`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 <skill-dir>/scripts/check_chinese_reply.py start --state-dir <home>/.codex/reply-language",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 <skill-dir>/scripts/check_chinese_reply.py stop --state-dir <home>/.codex/reply-language",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Trust**: Codex skips a hook until the user trusts its exact definition, and a changed entry needs a new review. After installing, run `/hooks` in an interactive Codex session and trust both entries. Editing only the script does not need a new trust review.
+
+**Differences from Claude Code**: this skill adds no check while text is shown, no check after a batch of tool calls, and no check on questions before the user sees them. English written between tool calls is found when the turn ends.
+
+**End-to-end check**: run `python3 <skill-dir>/tests/codex_session_e2e.py`. It passes both hooks on the command line for one run and bypasses hook trust, so it tests the script in this folder rather than what is installed on the machine. It needs the network and costs one short model call.

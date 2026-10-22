@@ -111,7 +111,7 @@ def report(found, request):
 
 
 def notice(found):
-    return f"回复语言检查：发现 {len(unique_lines(found))} 行英文，已要求 Claude 改用中文。"
+    return f"回复语言检查：发现 {len(unique_lines(found))} 行英文，已要求改用中文。"
 
 
 def state_file(state_dir, payload):
@@ -148,6 +148,19 @@ def batch(payload, state_dir):
     }
 
 
+def start(payload, state_dir):
+    skill_file = Path(__file__).resolve().parent.parent / "SKILL.md"
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "SessionStart",
+            "additionalContext": (
+                "Every reply in this session must follow the readable-output skill. "
+                f"Before your first reply, read {skill_file} in full, then keep following it for the rest of the session."
+            ),
+        }
+    }
+
+
 def stop(payload, state_dir):
     found = english_lines(take_shown_text(payload, state_dir))
     found += english_lines(payload.get("last_assistant_message") or "")
@@ -177,6 +190,7 @@ def ask(payload, state_dir):
 
 
 EVENTS = {
+    "start": (start, "SessionStart hook: tell the agent to read this skill before its first reply"),
     "record": (record, "MessageDisplay hook: keep the text shown to the user until the next check"),
     "batch": (batch, "PostToolBatch hook: report English shown before the tool calls"),
     "stop": (stop, "Stop hook: block the stop when this turn showed English"),
