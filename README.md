@@ -2,6 +2,8 @@
 
 This repository collects reusable agent skills. Each skill works with the user-selected project and current environment; shared source must not assume a particular person, account, host, site, or private project.
 
+Every skill here must also work under any agent harness (Claude Code, Codex, DeepSeek, and others), directly or with a small change. [mission.md](mission.md) records this goal and the rules that follow from it.
+
 ## Skills
 
 | Skill | Documentation | Installable folder | Purpose | Implicit invocation |
