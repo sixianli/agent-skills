@@ -154,6 +154,6 @@ Codex runs the same script through two hooks declared in `~/.codex/hooks.json`:
 
 **Trust**: Codex skips a hook until the user trusts its exact definition, and a changed entry needs a new review. After installing, run `/hooks` in an interactive Codex session and trust both entries. Editing only the script does not need a new trust review.
 
-**Differences from Claude Code**: this skill adds no check while text is shown, no check after a batch of tool calls, and no check on questions before the user sees them. English written between tool calls is found when the turn ends.
+**Differences from Claude Code**: this skill adds no check while text is shown, no check after a batch of tool calls, and no check on questions before the user sees them. The `Stop` hook sees only the last reply of a turn (`last_assistant_message`), so English in an earlier message of the same turn, such as a progress line before a tool call, is not caught.
 
 **End-to-end check**: run `python3 <skill-dir>/tests/codex_session_e2e.py`. It passes both hooks on the command line for one run and bypasses hook trust, so it tests the script in this folder rather than what is installed on the machine. It needs the network and costs one short model call.
