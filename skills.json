@@ -6,7 +6,8 @@
         "python3",
         "-m",
         "py_compile",
-        "scripts/validate_all.py"
+        "scripts/validate_all.py",
+        "scripts/install_links.py"
       ]
     },
     {
@@ -19,6 +20,7 @@
         "ruff",
         "check",
         "scripts/validate_all.py",
+        "scripts/install_links.py",
         "scripts/tests"
       ]
     },
@@ -576,7 +578,8 @@
             "codex-orchestration/tests"
           ]
         }
-      ]
+      ],
+      "harness": "claude-code"
     },
     {
       "name": "opencode-orchestration",
@@ -635,7 +638,8 @@
             "opencode-orchestration/tests"
           ]
         }
-      ]
+      ],
+      "harness": "claude-code"
     },
     {
       "name": "readable-output",

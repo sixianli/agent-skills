@@ -32,43 +32,53 @@ Each package README or skill entrypoint explains the specific skill's purpose, i
 
 ## Install
 
-Install one skill, for example:
+Install skills as symbolic links to this repository, never as copies, and only the skills you choose; [mission.md](mission.md) explains why. Run the commands from the main checkout of this repository, not from a git worktree: a link points at the checkout it was made from, and `install` and `migrate` refuse to run from a worktree.
 
-```bash
-mkdir -p "$HOME/.agents/skills"
-cp -R document-governance "$HOME/.agents/skills/"
-```
+1. See what each agent harness has now:
 
-Install either additional standalone skill by copying its complete folder after checking for an existing installation:
+   ```bash
+   python3 scripts/install_links.py list
+   ```
 
-```bash
-cp -R blog-workflow "$HOME/.agents/skills/"
-cp -R video-download "$HOME/.agents/skills/"
-```
+   For Claude Code (`~/.claude/skills`), Codex (`~/.agents/skills` and `~/.codex/skills`) and opencode (`~/.agents/skills` and `~/.claude/skills`), it prints every repository skill as `link`, `copy`, `broken`, `foreign-link` or `absent`. Entries whose names are not repository skills are never read or changed.
+
+2. Decide which skills to install, then install them by name:
+
+   ```bash
+   python3 scripts/install_links.py install --harness claude-code document-governance video-download
+   ```
+
+   A skill made for one harness (the `harness` field in `skills.json`) still installs elsewhere, with a warning.
+
+3. Replace copies left by earlier installs with links, without changing which skills are installed:
+
+   ```bash
+   python3 scripts/install_links.py migrate --harness codex
+   ```
+
+   Each copy moves to `~/agent-skill-copies-backup/<time>/<original folder>/<skill>` first. The script never deletes anything; a broken link or a link to somewhere else is reported and left alone.
+
+4. Check that no copy, broken link or conflicting duplicate is left:
+
+   ```bash
+   python3 scripts/install_links.py check
+   ```
+
+A change takes effect for every harness on this machine once it is fast-forwarded into the main checkout. Scripts and `SKILL.md` text are read again on next use; a new skill name or description appears in a new session, and Codex needs a restart.
 
 The blog workflow reads conventions and publishing checks from the selected Hugo repository. Install `sensitive-information-scan` separately when using its pre-publication check. Video downloads require `yt-dlp` and FFmpeg (`ffprobe`); see the skill entrypoints for usage and access limits.
 
-For `human-writing-zh`, follow its [installation and usage guide](human-writing-zh/README.md). Copy the complete folder after checking for an existing installation, and retain `LICENSE` and `THIRD_PARTY_NOTICES.md`. The optional text review script needs Python 3.9+ and uses only the standard library. Its tests check the script's behavior; they do not establish writing quality or factual accuracy.
+For `human-writing-zh`, follow its [installation and usage guide](human-writing-zh/README.md); its `LICENSE` and `THIRD_PARTY_NOTICES.md` stay in the linked folder. The optional text review script needs Python 3.9+ and uses only the standard library. Its tests check the script's behavior; they do not establish writing quality or factual accuracy.
 
-Restart Codex if a newly installed skill does not appear immediately.
+### Skills that need extra setup
 
-### Claude Code skills
-
-`long-task-planning` and `codex-orchestration` run from Claude Code. Install both side by side in `~/.claude/skills/`, because `codex-orchestration/scripts/codex-launch.sh` and `opencode-orchestration/scripts/oc-launch.sh` call `../../long-task-planning/scripts/longtask.py`. A symbolic link keeps the installed skill and this repository the same files, so edits made while using a skill show up in `git status`:
+`codex-orchestration` and `opencode-orchestration` are made for Claude Code, which uses them to direct another coding agent. Install `long-task-planning` into the same harness, because `codex-orchestration/scripts/codex-launch.sh` and `opencode-orchestration/scripts/oc-launch.sh` call `../../long-task-planning/scripts/longtask.py`:
 
 ```bash
-ln -s "$PWD/long-task-planning" "$HOME/.claude/skills/long-task-planning"
-ln -s "$PWD/codex-orchestration" "$HOME/.claude/skills/codex-orchestration"
-ln -s "$PWD/opencode-orchestration" "$HOME/.claude/skills/opencode-orchestration"
+python3 scripts/install_links.py install --harness claude-code long-task-planning codex-orchestration opencode-orchestration
 ```
 
-`readable-output` publishes pages through Claude Code's Artifact tool and needs no other skill. Install it the same way:
-
-```bash
-ln -s "$PWD/readable-output" "$HOME/.claude/skills/readable-output"
-```
-
-The link also installs its language hooks: Claude Code loads the folder as the plugin `readable-output@skills-dir`, enabled by default. Turn the hooks off with `"readable-output@skills-dir": false` under `enabledPlugins`; [readable-output/SKILL.md](readable-output/SKILL.md#5-check-that-replies-are-in-chinese) explains them. Do not also list them in `~/.claude/settings.json`.
+`readable-output` publishes pages through Claude Code's Artifact tool and needs no other skill. Its link also installs its language hooks in Claude Code: Claude Code loads the folder as the plugin `readable-output@skills-dir`, enabled by default. Turn the hooks off with `"readable-output@skills-dir": false` under `enabledPlugins`; [readable-output/SKILL.md](readable-output/SKILL.md#5-check-that-replies-are-in-chinese) explains them. Do not also list them in `~/.claude/settings.json`.
 
 `long-task-planning` also needs its session-start hook in `~/.claude/settings.json` (Claude Code) and `~/.codex/hooks.json` (Codex, matcher `startup|resume|clear|compact`; then trust it in Codex `/hooks`). Use the absolute path of the installed script:
 
@@ -76,7 +86,7 @@ The link also installs its language hooks: Claude Code loads the folder as the p
 {"type": "command", "command": "python3 /absolute/path/to/skills/long-task-planning/scripts/longtask.py hook", "timeout": 20}
 ```
 
-Point the global agent instructions (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`) at `long-task-planning/SKILL.md` so every hands-on task picks light or full mode. `long-task-planning/FEEDBACK.md` and `*/tests/verification/*/local/` stay on the maintainer's machine and are git-ignored, because they hold private project details.
+Point the global instructions file (the single file every harness reads; see "本机的全局说明" in [mission.md](mission.md)) at `long-task-planning/SKILL.md` so every hands-on task picks light or full mode. `*/FEEDBACK.md` and `*/tests/verification/*/local/` stay on the maintainer's machine and are git-ignored, because they hold private project details.
 
 ## Validate
 
