@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""验证项目文档是否符合 document-governance SOP。
-
-详细规则参见 references/validation-rules.md。
-"""
 
 from __future__ import annotations
 
@@ -67,8 +63,6 @@ ARCHIVE_COMPATIBILITY = {
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
-
     parser = argparse.ArgumentParser(
         description="Validate project document governance.",
     )
@@ -95,14 +89,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def rel_path(path: Path, root: Path) -> str:
-    """返回面向输出的 POSIX 相对路径。"""
-
     return path.relative_to(root).as_posix()
 
 
 def is_under(path: Path, root: Path, relative_dir: str) -> bool:
-    """判断文件是否位于指定相对目录下。"""
-
     target = root / relative_dir
     try:
         path.relative_to(target)
@@ -112,8 +102,6 @@ def is_under(path: Path, root: Path, relative_dir: str) -> bool:
 
 
 def is_within(path: Path, directory: Path) -> bool:
-    """判断解析后的路径是否仍位于指定目录。"""
-
     try:
         path.relative_to(directory)
     except ValueError:
@@ -122,8 +110,6 @@ def is_within(path: Path, directory: Path) -> bool:
 
 
 def iter_markdown_files(root: Path) -> list[Path]:
-    """列出 docs/ 下所有受治理的 Markdown 文档。"""
-
     docs = root / "docs"
     if not docs.exists():
         return []
@@ -136,8 +122,6 @@ def iter_markdown_files(root: Path) -> list[Path]:
 
 
 def parse_scalar(value: str) -> str:
-    """解析 SOP 支持的单行标量并移除行尾注释。"""
-
     value = value.strip()
     quoted = re.match(r"^([\"'])(.*?)\1(?:\s+#.*)?$", value)
     if quoted:
@@ -146,8 +130,6 @@ def parse_scalar(value: str) -> str:
 
 
 def read_frontmatter(path: Path) -> tuple[dict[str, str], str, list[str]]:
-    """读取并校验 SOP 支持的单行 frontmatter。"""
-
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
@@ -200,8 +182,6 @@ def report_compat(
     warnings: list[str],
     errors: list[str],
 ) -> None:
-    """在严格模式下把迁移警告统一升级为错误。"""
-
     if strict:
         errors.append(message)
     else:
@@ -214,8 +194,6 @@ def validate_required_dirs(
     warnings: list[str],
     errors: list[str],
 ) -> None:
-    """校验必需目录是否存在。"""
-
     for relative_dir in REQUIRED_DIRS:
         if not (root / relative_dir).is_dir():
             report_compat(
@@ -227,8 +205,6 @@ def validate_required_dirs(
 
 
 def inferred_document_type(path: Path, root: Path) -> str | None:
-    """根据受治理目录和文件名推断文档类型。"""
-
     relative = rel_path(path, root)
     if is_under(path, root, "docs/adr") or is_under(
         path, root, "docs/archive/adr"
@@ -266,8 +242,6 @@ def validate_frontmatter(
     warnings: list[str],
     errors: list[str],
 ) -> tuple[dict[str, str], str]:
-    """校验单个 Markdown 文件的 frontmatter。"""
-
     fields, body, problems = read_frontmatter(path)
     relative = rel_path(path, root)
     if problems:
@@ -385,8 +359,6 @@ def validate_frontmatter(
 
 
 def is_iso_date(value: str) -> bool:
-    """判断值是否为有效的 YYYY-MM-DD 日期。"""
-
     try:
         date.fromisoformat(value)
     except ValueError:
@@ -403,8 +375,6 @@ def validate_record_target(
     warnings: list[str],
     errors: list[str],
 ) -> Path | None:
-    """校验 Idea/Backlog 关系字段指向 docs/ 内的现有文件。"""
-
     if not value:
         return None
     candidate, problem = normalize_local_target(root, value)
@@ -433,8 +403,6 @@ def validate_structured_record(
     errors: list[str],
     seen_ids: dict[str, Path],
 ) -> None:
-    """校验 Idea/Backlog 的路径、ID、状态转换证据和关系字段。"""
-
     path_kind: str | None = None
     if is_under(path, root, IDEA_DIR):
         path_kind = "idea"
@@ -666,8 +634,6 @@ def validate_plan(
     warnings: list[str],
     errors: list[str],
 ) -> None:
-    """检查 Plan 是否具有 Source Spec 入口。"""
-
     if inferred_document_type(path, root) != "plan":
         return
     if "Source Spec" not in body and "[SOURCE:" not in body:
@@ -686,16 +652,12 @@ def validate_active_runbook(
     warnings: list[str],
     errors: list[str],
 ) -> None:
-    """Apply the shared Runbook contract rules with migration semantics."""
-
     if not is_under(path, root, "docs/runbooks"):
         return
     relative = rel_path(path, root)
     audit = audit_active_runbook(root, path)
     for finding in audit.findings:
         if finding.code in {"frontmatter", "inactive-status"}:
-            # Generic frontmatter and directory lifecycle checks above own
-            # these messages; the shared audit still enforces them for check.
             continue
         message = f"{relative}: {finding.message}"
         if finding.kind == "error":
@@ -710,8 +672,6 @@ def validate_archived_runbook(
     fields: dict[str, str],
     errors: list[str],
 ) -> None:
-    """Validate declared archive fields without recomputing historical hashes."""
-
     if not is_under(path, root, "docs/archive/runbooks"):
         return
     relative = rel_path(path, root)
@@ -724,8 +684,6 @@ def validate_archived_runbook(
 
 
 def normalize_local_target(root: Path, target: str) -> tuple[Path | None, str | None]:
-    """把本地引用解析到 docs/ 内，并返回路径边界错误。"""
-
     raw_path = Path(target)
     if raw_path.is_absolute():
         return None, "local target must be repository-relative"
@@ -748,8 +706,6 @@ def normalize_local_target(root: Path, target: str) -> tuple[Path | None, str | 
 
 
 def source_target_result(root: Path, target: str) -> tuple[str, str]:
-    """返回 SOURCE 目标的状态：ok、invalid 或 missing。"""
-
     candidate, problem = normalize_local_target(root, target)
     if problem:
         return "invalid", problem
@@ -763,8 +719,6 @@ def source_target_result(root: Path, target: str) -> tuple[str, str]:
     docs_root = (root / "docs").resolve()
 
     def safe_docs_file(path: Path) -> bool:
-        """Accept compatibility targets only when they still resolve inside docs/."""
-
         try:
             resolved = path.resolve(strict=True)
         except (OSError, RuntimeError):
@@ -805,8 +759,6 @@ def validate_source_links(
     warnings: list[str],
     errors: list[str],
 ) -> None:
-    """校验本地 SOURCE 引用的边界与存在性。"""
-
     relative = rel_path(path, root)
     for match in SOURCE_PATTERN.finditer(body):
         target = match.group(1).strip()
@@ -825,8 +777,6 @@ def validate_source_links(
 
 
 def split_relationships(value: str) -> list[str]:
-    """拆分逗号分隔的 supersession 路径。"""
-
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
@@ -839,8 +789,6 @@ def resolved_relationships(
     warnings: list[str],
     errors: list[str],
 ) -> list[Path]:
-    """解析 ADR 关系字段并报告无效或缺失的目标。"""
-
     resolved: list[Path] = []
     for target in split_relationships(value):
         candidate, problem = normalize_local_target(root, target)
@@ -861,6 +809,97 @@ def resolved_relationships(
     return resolved
 
 
+def superseded_by_chain_problems(
+    root: Path,
+    owner: Path,
+    target: Path,
+    documents: dict[Path, dict[str, str]],
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    owner_relative = rel_path(owner, root)
+    target_relative = rel_path(target, root)
+    target_fields = documents.get(target)
+    if target_fields is None:
+        return
+    if inferred_document_type(target, root) != "adr" and target_fields.get(
+        "document_type"
+    ) != "adr":
+        return
+
+    def successors(fields: dict[str, str]) -> list[Path]:
+        resolved: list[Path] = []
+        for value in split_relationships(fields.get("superseded_by", "")):
+            candidate, problem = normalize_local_target(root, value)
+            if problem or candidate is None or not candidate.is_file():
+                continue
+            resolved.append(candidate)
+        return resolved
+
+    def is_active_accepted(fields: dict[str, str]) -> bool:
+        return (
+            fields.get("status") == "active"
+            and fields.get("decision_status") == "accepted"
+        )
+
+    def is_superseded(fields: dict[str, str]) -> bool:
+        return (
+            fields.get("status") == "superseded"
+            and fields.get("decision_status") == "superseded"
+        )
+
+    def report(message: str) -> None:
+        report_compat(message, strict, warnings, errors)
+
+    if is_active_accepted(target_fields):
+        return
+    if not is_superseded(target_fields):
+        report(
+            f"{owner_relative}: superseding ADR {target_relative} must be "
+            "active and accepted"
+        )
+        return
+    if not split_relationships(target_fields.get("superseded_by", "")):
+        report(
+            f"{owner_relative}: superseded_by chain through {target_relative} "
+            f"ends at {target_relative}, which must be active and accepted"
+        )
+        return
+
+    ancestors = {owner, target}
+    stack = [(node, ancestors) for node in successors(target_fields)]
+    while stack:
+        current, ancestors = stack.pop()
+        current_fields = documents.get(current)
+        if current_fields is None:
+            continue
+        if inferred_document_type(current, root) != "adr" and current_fields.get(
+            "document_type"
+        ) != "adr":
+            continue
+        current_relative = rel_path(current, root)
+        if current in ancestors:
+            report(
+                f"{owner_relative}: superseded_by chain through "
+                f"{target_relative} loops back to {current_relative}"
+            )
+            continue
+        path = ancestors | {current}
+        if is_active_accepted(current_fields):
+            continue
+        if not is_superseded(current_fields) or not split_relationships(
+            current_fields.get("superseded_by", "")
+        ):
+            report(
+                f"{owner_relative}: superseded_by chain through "
+                f"{target_relative} ends at {current_relative}, which must be "
+                "active and accepted"
+            )
+            continue
+        stack.extend((node, path) for node in successors(current_fields))
+
+
 def validate_adr_relationships(
     root: Path,
     documents: dict[Path, dict[str, str]],
@@ -868,8 +907,6 @@ def validate_adr_relationships(
     warnings: list[str],
     errors: list[str],
 ) -> None:
-    """校验 ADR supersedes/superseded_by 双向关系。"""
-
     for path, fields in documents.items():
         if inferred_document_type(path, root) != "adr" and fields.get(
             "document_type"
@@ -979,24 +1016,20 @@ def validate_adr_relationships(
                     warnings,
                     errors,
                 )
-            if new_fields.get("status") != "active" or new_fields.get(
-                "decision_status"
-            ) != "accepted":
-                new_relative = rel_path(new_path, root)
-                report_compat(
-                    f"{owner_relative}: superseding ADR {new_relative} must "
-                    "be active and accepted",
-                    strict,
-                    warnings,
-                    errors,
-                )
+            superseded_by_chain_problems(
+                root,
+                path,
+                new_path,
+                documents,
+                strict,
+                warnings,
+                errors,
+            )
 
 
 def _is_runbook_document(
     root: Path, path: Path, fields: dict[str, str]
 ) -> bool:
-    """Return whether path or frontmatter identifies a Runbook."""
-
     return (
         inferred_document_type(path, root) == "runbook"
         or fields.get("document_type") == "runbook"
@@ -1010,8 +1043,6 @@ def validate_runbook_relationships(
     warnings: list[str],
     errors: list[str],
 ) -> None:
-    """Validate active/archive Runbook placement and reciprocal lineage."""
-
     for path, fields in documents.items():
         if not _is_runbook_document(root, path, fields):
             continue
@@ -1123,8 +1154,6 @@ def validate_runbook_relationships(
 
 
 def emit_text(warnings: list[str], errors: list[str]) -> None:
-    """以人类可读格式输出结果。"""
-
     for warning in warnings:
         print(f"WARNING: {warning}")
     for error in errors:
@@ -1149,8 +1178,6 @@ def emit_json(
     warnings: list[str],
     errors: list[str],
 ) -> None:
-    """以 JSON 格式输出结果。"""
-
     payload = {
         "root": str(root),
         "strict": strict,
@@ -1166,8 +1193,6 @@ def emit_json(
 
 
 def main() -> int:
-    """执行文档治理校验。"""
-
     args = parse_args()
     root = Path(args.root).resolve()
     errors: list[str] = []

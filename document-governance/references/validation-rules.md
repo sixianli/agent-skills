@@ -59,7 +59,9 @@ These conditions fail in every mode:
   lacks `review_after` or `reason`; or a terminal record lacks its required
   result, reason, or successor.
 - An ADR lacks `decision_status`, uses an invalid decision status, or has
-  inconsistent `status`, `decision_status`, and supersession links.
+  inconsistent `status`, `decision_status`, and supersession links, including a
+  `superseded_by` chain that loops or ends at an ADR that is not active and
+  accepted.
 - A Plan lacks a Source Spec section or SOURCE reference.
 - A SOURCE target does not exist under `docs/`.
 - An old active Runbook lacks `document_type: runbook`, `execution_risk`,

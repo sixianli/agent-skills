@@ -62,10 +62,25 @@ Do not archive ADRs. Supersede them in place:
 3. Update the old ADR in place to `status: superseded`,
    `decision_status: superseded`, and
    `superseded_by: docs/adr/<new-adr>.md`.
-4. Preserve the old ADR's recorded context, options, decision, and
+4. When the superseded ADR itself superseded an older one, keep its
+   `supersedes` field and the older ADR's `superseded_by` field unchanged;
+   record each link exactly once. The validator follows `superseded_by` until
+   it reaches an `active`, `accepted` ADR, and fails when the chain loops or
+   ends anywhere else.
+5. Preserve the old ADR's recorded context, options, decision, and
    consequences; change only lifecycle metadata and cross-references.
-5. Update Architecture to describe the new current behavior.
-6. Validate both directions of the relationship and all affected SOURCE links.
+6. Update Architecture to describe the new current behavior.
+7. Validate both directions of the relationship and all affected SOURCE links.
+
+A three-ADR chain records one link per pair:
+
+- `docs/adr/0001-old.md`: `status: superseded`,
+  `decision_status: superseded`, `superseded_by: docs/adr/0002-middle.md`
+- `docs/adr/0002-middle.md`: `status: superseded`,
+  `decision_status: superseded`, `supersedes: docs/adr/0001-old.md`,
+  `superseded_by: docs/adr/0003-new.md`
+- `docs/adr/0003-new.md`: `status: active`, `decision_status: accepted`,
+  `supersedes: docs/adr/0002-middle.md`
 
 ## Spec and Plan Closure
 

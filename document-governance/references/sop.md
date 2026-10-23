@@ -92,6 +92,9 @@ Use the lifecycle fields consistently:
   `superseded_by`.
 - For the replacement ADR, set `status: active`, set `supersedes`, and accept
   it before marking the old ADR superseded.
+- When a superseded ADR itself replaced an earlier one, keep each `supersedes`
+  field and the predecessor's `superseded_by` field unchanged; the validator
+  follows the `superseded_by` chain to the final active, accepted ADR.
 - Keep only `status: active` Runbooks under `docs/runbooks/`. Historical
   snapshots, superseded Runbooks, and retired Runbooks use `status: archived`
   under `docs/archive/runbooks/`.
