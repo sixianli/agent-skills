@@ -884,3 +884,77 @@ class ReadOnlyBriefTests(Base):
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn("check-brief refused the brief", result.stderr)
         self.assertEqual(self.calls(), 0)
+
+
+class TaskFlagTests(Base):
+    counting_fake = StopFileTests.counting_fake
+    calls = StopFileTests.calls
+
+    def setUp(self):
+        super().setUp()
+        self.count = self.root / "count"
+        subprocess.run(["git", "init", "-q", str(self.root)], capture_output=True, check=True)
+        for name, prefix, goal, item in (
+            ("t1", "T", "目标", "T-A1"),
+            ("t2", "U", "另一个目标", "U-B1"),
+        ):
+            subprocess.run(
+                [sys.executable, str(SCRIPTS.parent.parent / "long-task-planning" / "scripts" / "longtask.py"),
+                 "init", name, "--prefix", prefix, "--goal", goal, "--date", "2026-10-01"],
+                cwd=self.root, capture_output=True, text=True, check=True,
+            )
+            items = self.root / ".agents" / "tasks" / name / "items.json"
+            data = json.loads(items.read_text(encoding="utf-8"))
+            data["items"] = [{
+                "id": item, "title": "缺陷", "goal_ref": ["G1"],
+                "done_when": [{"type": "test", "tag": item}],
+                "added": {"by": "claude", "on": "2026-10-01"},
+            }]
+            items.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        self.brief.write_text(f"# brief\n\n## 2. 范围\n\n- 本批条目：\n  - `T-A1` 先写红测试\n\n写停止文件 `{self.stop}`。\n")
+
+    def run_launch(self, *args):
+        fake = self.counting_fake()
+        env = dict(os.environ, OC_OPENCODE=str(fake), OC_STARTUP_SECONDS="6", OC_SERVER_DIR=str(self.server_dir))
+        return subprocess.run(
+            ["bash", str(SCRIPTS / "oc-launch.sh"), *args],
+            cwd=self.root, env=env, capture_output=True, text=True, check=False, timeout=60,
+        )
+
+    def new(self, *leading):
+        return self.run_launch("new", *leading, str(self.brief), str(self.prefix), "provider/model")
+
+    def test_two_open_tasks_without_task_flag_refuses_the_brief(self):
+        result = self.new()
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("check-brief refused the brief", result.stderr)
+        self.assertEqual(self.calls(), 0)
+
+    def test_task_flag_selects_the_task_and_is_not_passed_to_opencode(self):
+        result = self.new("--task", "t1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.wait_for(self.root / "args-1")
+        args = (self.root / "args-1").read_text().splitlines()
+        self.assertNotIn("--task", args)
+        self.assertNotIn("t1", args)
+        self.assertEqual(self.calls(), 1)
+
+    def test_task_flag_naming_another_task_refuses_the_brief(self):
+        result = self.new("--task", "t2")
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("check-brief refused the brief", result.stderr)
+        self.assertEqual(self.calls(), 0)
+
+    def test_task_flag_without_a_value_or_after_resume_shows_usage(self):
+        reply = self.root / "reply.md"
+        reply.write_text("# 回复\n")
+        for args in (
+            ["new", "--task"],
+            ["new", "--task", ""],
+            ["resume", "--task", "x", SESSION, str(reply), str(self.stop), str(self.prefix), "provider/model"],
+        ):
+            with self.subTest(args=args):
+                result = self.run_launch(*args)
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertIn("usage", result.stderr)
+                self.assertEqual(self.calls(), 0)

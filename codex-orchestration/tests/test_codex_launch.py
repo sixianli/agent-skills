@@ -70,6 +70,19 @@ class CodexLaunchTests(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return str(path)
 
+    def add_second_task(self):
+        self.run_ok([sys.executable, str(LONGTASK), "init", "other", "--prefix", "U", "--goal", "另一个目标", "--date", "2026-10-01"])
+        items = self.repo / ".agents/tasks/other/items.json"
+        data = json.loads(items.read_text(encoding="utf-8"))
+        data["items"] = [{
+            "id": "U-B1", "title": "缺陷 B1", "goal_ref": ["G1"],
+            "done_when": [{"type": "test", "tag": "U-B1"}],
+            "added": {"by": "claude", "on": "2026-10-01"},
+        }]
+        items.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        self.run_ok(["git", "add", "-A"])
+        self.run_ok(["git", "commit", "-q", "-m", "other"])
+
     def test_valid_brief_launches_codex_with_the_given_options(self):
         brief = self.brief("# 任务说明\n\n## 2. 范围\n\n- 本批条目：\n  - `T-A1` 先写红测试\n")
         result = self.launch(brief, "handoff/stop-1.md", "--", "-m", "gpt-x", "-c", 'model_reasoning_effort="xhigh"')
@@ -91,6 +104,42 @@ class CodexLaunchTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("usage", result.stderr)
         self.assertFalse(self.args_file.exists())
+
+    def test_two_open_tasks_without_task_flag_refuses_to_launch(self):
+        self.add_second_task()
+        brief = self.brief("# 任务说明\n\n## 2. 范围\n\n- 本批条目：\n  - `T-A1` 先写红测试\n")
+        result = self.launch(brief, "handoff/stop-1.md", "--", "-m", "gpt-x")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.args_file.exists())
+        self.assertIn("--task", result.stdout + result.stderr)
+
+    def test_task_flag_selects_the_task_and_is_not_passed_to_codex(self):
+        self.add_second_task()
+        brief = self.brief("# 任务说明\n\n## 2. 范围\n\n- 本批条目：\n  - `T-A1` 先写红测试\n")
+        result = self.launch("--task", "demo", brief, "handoff/stop-1.md", "--", "-m", "gpt-x",
+                             "-c", 'model_reasoning_effort="xhigh"')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.args_file.read_text().splitlines(), [
+            "-m", "gpt-x", "-c", 'model_reasoning_effort="xhigh"',
+            f"Read {brief} fully, then work per it. The first stop file is handoff/stop-1.md.",
+        ])
+
+    def test_task_flag_naming_another_task_checks_the_brief_against_it(self):
+        self.add_second_task()
+        brief = self.brief("# 任务说明\n\n## 2. 范围\n\n- 本批条目：\n  - `T-A1` 先写红测试\n")
+        result = self.launch("--task", "other", brief, "handoff/stop-1.md", "--", "-m", "gpt-x")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.args_file.exists())
+        self.assertIn("U-A1", result.stdout + result.stderr)
+
+    def test_task_flag_without_a_value_shows_usage(self):
+        brief = self.brief("- T-A1\n")
+        for args in (["--task"], ["--task", "", brief, "handoff/stop-1.md", "--", "-m", "gpt-x"]):
+            with self.subTest(args=args):
+                result = self.launch(*args)
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertIn("usage", result.stderr)
+                self.assertFalse(self.args_file.exists())
 
 
 if __name__ == "__main__":

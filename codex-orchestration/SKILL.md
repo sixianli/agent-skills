@@ -112,7 +112,10 @@ covers how to talk to Codex, not what the goal or progress is.
   long task, has more than three, or names a withdrawn item; a withdrawn ID
   mentioned elsewhere only prints a warning:
   `bash ~/.claude/skills/codex-orchestration/scripts/codex-launch.sh <brief path> <first stop path> -- -m <model> -c model_reasoning_effort="<effort>" -c service_tier="fast"`
-  (drop the last option when the user's speed preference is standard).
+  (drop the last option when the user's speed preference is standard). When
+  the repository has more than one open long task, put `--task <task>` before
+  the brief path: the launcher passes the value unchanged to
+  `longtask.py check-brief --task`, so the brief is checked against that task.
   Resume: `codex resume <session-uuid> -m <model> -c model_reasoning_effort="<effort>" "Read <reply path> fully, then continue per its ruling. The next stop file is <path>."`
 - Effort can change **per turn** inside one session: `codex resume` with a
   different `-c model_reasoning_effort` applies to every later turn, and the

@@ -4,7 +4,7 @@ set -u
 usage() {
   cat >&2 <<'EOF'
 usage:
-  oc-launch.sh new <brief> <run prefix> <provider/model> [title]
+  oc-launch.sh new [--task <task>] <brief> <run prefix> <provider/model> [title]
   oc-launch.sh resume <session id> <reply> <next stop file> <run prefix> <provider/model>
 Starts opencode detached (it outlives the calling shell), writes <prefix>.jsonl,
 .err, .pid and, when it ends, .rc. The prefix must name a directory other than
@@ -22,6 +22,9 @@ name at least one long-task item (longtask.py check-brief), unless the brief
 holds a line that is exactly 只读任务：是 outside fenced code: then the check is
 skipped and READ_ONLY_BRIEF is printed. Use it only for work that changes no
 file (reading code for a report, reviewing a document).
+When the repository has more than one open long task, give new --task <task> to
+say which task the brief belongs to; the value goes unchanged to
+longtask.py check-brief --task.
 When .opencode/opencode.json exists in the current directory, every text in a
 bash deny pattern of the form *text* (no spaces or other wildcards) that the
 brief or reply contains must also appear on a line starting with
@@ -64,6 +67,7 @@ EOF
 [ $# -ge 1 ] || usage
 mode=$1
 shift
+task=
 script_dir=$(cd "$(dirname "$0")" && pwd)
 longtask="$script_dir/../../long-task-planning/scripts/longtask.py"
 startup=${OC_STARTUP_SECONDS:-180}
@@ -71,6 +75,11 @@ opencode_bin=${OC_OPENCODE:-opencode}
 
 case "$mode" in
   new)
+    if [ "${1:-}" = "--task" ]; then
+      [ $# -ge 4 ] && [ -n "${2:-}" ] || usage
+      task=$2
+      shift 2
+    fi
     [ $# -ge 3 ] || usage
     brief=$1 prefix=$2 model=$3 title=${4:-$(basename "$1" .md)}
     [ -f "$brief" ] || { echo "brief not found: $brief" >&2; exit 2; }
@@ -79,6 +88,7 @@ case "$mode" in
     set -- run --auto --format json -m "$model" --title "$title" -f "$brief" "$message"
     ;;
   resume)
+    [ "${1:-}" = "--task" ] && usage
     [ $# -ge 5 ] || usage
     session=$1 reply=$2 stop=$3 prefix=$4 model=$5
     [ -f "$reply" ] || { echo "reply not found: $reply" >&2; exit 2; }
@@ -166,7 +176,11 @@ PY
   then
     echo "READ_ONLY_BRIEF: the brief marks itself read-only (只读任务：是), so the long-task item check is skipped"
   else
-    python3 "$longtask" check-brief "$brief" || { echo "check-brief refused the brief" >&2; exit 2; }
+    if [ -n "$task" ]; then
+      python3 "$longtask" check-brief "$brief" --task "$task" || { echo "check-brief refused the brief" >&2; exit 2; }
+    else
+      python3 "$longtask" check-brief "$brief" || { echo "check-brief refused the brief" >&2; exit 2; }
+    fi
   fi
 fi
 
