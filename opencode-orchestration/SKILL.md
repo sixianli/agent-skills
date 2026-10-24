@@ -853,5 +853,22 @@ instructions reserve for the user. Production steps are never delegated.
   it prints is unchanged. A test feeds it zero-width-only, mixed and plain
   text, and a replay of that stream dropped the 42 empty lines and left
   every other line the same.
+- 2026-10-23, opencode 2.0.32: the same account started three free
+  models in about 40 seconds via `oc-launch.sh new`:
+  `opencode/deepseek-v4.1-flash-free#high`,
+  `opencode/glm-5.3-flash-free#high` and
+  `opencode/mimo-v2.6-flash-free`. Each session's first event was the same
+  error:
+  `{"type":"error",...,"error":{"type":"provider.quota","message":"Free usage limit reached. Subscribe to OpenCode Go to keep going: https://opencode.ai/go","status":429,...}}`
+  The response body names the error type `FreeUsageLimitError`.
+  `oc-launch.sh` prints `first events contain an error:` and that line
+  within about a second, then exits with code 4; in `<prefix>.rc`
+  opencode's own exit code is 1. All three failed the same way, so the
+  free quota is shared by the whole account, not per model: when one
+  free model reports `provider.quota` or `FreeUsageLimitError`, do not
+  retry on another free model; stop and tell the user. Whether to switch
+  to a paid model or hand the work to another agent is the user's call
+  (using a paid model needs the user's approval first anyway, see
+  [Authority](#authority)).
 - Observed cost, for planning: a 14-minute batch with about 40 tool calls on
   `deepseek-v4.1-flash` cost about USD 0.10, mostly cached input.
