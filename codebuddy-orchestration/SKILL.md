@@ -384,10 +384,13 @@ rounds.
   - The command tool ends a command at 120 seconds (the tool result shows
     `"signal": "SIGTERM"`, `"interrupted": true` and `"tool_error_code":
     "8013"` when no timeout was passed to the call).
-  - A resume round lists every tool call of the earlier rounds again, so the
-    report's "tool calls outside the worktree" and "shell commands" lists
-    also include the earlier rounds; the acceptance check counts only calls
-    whose `callId` is not in the previous round's output.
+  - A resume round may list the tool calls of the earlier rounds again with
+    the same `callId` (two of three tasks checked on 2026-10-24 did, the
+    third shared no `callId` with its first round), so the report's "tool
+    calls outside the worktree" and "shell commands" lists can include the
+    earlier rounds. The acceptance check counts only calls whose `callId` is
+    not in the previous round's output, which gives the same answer in both
+    cases.
   - In four tasks the worker (once `deepseek-v4.1-flash`, three times `hy3`)
     rewrote an acceptance command despite the worker rules, and twice gave up
     after a denial, so the script now checks and resumes automatically.
