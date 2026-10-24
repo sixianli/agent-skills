@@ -26,6 +26,10 @@ STUB = textwrap.dedent(
                 git -c user.name=stub -c user.email=stub@example.com commit -qm stub ;;
       hang)     sleep 30 & echo $! > "$STUB_CHILD"; wait ;;
       nojson)   echo "Error: not logged in" >&2; exit 3 ;;
+      maxturns) printf 'warning: retrying model request\nMax turns (60) exceeded\n\n' >&2; exit 0 ;;
+      failresult)
+                printf '[{"type":"message","role":"user"},{"type":"function_call","name":"StructuredOutput"},%s]\n' "$RESULT"
+                exit 5 ;;
       noop)     ;;
       noresult) echo '[{"type":"message","role":"user"}]'; exit 0 ;;
       object)   printf '%s\n' "$RESULT"; exit 0 ;;
@@ -222,7 +226,7 @@ class CbDelegateTest(unittest.TestCase):
 
     def test_output_without_result_is_reported_as_invalid(self):
         start = self.cb("start", "t9", str(self.brief), mode="noresult")
-        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertEqual(start.returncode, 3, start.stderr)
         self.assertIn("worker produced no valid JSON", start.stdout)
         self.assertIsNone(self.ledger()[-1]["cost_usd"])
         self.assertIn("no valid JSON", self.cb("status", "t9").stdout)
@@ -231,6 +235,7 @@ class CbDelegateTest(unittest.TestCase):
         began = time.monotonic()
         start = self.cb("start", "t6", str(self.brief), mode="hang", CB_TIMEOUT="3", CB_TIMEOUT_IMPL="builtin")
         self.assertLess(time.monotonic() - began, 20)
+        self.assertEqual(start.returncode, 124, start.stdout)
         self.assertIn("exit 124", start.stdout)
         self.assertIn("TIMED OUT", start.stdout)
         child = int(Path(self.env["STUB_CHILD"]).read_text())
@@ -480,6 +485,54 @@ class CbDelegateTest(unittest.TestCase):
         check = self.cb("check", "c3")
         self.assertEqual(check.returncode, 0, check.stdout)
         self.assertIn("SCOPE PASS", check.stdout)
+
+    def test_max_turns_exits_three_and_reports_missing_records(self):
+        start = self.cb("start", "t17", str(self.brief), mode="maxturns")
+        self.assertEqual(start.returncode, 3, start.stderr)
+        self.assertIn("tool-call and command records are missing", start.stdout)
+        self.assertIn("(last stderr line: Max turns (60) exceeded)", start.stdout)
+        self.assertNotIn("-- tool calls outside the worktree:", start.stdout)
+        self.assertNotIn("-- shell commands:", start.stdout)
+        lines = start.stdout.splitlines()
+        title = next(i for i, line in enumerate(lines) if line.startswith("== cb-delegate report:"))
+        self.assertTrue(lines[title + 1].startswith("!! tool-call and command records are missing"), lines[title + 1])
+        self.assertEqual(self.ledger()[-1]["exit_code"], 0)
+        status = self.cb("status", "t17")
+        self.assertEqual(status.returncode, 0, status.stderr)
+        self.assertIn("tool-call and command records are missing", status.stdout)
+
+    def test_resume_max_turns_exits_three_and_reports_missing_records(self):
+        self.assertEqual(self.cb("start", "t18", str(self.brief)).returncode, 0)
+        feedback = self.brief.parent / "feedback-maxturns.md"
+        feedback.write_text("fix it\n")
+        resume = self.cb("resume", "t18", str(feedback), mode="maxturns")
+        self.assertEqual(resume.returncode, 3, resume.stderr)
+        self.assertIn("tool-call and command records are missing", resume.stdout)
+
+    def test_worker_failure_with_result_returns_worker_exit_code(self):
+        start = self.cb("start", "t19", str(self.brief), mode="failresult")
+        self.assertEqual(start.returncode, 5, start.stderr)
+        self.assertIn('"summary": "stub"', start.stdout)
+        self.assertNotIn("tool-call and command records are missing", start.stdout)
+        self.assertIn("-- tool calls outside the worktree:", start.stdout)
+
+    def test_single_result_object_reports_missing_records_without_stderr(self):
+        start = self.cb("start", "t20", str(self.brief), mode="object")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertIn("tool-call and command records are missing", start.stdout)
+        self.assertIn("(last stderr line: none)", start.stdout)
+
+    def test_conversation_output_keeps_record_sections(self):
+        start = self.cb("start", "t21", str(self.brief))
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertNotIn("tool-call and command records are missing", start.stdout)
+        self.assertIn("-- tool calls outside the worktree:", start.stdout)
+        self.assertIn("-- shell commands:", start.stdout)
+
+    def test_failed_run_without_json_reports_last_stderr_line(self):
+        start = self.cb("start", "t22", str(self.brief), mode="nojson")
+        self.assertEqual(start.returncode, 3, start.stderr)
+        self.assertIn("(last stderr line: Error: not logged in)", start.stdout)
 
 
 if __name__ == "__main__":

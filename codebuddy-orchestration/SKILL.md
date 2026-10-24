@@ -102,8 +102,10 @@ before and after the smoke test when the model is supposed to be free.
    `structured_output`, every tool call whose path lies outside the
    worktree with `ok` or `failed`, every shell command the worker ran, the
    worktree's `git status`, the diff stat and the worktree path. Read only
-   that, never the worker's transcript. Print it again later with
-   `cb status <id>`.
+   that, never the worker's transcript. When the output holds no
+   conversation, the report says in a `!!` line that the read and command
+   records are missing and gives the last line of the worker's stderr. Print
+   it again later with `cb status <id>`.
 5. **Accept** (see [Acceptance](#acceptance)), then either **land** (see
    [Landing](#landing)) or **rework** (see
    [Rework and taking the task back](#rework-and-taking-the-task-back)).
@@ -125,7 +127,11 @@ failure means the task is not accepted:
    of a path that is neither in the brief's `## References` nor a system
    or toolchain file the task plausibly needs is a finding: tell the user
    which file was read, because its content was sent to Tencent's model
-   service, and add a `--deny` rule for that place to later tasks.
+   service, and add a `--deny` rule for that place to later tasks. When
+   the report says the records are missing, this step cannot be done: tell
+   the user that the run left no record of what it read, so there is no
+   way to know which files outside the worktree were sent to Tencent's
+   model service.
 3. Re-run every `## Acceptance` command inside the worktree and read only
    the tail of the output, for example
    `(cd <worktree> && ./mvnw -q -Dtest=OrderServiceTest test 2>&1 | tail -40)`.
@@ -194,9 +200,16 @@ Accept a review task like this:
   needs a design judgment, take the task back: continue from the worktree's
   changes, or run `cb clean <id> --discard` and start over. Tell the user
   why before discarding.
-- A non-zero exit, a timeout (exit 124) or a run without JSON shows the tail
-  of the worker's stderr in the report. For login, quota or model errors,
-  stop and tell the user; do not retry.
+- A non-zero exit, a timeout (exit 124) or a run without JSON shows the
+  tail of the worker's stderr in the report, and `start` and `resume` then
+  exit non-zero: with the worker's own exit code, or with 3 when the
+  worker exited 0 without returning a result. Hitting `CB_MAX_TURNS` is
+  the second case: the CLI exits 0, prints nothing on stdout and writes
+  `Max turns (<n>) exceeded` to stderr, and its output holds no session
+  id, so a first run that hits the limit cannot be resumed. Look at the
+  changes already in the worktree, then take the task back and finish it
+  yourself, or discard it and `start` again with a larger `CB_MAX_TURNS`.
+  For login, quota or model errors, stop and tell the user; do not retry.
 
 ## Reporting to the user
 
@@ -316,3 +329,11 @@ rounds.
   `Write` while every file-writing tool was denied. Both calls were refused
   only because `DeferExecuteTool` was not on the allow list; the script now
   denies it explicitly.
+- Checked on 2026-10-23 and 2026-10-24 with CLI 2.173.0: with
+  `--output-format json`, a run that hits `--max-turns` exits 0, prints
+  nothing on stdout and writes only `Max turns (<n>) exceeded` to stderr, so
+  the conversation, the tool calls and the session id are all lost.
+  `--output-format stream-json` writes one event per line as the run goes,
+  starting with the session id, but after hitting the turn limit it wrote no
+  result and the process did not exit for more than ten minutes and was
+  stopped by hand, so the script still uses `json`.

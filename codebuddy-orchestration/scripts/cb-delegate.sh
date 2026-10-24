@@ -38,6 +38,10 @@ Usage:
 
 Requires git, jq and codebuddy.
 
+start and resume exit with the worker's exit code when it is not 0 (124 after a
+timeout), and with 3 when the worker exited 0 without returning a result, for
+example after hitting CB_MAX_TURNS.
+
 CB_MODEL must be listed in the file CB_ALLOWED_MODELS names, or else in
 $CB_HOME/allowed-models.txt (one model id per line, # lines ignored). Without
 either file only the default model runs.
@@ -48,6 +52,7 @@ die()  { echo "cb-delegate: error: $*" >&2; exit 1; }
 warn() { echo "cb-delegate: warning: $*" >&2; }
 need() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"; }
 valid_json() { [ -s "$1" ] && jq -e 'type == "object"' "$1" >/dev/null 2>&1; }
+has_conversation() { [ -f "$1" ] && jq -e 'type == "array"' "$1" >/dev/null 2>&1; }
 extract_result() {
   jq -c 'if type == "array" then map(select(type == "object" and .type == "result")) | last else . end
          | select(type == "object")' "$1" >"$2" 2>/dev/null || : >"$2"
@@ -178,6 +183,9 @@ run_worker() {
     '{ts:$ts,event:"run",repo:$repo,id:$id,model:$model,mode:$mode,round:$round,exit_code:$rc,seconds:$secs,cost_usd:$cost}')"
 
   report "$sd"
+  if [ "$rc" -ne 0 ]; then return "$rc"; fi
+  valid_json "$out" || return 3
+  return 0
 }
 
 tool_calls() {
@@ -203,10 +211,11 @@ tool_calls() {
 }
 
 report() {
-  local sd="$1" round rc out wt
+  local sd="$1" round rc out wt raw err wtr
   round="$(cat "$sd/round" 2>/dev/null || echo 0)"
   rc="$(cat "$sd/last_rc" 2>/dev/null || echo '?')"
   out="$sd/run-$round.json"; wt="$sd/wt"
+  raw="$sd/run-$round.out"; err="$sd/run-$round.err"; wtr="$wt"
 
   if [ "$(task_mode "$sd")" = review ]; then
     echo "== cb-delegate report: $(basename "$sd") (review task, round $round, exit $rc) =="
@@ -214,6 +223,14 @@ report() {
     echo "== cb-delegate report: $(basename "$sd") (round $round, exit $rc) =="
   fi
   [ "$rc" = 124 ] && echo "!! worker TIMED OUT after ${CB_TIMEOUT}s"
+  if ! has_conversation "$raw"; then
+    local last="none"
+    if [ -f "$err" ]; then
+      last="$(awk 'NF { l = $0 } END { if (l != "") print l }' "$err")"
+      [ -n "$last" ] || last="none"
+    fi
+    echo "!! tool-call and command records are missing: the worker's output holds no conversation, so the files it read and the commands it ran are unknown (last stderr line: $last)"
+  fi
   if valid_json "$out"; then
     jq '{
       session_id: (.session_id // null),
@@ -227,9 +244,8 @@ report() {
     echo "-- worker produced no valid JSON. stderr tail:"
     tail -n 25 "$sd/run-$round.err" 2>/dev/null || true
   fi
-  local raw="$sd/run-$round.out" wtr="$wt"
   [ -d "$wt" ] && wtr="$(cd "$wt" && pwd -P)"
-  if [ -f "$raw" ]; then
+  if has_conversation "$raw"; then
     echo "-- tool calls outside the worktree:"
     tool_calls "$raw" "$wt" "$wtr" outside
     echo "-- shell commands:"
