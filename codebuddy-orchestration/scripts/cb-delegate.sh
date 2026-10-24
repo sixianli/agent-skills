@@ -89,9 +89,20 @@ repo_key() {
   printf '%s-%s' "$(basename "$root")" "$h"
 }
 
+main_root() {
+  local common
+  common="$(git rev-parse --git-common-dir 2>/dev/null)" || die "not inside a git repository"
+  common="$(cd "$common" && pwd -P)"
+  if [ "$(basename "$common")" = ".git" ]; then
+    git -C "$(dirname "$common")" rev-parse --show-toplevel
+  else
+    printf '%s' "$common"
+  fi
+}
+
 valid_id() { [[ "$1" =~ ^[a-z0-9][a-z0-9._-]{0,40}$ ]] || die "invalid task id '$1' (use [a-z0-9._-], max 41 chars)"; }
 
-state_dir() { printf '%s/%s/%s' "$CB_HOME" "$(repo_key "$(repo_root)")" "$1"; }
+state_dir() { printf '%s/%s/%s' "$CB_HOME" "$(repo_key "$(main_root)")" "$1"; }
 
 task_mode() {
   local m=""
@@ -462,9 +473,11 @@ cmd_land() {
     die "task '$1' is a review task and has nothing to land; read its report with 'status $1', then remove it with 'clean $1'"
   fi
   [ -d "$sd/wt" ] || die "no active task '$1'"
+  local root; root="$(cat "$sd/root")"
+  [ -d "$root" ] || die "the worktree task '$1' was started from no longer exists: $root; land applies the changes there. Take them from $sd/wt by hand, or discard the task with 'clean $1 --discard'"
   cmd_check "$1" >/dev/null || die "scope check fails; run 'check $1' and resolve before landing"
-  local wt="$sd/wt" root base patch
-  root="$(cat "$sd/root")"; base="$(cat "$sd/base")"; patch="$sd/changes.patch"
+  local wt="$sd/wt" base patch
+  base="$(cat "$sd/base")"; patch="$sd/changes.patch"
 
   git -C "$wt" add -A
   git -C "$wt" diff --cached --binary "$base" >"$patch"
@@ -493,7 +506,7 @@ cmd_clean() {
     die "task '$1' is '$st', not landed. Use 'clean $1 --discard' to throw the worker's changes away."
   fi
   if [ -d "$sd/wt" ]; then
-    git -C "$(cat "$sd/root")" worktree remove --force "$sd/wt"
+    git worktree remove --force "$sd/wt"
   fi
   if [ "$mode" = review ] || [ "$st" = landed ]; then
     printf 'cleaned' >"$sd/status"
@@ -506,7 +519,7 @@ cmd_clean() {
 }
 
 cmd_list() {
-  local base; base="$CB_HOME/$(repo_key "$(repo_root)")"
+  local base; base="$CB_HOME/$(repo_key "$(main_root)")"
   [ -d "$base" ] || { echo "(no tasks for this repo)"; return 0; }
   local d
   for d in "$base"/*/; do

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -111,11 +112,21 @@ class CbDelegateTest(unittest.TestCase):
             ["git", *args], cwd=self.repo, env=self.env, check=True, capture_output=True, text=True
         ).stdout
 
-    def cb(self, *args, mode="inscope", **extra_env):
+    def cb(self, *args, mode="inscope", cwd=None, **extra_env):
+        if cwd is None:
+            cwd = self.repo
         env = {**self.env, "STUB_MODE": mode, **extra_env}
         return subprocess.run(
-            ["bash", str(SCRIPT), *args], cwd=self.repo, env=env, capture_output=True, text=True, timeout=60, check=False
+            ["bash", str(SCRIPT), *args], cwd=cwd, env=env, capture_output=True, text=True, timeout=60, check=False
         )
+
+    def linked_worktree(self):
+        linked = Path(self.tmp.name) / "linked"
+        self.git("worktree", "add", "-q", "--detach", str(linked), "HEAD")
+        return linked
+
+    def remove_linked_worktree(self, linked):
+        self.git("worktree", "remove", "--force", str(linked))
 
     def worktree(self, task_id):
         return next(self.home.glob(f"*/{task_id}/wt"))
@@ -533,6 +544,73 @@ class CbDelegateTest(unittest.TestCase):
         start = self.cb("start", "t22", str(self.brief), mode="nojson")
         self.assertEqual(start.returncode, 3, start.stderr)
         self.assertIn("(last stderr line: Error: not logged in)", start.stdout)
+
+    def test_main_worktree_key_is_unchanged(self):
+        start = self.cb("start", "k1", str(self.brief))
+        self.assertEqual(start.returncode, 0, start.stderr)
+        top = self.git("rev-parse", "--show-toplevel").strip()
+        key = f"{Path(top).name}-{hashlib.sha1(top.encode()).hexdigest()[:8]}"
+        wt = self.home / key / "k1" / "wt"
+        self.assertTrue(wt.is_dir(), wt)
+
+    def test_clean_works_after_starting_worktree_deleted(self):
+        linked = self.linked_worktree()
+        start = self.cb("start", "cw1", str(self.brief), cwd=linked)
+        self.assertEqual(start.returncode, 0, start.stderr)
+        land = self.cb("land", "cw1", cwd=linked)
+        self.assertEqual(land.returncode, 0, land.stderr)
+        wt = self.worktree("cw1")
+        self.remove_linked_worktree(linked)
+        clean = self.cb("clean", "cw1")
+        self.assertEqual(clean.returncode, 0, clean.stderr)
+        listing = self.git("worktree", "list", "--porcelain")
+        listed = {os.path.realpath(p.split(" ", 1)[1]) for p in listing.splitlines() if p.startswith("worktree ")}
+        self.assertNotIn(os.path.realpath(str(wt)), listed)
+        self.assertFalse(Path(os.path.realpath(str(wt))).exists())
+        self.assertEqual((wt.parent / "status").read_text(), "cleaned")
+
+    def test_task_started_in_linked_worktree_found_in_main(self):
+        linked = self.linked_worktree()
+        start = self.cb("start", "lf1", str(self.brief), cwd=linked)
+        self.assertEqual(start.returncode, 0, start.stderr)
+        status = self.cb("status", "lf1")
+        self.assertEqual(status.returncode, 0, status.stderr)
+        self.assertIn("== cb-delegate report: lf1", status.stdout)
+        check = self.cb("check", "lf1")
+        self.assertEqual(check.returncode, 0, check.stdout)
+        self.assertIn("SCOPE PASS", check.stdout)
+        listing = self.cb("list")
+        self.assertIn("lf1", listing.stdout)
+
+    def test_task_started_in_main_found_in_linked_worktree(self):
+        linked = self.linked_worktree()
+        start = self.cb("start", "mf1", str(self.brief))
+        self.assertEqual(start.returncode, 0, start.stderr)
+        status = self.cb("status", "mf1", cwd=linked)
+        self.assertEqual(status.returncode, 0, status.stderr)
+        self.assertIn("== cb-delegate report: mf1", status.stdout)
+        listing = self.cb("list", cwd=linked)
+        self.assertIn("mf1", listing.stdout)
+
+    def test_same_id_cannot_run_in_two_worktrees(self):
+        linked = self.linked_worktree()
+        first = self.cb("start", "dup1", str(self.brief))
+        self.assertEqual(first.returncode, 0, first.stderr)
+        second = self.cb("start", "dup1", str(self.brief), cwd=linked)
+        self.assertNotEqual(second.returncode, 0)
+        self.assertIn("already exists", second.stderr)
+
+    def test_land_errors_when_starting_worktree_deleted(self):
+        linked = self.linked_worktree()
+        start = self.cb("start", "ld1", str(self.brief), cwd=linked)
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.remove_linked_worktree(linked)
+        land = self.cb("land", "ld1")
+        self.assertNotEqual(land.returncode, 0)
+        self.assertIn("no longer exists", land.stderr)
+        self.assertIn("linked", land.stderr)
+        self.assertEqual(self.git("status", "--porcelain", "-uall"), "")
+        self.assertEqual((self.worktree("ld1").parent / "status").read_text(), "ran")
 
 
 if __name__ == "__main__":

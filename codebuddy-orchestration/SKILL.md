@@ -92,12 +92,15 @@ before and after the smoke test when the model is supposed to be free.
    configuration or another project's checkout (see
    [Configuration](#configuration) for what is always denied).
 3. **Start.** `cb start <id> <brief> --allow '<rule>' --deny '<rule>'`. Use `[a-z0-9._-]`
-   for the id, for example `order-cancel-test`. A run can take up to
-   `CB_TIMEOUT` seconds (30 minutes by default): if the harness can run a
-   shell command in the background and notify on completion, do that;
-   otherwise run it in the foreground with a timeout longer than
-   `CB_TIMEOUT`. Do not poll in a loop. Meanwhile, work only on files
-   outside the task's allowed paths.
+   for the id, for example `order-cancel-test`. A task belongs to the
+   repository, not to the worktree that started it: from any worktree of the
+   same repository, `status`, `check`, `land`, `clean` and `list` find it. An
+   id is used once per repository: `clean` keeps the task directory and its
+   logs, so to start over pick a new id. A run can take up to `CB_TIMEOUT`
+   seconds (30 minutes by default): if the harness can run a shell command in
+   the background and notify on completion, do that; otherwise run it in the
+   foreground with a timeout longer than `CB_TIMEOUT`. Do not poll in a loop.
+   Meanwhile, work only on files outside the task's allowed paths.
 4. **Read the report.** At the end the script prints the worker's
    `structured_output`, every tool call whose path lies outside the
    worktree with `ok` or `failed`, every shell command the worker ran, the
@@ -145,13 +148,17 @@ failure means the task is not accepted:
 ## Landing
 
 1. `cb land <id>` re-runs the scope check, then applies the worktree's
-   changes to the main worktree as a patch, **unstaged**. If the patch does
-   not apply, the script stops and keeps the patch; tell the user instead of
+   changes as a patch, **unstaged**, to the worktree where the task was
+   started, even when `land` runs from another worktree of the same
+   repository; if that worktree is gone, `land` stops. If the patch does not
+   apply, the script stops and keeps the patch; tell the user instead of
    forcing it.
-2. Run the acceptance commands again in the main worktree.
+2. Run the acceptance commands again in the worktree where the changes landed.
 3. Stage and commit only under the project's and the user's own git rules.
    Delegation itself authorizes no commit, push or branch.
-4. `cb clean <id>` removes the task's worktree and keeps its logs.
+4. `cb clean <id>` removes the task's worktree and keeps its logs. When the
+   worktree that started the task has been deleted, `cb clean <id>` still runs
+   from any other worktree of the same repository.
 
 ## Review tasks
 
