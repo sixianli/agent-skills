@@ -1,0 +1,192 @@
+{
+  "task": "feedback-round4",
+  "prefix": "F4",
+  "decisions": {
+    "G1": "once",
+    "G2": "once"
+  },
+  "items": [
+    {
+      "id": "F4-1",
+      "title": "codebuddy-orchestration 的 SKILL.md：Known pitfalls 和 Rework 写清免费模型 429 频率限制的原文、CLI 退出 0、之后怎么重来",
+      "goal_ref": [
+        "G1"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        },
+        {
+          "type": "command",
+          "run": "UV_OFFLINE=1 uv run --no-project --with pyyaml python scripts/validate_all.py"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-24",
+        "why": "FEEDBACK C8"
+      }
+    },
+    {
+      "id": "F4-2",
+      "title": "codebuddy-orchestration 的工作者规则：自己改写过的命令被拒时先照原样重跑；不建临时或调试文件；新加的函数和方法照周围代码留空行",
+      "goal_ref": [
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        },
+        {
+          "type": "command",
+          "run": "UV_OFFLINE=1 uv run --no-project --with pyyaml python scripts/validate_all.py"
+        },
+        {
+          "type": "command",
+          "run": "python3 -m unittest discover -s codebuddy-orchestration/tests -p test_cb_delegate.py"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-24",
+        "why": "FEEDBACK C10、C11"
+      }
+    },
+    {
+      "id": "F4-3",
+      "title": "opencode-orchestration 的 SKILL.md：Known pitfalls 写明 provider.quota 表示账号的免费额度用完，所有免费模型一起失败，不要换免费模型重试",
+      "goal_ref": [
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        },
+        {
+          "type": "command",
+          "run": "UV_OFFLINE=1 uv run --no-project --with pyyaml python scripts/validate_all.py"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-24",
+        "why": "FEEDBACK O1"
+      }
+    },
+    {
+      "id": "F4-4",
+      "title": "document-governance 的 idea/backlog capture：中文标题生成可读的文件名（连续汉字不拆开、按字节截断），并可用 --slug 直接指定",
+      "goal_ref": [
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "document-governance/tests/test_idea_backlog.py",
+          "name": "keeps_cjk_runs"
+        },
+        {
+          "type": "test",
+          "file": "document-governance/tests/test_idea_backlog.py",
+          "name": "uses_slug_option"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-24",
+        "why": "document-governance 的 FEEDBACK：另一个项目里中文标题被逐字拆开"
+      }
+    },
+    {
+      "id": "F4-5",
+      "title": "check-brief：多个进行中的任务、没给 --task 时，对每个任务各检查一次，恰好一个通过就用它并打印任务名；某个任务的 items.json 坏了不拖垮检查",
+      "goal_ref": [
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "infers_the_only_task"
+        },
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "several_tasks_accept"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-24",
+        "why": "修订方案第 1 条第二步（启动脚本的 --task 已在 9990dc2 做完）"
+      }
+    },
+    {
+      "id": "F4-6",
+      "title": "F24：只读核对另一个项目里那条证据记录的 kind、host、tags 字段，把结论写回 long-task-planning 的 FEEDBACK",
+      "goal_ref": [
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-24",
+        "why": "修订方案第 6 条"
+      }
+    },
+    {
+      "id": "F4-7",
+      "title": "没有进行中的长任务时 check-brief 说明后通过，两个启动脚本都能启动轻量批次；codex-launch.sh 也认“只读任务：是”",
+      "goal_ref": [
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "without_open_task"
+        },
+        {
+          "type": "test",
+          "file": "codex-orchestration/tests/test_codex_launch.py",
+          "name": "read_only_brief"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-24",
+        "why": "修订方案评审时确认：codex-launch.sh 在没有进行中的任务时起不来，也没有只读跳过"
+      }
+    }
+  ],
+  "fingerprint": {
+    "include": [
+      "codebuddy-orchestration/",
+      "opencode-orchestration/",
+      "codex-orchestration/",
+      "long-task-planning/",
+      "document-governance/",
+      "scripts/"
+    ]
+  }
+}
