@@ -1,5 +1,3 @@
-"""Black-box tests for scripts/idea_backlog.py."""
-
 from __future__ import annotations
 
 import json
@@ -14,8 +12,6 @@ IDEA_BACKLOG = SKILL_ROOT / "scripts" / "idea_backlog.py"
 
 
 class IdeaBacklogTests(unittest.TestCase):
-    """Exercise Idea/Backlog capture, query, and transitions."""
-
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary_directory.cleanup)
@@ -27,8 +23,6 @@ class IdeaBacklogTests(unittest.TestCase):
         *arguments: str,
         expected_returncode: int = 0,
     ) -> tuple[subprocess.CompletedProcess[str], dict]:
-        """Run the CLI with JSON output and decode successful payloads."""
-
         command = [
             sys.executable,
             str(IDEA_BACKLOG),
@@ -42,8 +36,6 @@ class IdeaBacklogTests(unittest.TestCase):
         return result, payload
 
     def capture_idea(self, title: str = "Small useful thought") -> dict:
-        """Create a deterministic Idea fixture."""
-
         _, payload = self.run_cli(
             "idea",
             "capture",
@@ -59,8 +51,6 @@ class IdeaBacklogTests(unittest.TestCase):
         return payload
 
     def test_idea_capture_accepts_zero_quotes_and_uses_governed_path(self) -> None:
-        """Short Ideas must not be rejected merely because no quote exists."""
-
         payload = self.capture_idea()
 
         self.assertEqual(payload["record_id"], "IDEA-20260721-001")
@@ -73,8 +63,6 @@ class IdeaBacklogTests(unittest.TestCase):
         self.assertFalse((self.root / "docs/ideas/INDEX.md").exists())
 
     def test_backlog_from_idea_writes_bidirectional_relationship(self) -> None:
-        """Creating future work from an Idea promotes and links the source."""
-
         idea = self.capture_idea()
         _, backlog = self.run_cli(
             "backlog",
@@ -96,8 +84,6 @@ class IdeaBacklogTests(unittest.TestCase):
         self.assertIn(f'source_idea: "{idea["path"]}"', backlog_text)
 
     def test_list_and_review_query_source_files_without_index(self) -> None:
-        """Queries must derive state from records rather than a second index."""
-
         self.capture_idea()
         self.run_cli(
             "backlog",
@@ -121,8 +107,6 @@ class IdeaBacklogTests(unittest.TestCase):
         )
 
     def test_backlog_start_and_defer_are_explicit_state_transitions(self) -> None:
-        """Backlog execution supports explicit start and defer transitions."""
-
         _, backlog = self.run_cli(
             "backlog",
             "capture",
@@ -158,8 +142,6 @@ class IdeaBacklogTests(unittest.TestCase):
         self.assertIn('reason: "Waiting for capacity."', deferred)
 
     def test_defer_requires_review_timing_or_reason(self) -> None:
-        """A deferral cannot hide an item without future review evidence."""
-
         _, backlog = self.run_cli(
             "backlog",
             "capture",
@@ -178,8 +160,6 @@ class IdeaBacklogTests(unittest.TestCase):
         self.assertIn("requires --review-after or --reason", result.stderr)
 
     def test_promote_and_close_require_existing_target_and_outcome(self) -> None:
-        """Transitions record an existing target and require closure evidence."""
-
         idea = self.capture_idea()
         spec = self.root / "docs/execution/specs/topic.md"
         spec.parent.mkdir(parents=True)
@@ -257,6 +237,121 @@ class IdeaBacklogTests(unittest.TestCase):
         closed = (self.root / backlog["path"]).read_text(encoding="utf-8")
         self.assertIn('record_state: "done"', closed)
         self.assertIn('result: "Implemented and verified."', closed)
+
+    def test_capture_keeps_cjk_runs_in_file_name(self) -> None:
+        _, idea = self.run_cli(
+            "idea",
+            "capture",
+            "--title",
+            "在卡片上按键批准或拒绝",
+            "--core-ideas",
+            "Keep the durable insight.",
+            "--quotes",
+            "[]",
+            "--date",
+            "2026-07-21",
+        )
+        self.assertEqual(
+            Path(idea["path"]).name,
+            "IDEA-20260721-001-在卡片上按键批准或拒绝.md",
+        )
+
+        _, backlog = self.run_cli(
+            "backlog",
+            "capture",
+            "--title",
+            "Push 按住说话 v2",
+            "--summary",
+            "Any summary sentence.",
+            "--date",
+            "2026-07-21",
+        )
+        self.assertEqual(
+            Path(backlog["path"]).name,
+            "BL-20260721-001-push-按住说话-v2.md",
+        )
+
+        long_title = "长" * 50
+        _, long_idea = self.run_cli(
+            "idea",
+            "capture",
+            "--title",
+            long_title,
+            "--core-ideas",
+            "Keep the durable insight.",
+            "--quotes",
+            "[]",
+            "--date",
+            "2026-07-21",
+        )
+        self.assertEqual(
+            Path(long_idea["path"]).name,
+            "IDEA-20260721-002-" + "长" * 40 + ".md",
+        )
+
+    def test_capture_uses_slug_option_for_file_name(self) -> None:
+        _, idea = self.run_cli(
+            "idea",
+            "capture",
+            "--title",
+            "在卡片上按键批准或拒绝",
+            "--slug",
+            "Card approve/deny",
+            "--core-ideas",
+            "Keep the durable insight.",
+            "--quotes",
+            "[]",
+            "--date",
+            "2026-07-21",
+        )
+        self.assertEqual(
+            Path(idea["path"]).name,
+            "IDEA-20260721-001-card-approve-deny.md",
+        )
+        content = (self.root / idea["path"]).read_text(encoding="utf-8")
+        self.assertIn("# 在卡片上按键批准或拒绝", content)
+
+        _, backlog = self.run_cli(
+            "backlog",
+            "capture",
+            "--title",
+            "按住说话",
+            "--slug",
+            "push-to-talk",
+            "--summary",
+            "Any summary sentence.",
+            "--date",
+            "2026-07-21",
+        )
+        self.assertEqual(
+            Path(backlog["path"]).name,
+            "BL-20260721-001-push-to-talk.md",
+        )
+
+    def test_ascii_title_file_name_is_unchanged(self) -> None:
+        payload = self.capture_idea()
+        self.assertEqual(
+            Path(payload["path"]).name,
+            "IDEA-20260721-001-small-useful-thought.md",
+        )
+
+        long_title = " ".join(["Abcdefghijklmnopqrst"] * 9)
+        _, long_idea = self.run_cli(
+            "idea",
+            "capture",
+            "--title",
+            long_title,
+            "--core-ideas",
+            "Keep the durable insight.",
+            "--quotes",
+            "[]",
+            "--date",
+            "2026-07-21",
+        )
+        self.assertEqual(
+            Path(long_idea["path"]).name,
+            "IDEA-20260721-002-" + "abcdefghijklmnopqrst-" * 5 + "abcdefghijklmno" + ".md",
+        )
 
 
 if __name__ == "__main__":

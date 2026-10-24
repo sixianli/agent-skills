@@ -78,6 +78,12 @@ idea_backlog.py --root <project> promote <ID> --target docs/...
 idea_backlog.py --root <project> close <ID> --state ...
 ```
 
+`idea capture` and `backlog capture` name the new file `<record_id>-<slug>.md`.
+The slug takes ASCII alphanumeric words and contiguous CJK character runs from
+`--title`, joins them with `-`, and keeps at most 8 segments and 120 bytes. To
+name the file with different text (for example an English short name for a
+Chinese title), pass `--slug`; the title stored in the record stays `--title`.
+
 When a Backlog is captured with `--source-idea`, the script promotes the Idea
 and writes bidirectional links. A promotion target must already exist; the
 script will not fabricate the semantic content of a Spec, ADR, or Plan.

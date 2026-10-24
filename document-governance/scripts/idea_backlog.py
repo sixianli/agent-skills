@@ -1,9 +1,3 @@
-"""管理 Document Governance 的 Idea 与 Backlog 记录。
-
-脚本只处理确定性的文件操作：创建、查询和状态转换。
-内容提炼仍由调用该 skill 的 agent 完成。
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -64,27 +58,21 @@ FIELD_ORDER = [
 
 
 class RecordError(RuntimeError):
-    """表示可直接向用户报告的 Idea/Backlog 操作错误。"""
+    pass
 
 
 def local_today_iso() -> str:
-    """返回运行环境本地时区中的当天日期。"""
-
     return datetime.now(timezone.utc).astimezone().date().isoformat()
 
 
 @dataclass
 class Record:
-    """一个已解析的 Idea 或 Backlog 记录。"""
-
     path: Path
     fields: dict[str, str]
     body: str
 
 
 def find_project_root(start: Path) -> Path:
-    """从当前路径向上查找最近的 Git 项目根；找不到时使用当前路径。"""
-
     current = start.resolve()
     for candidate in (current, *current.parents):
         if (candidate / ".git").exists():
@@ -93,8 +81,6 @@ def find_project_root(start: Path) -> Path:
 
 
 def resolve_root(value: str | None) -> Path:
-    """解析显式项目根或从当前目录推断项目根。"""
-
     root = Path(value).expanduser().resolve() if value else find_project_root(Path.cwd())
     if not root.is_dir():
         raise RecordError(f"project root is not a directory: {root}")
@@ -102,8 +88,6 @@ def resolve_root(value: str | None) -> Path:
 
 
 def is_within(path: Path, directory: Path) -> bool:
-    """判断路径是否位于指定目录内。"""
-
     try:
         path.relative_to(directory)
     except ValueError:
@@ -112,14 +96,10 @@ def is_within(path: Path, directory: Path) -> bool:
 
 
 def repo_relative(path: Path, root: Path) -> str:
-    """返回 POSIX 格式的仓库相对路径。"""
-
     return path.resolve().relative_to(root.resolve()).as_posix()
 
 
 def parse_scalar(value: str) -> str:
-    """解析本 skill 支持的单行 frontmatter 标量。"""
-
     raw = value.strip()
     if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in {'"', "'"}:
         if raw[0] == '"':
@@ -133,8 +113,6 @@ def parse_scalar(value: str) -> str:
 
 
 def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
-    """拆分单行 frontmatter 与正文，并保留正文原始字节序列。"""
-
     lines = text.splitlines(keepends=True)
     if not lines or lines[0].strip() != "---":
         return {}, text
@@ -163,14 +141,10 @@ def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
 
 
 def quote_scalar(value: str) -> str:
-    """把字符串编码成无歧义的 YAML 单行双引号标量。"""
-
     return json.dumps(str(value), ensure_ascii=False)
 
 
 def render_document(fields: dict[str, str], body: str) -> str:
-    """按稳定字段顺序渲染受治理 Markdown。"""
-
     ordered = [key for key in FIELD_ORDER if key in fields]
     ordered.extend(key for key in fields if key not in ordered)
     frontmatter = ["---"]
@@ -180,8 +154,6 @@ def render_document(fields: dict[str, str], body: str) -> str:
 
 
 def read_record(path: Path) -> Record:
-    """读取一个 Idea 或 Backlog 记录。"""
-
     try:
         fields, body = split_frontmatter(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError) as exc:
@@ -190,8 +162,6 @@ def read_record(path: Path) -> Record:
 
 
 def iter_records(root: Path, kind: str = "all") -> list[Record]:
-    """列出 Idea、Backlog 或全部结构化记录。"""
-
     directories: list[Path]
     if kind == "idea":
         directories = [root / IDEA_DIR]
@@ -212,30 +182,36 @@ def iter_records(root: Path, kind: str = "all") -> list[Record]:
 
 
 def slugify(text: str, max_tokens: int = 8) -> str:
-    """将 ASCII 与 CJK 标题转换为稳定的 kebab-case slug。"""
-
     normalized = unicodedata.normalize("NFKC", text).lower().strip()
-    tokens: list[str] = []
-    buffer = ""
+    segments: list[str] = []
+    current = ""
+    current_kind = None
     for character in normalized:
         if is_cjk(character):
-            if buffer.strip():
-                tokens.extend(buffer.replace("-", " ").split())
-                buffer = ""
-            tokens.append(character)
+            kind = "cjk"
         elif character.isascii() and character.isalnum():
-            buffer += character
+            kind = "alnum"
         else:
-            buffer += " "
-    if buffer.strip():
-        tokens.extend(buffer.split())
-    kept = [token for token in tokens if token][:max_tokens]
-    return "-".join(kept)[:120] or "untitled"
+            kind = "sep"
+        if kind == "sep":
+            if current:
+                segments.append(current)
+                current = ""
+                current_kind = None
+        else:
+            if current and current_kind != kind:
+                segments.append(current)
+                current = ""
+            current += character
+            current_kind = kind
+    if current:
+        segments.append(current)
+    kept = segments[:max_tokens]
+    slug = "-".join(kept).encode("utf-8")[:120].decode("utf-8", "ignore")
+    return slug or "untitled"
 
 
 def is_cjk(character: str) -> bool:
-    """判断字符是否属于常用 CJK 文字范围。"""
-
     codepoint = ord(character)
     ranges = [
         (0x3400, 0x4DBF),
@@ -248,8 +224,6 @@ def is_cjk(character: str) -> bool:
 
 
 def validate_iso_date(value: str, field_name: str) -> str:
-    """校验 ISO 日期并返回原值。"""
-
     try:
         date.fromisoformat(value)
     except ValueError as exc:
@@ -263,8 +237,6 @@ def next_record_id(
     record_date: str,
     reserved: set[str] | None = None,
 ) -> str:
-    """为指定日期分配下一个未使用的记录 ID。"""
-
     validate_iso_date(record_date, "date")
     prefix = "IDEA" if kind == "idea" else "BL"
     compact_date = record_date.replace("-", "")
@@ -281,23 +253,17 @@ def next_record_id(
     return f"{prefix}-{compact_date}-{sequence:03d}"
 
 
-def record_path(root: Path, kind: str, record_id: str, title: str) -> Path:
-    """构造一条新记录的目标路径。"""
-
+def record_path(root: Path, kind: str, record_id: str, slug_source: str) -> Path:
     directory = IDEA_DIR if kind == "idea" else BACKLOG_DIR
-    return root / directory / f"{record_id}-{slugify(title)}.md"
+    return root / directory / f"{record_id}-{slugify(slug_source)}.md"
 
 
 def ensure_record_dirs(root: Path) -> None:
-    """创建 Idea 与 Backlog 目录。"""
-
     (root / IDEA_DIR).mkdir(parents=True, exist_ok=True)
     (root / BACKLOG_DIR).mkdir(parents=True, exist_ok=True)
 
 
 def base_fields(kind: str, record_id: str, record_date: str) -> dict[str, str]:
-    """返回 Idea/Backlog 共用 frontmatter。"""
-
     return {
         "status": "active",
         "document_type": kind,
@@ -312,8 +278,6 @@ def base_fields(kind: str, record_id: str, record_date: str) -> dict[str, str]:
 
 
 def normalize_quotes(raw: str) -> list[str]:
-    """解析可选 JSON 引语数组并过滤空值；不规定最少条数。"""
-
     try:
         decoded = json.loads(raw)
     except json.JSONDecodeError as exc:
@@ -331,8 +295,6 @@ def render_idea_body(
     quotes: list[str],
     open_questions: str,
 ) -> str:
-    """渲染 Idea 正文。"""
-
     quote_block = "\n".join(f'> "{quote}"' for quote in quotes) or "- None recorded."
     trajectory = thought_trajectory.strip() or "- Not recorded."
     questions = open_questions.strip() or "- None at the moment."
@@ -351,8 +313,6 @@ def render_idea_body(
 
 
 def render_backlog_body(title: str, summary: str, source_idea: str) -> str:
-    """渲染 Backlog 正文。"""
-
     origin = f"- [SOURCE: {source_idea}]" if source_idea else "- Captured directly."
     return (
         f"# {title.strip()}\n\n"
@@ -366,8 +326,6 @@ def render_backlog_body(title: str, summary: str, source_idea: str) -> str:
 
 
 def write_new_record(path: Path, fields: dict[str, str], body: str) -> None:
-    """创建一条记录，拒绝覆盖已有文件。"""
-
     if path.exists():
         raise RecordError(f"refusing to overwrite existing record: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -375,8 +333,6 @@ def write_new_record(path: Path, fields: dict[str, str], body: str) -> None:
 
 
 def find_record(root: Path, identity: str) -> Record:
-    """按记录 ID 或仓库相对路径查找一条记录。"""
-
     if identity.startswith("docs/") or identity.endswith(".md"):
         candidate = (root / identity).resolve()
         if not is_within(candidate, (root / "docs").resolve()) or not candidate.is_file():
@@ -399,17 +355,13 @@ def find_record(root: Path, identity: str) -> Record:
 
 
 def update_record(record: Record) -> None:
-    """覆盖一条已读取记录的 frontmatter，同时保持正文不变。"""
-
     record.path.write_text(render_document(record.fields, record.body), encoding="utf-8")
 
 
 def command_idea_capture(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    """创建一条 Idea。"""
-
     record_date = validate_iso_date(args.date, "date")
     record_id = next_record_id(root, "idea", record_date)
-    path = record_path(root, "idea", record_id, args.title)
+    path = record_path(root, "idea", record_id, args.slug or args.title)
     project = args.project.strip() if args.project else root.name
     fields = base_fields("idea", record_id, record_date)
     fields["project"] = project
@@ -433,8 +385,6 @@ def command_idea_capture(args: argparse.Namespace, root: Path) -> dict[str, obje
 
 
 def resolve_source_idea(root: Path, identity: str) -> Record:
-    """解析并校验 Backlog 的来源 Idea。"""
-
     record = find_record(root, identity)
     if record.fields.get("document_type") != "idea":
         raise RecordError(f"source record is not an Idea: {identity}")
@@ -442,14 +392,12 @@ def resolve_source_idea(root: Path, identity: str) -> Record:
 
 
 def command_backlog_capture(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    """创建 Backlog；存在来源 Idea 时自动建立双向关系。"""
-
     record_date = validate_iso_date(args.date, "date")
     if args.review_after:
         validate_iso_date(args.review_after, "review_after")
     source = resolve_source_idea(root, args.source_idea) if args.source_idea else None
     record_id = next_record_id(root, "backlog", record_date)
-    path = record_path(root, "backlog", record_id, args.title)
+    path = record_path(root, "backlog", record_id, args.slug or args.title)
     source_path = repo_relative(source.path, root) if source else ""
     fields = base_fields("backlog", record_id, record_date)
     fields.update(
@@ -481,8 +429,6 @@ def command_backlog_capture(args: argparse.Namespace, root: Path) -> dict[str, o
 
 
 def record_payload(record: Record, root: Path) -> dict[str, str]:
-    """把记录转换为稳定的查询结果。"""
-
     title_match = re.search(r"^#\s+(.+?)\s*$", record.body, re.MULTILINE)
     return {
         "record_id": record.fields.get("record_id", ""),
@@ -500,8 +446,6 @@ def filter_records(
     root: Path,
     state: str | None,
 ) -> list[dict[str, str]]:
-    """按状态过滤并排序查询结果。"""
-
     payloads = [record_payload(record, root) for record in records]
     if state:
         payloads = [item for item in payloads if item["state"] == state]
@@ -509,15 +453,11 @@ def filter_records(
 
 
 def command_list(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    """查询源文件，不依赖手工索引。"""
-
     items = filter_records(iter_records(root, args.kind), root, args.state)
     return {"action": "list", "count": len(items), "items": items}
 
 
 def command_review(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    """列出需要评审的未分流 Idea、开放 Backlog 与到期 deferred 项。"""
-
     as_of = validate_iso_date(args.as_of, "as_of")
     candidates: list[dict[str, str]] = []
     for record in iter_records(root):
@@ -551,8 +491,6 @@ def command_review(args: argparse.Namespace, root: Path) -> dict[str, object]:
 
 
 def command_start(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    """把一个开放或延期的 Backlog 标记为正在进行。"""
-
     record = find_record(root, args.identity)
     kind = record.fields.get("document_type")
     state = record.fields.get("record_state")
@@ -576,8 +514,6 @@ def command_start(args: argparse.Namespace, root: Path) -> dict[str, object]:
 
 
 def command_defer(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    """把开放或进行中的 Backlog 延期，并记录复查日期或原因。"""
-
     record = find_record(root, args.identity)
     kind = record.fields.get("document_type")
     state = record.fields.get("record_state")
@@ -609,8 +545,6 @@ def command_defer(args: argparse.Namespace, root: Path) -> dict[str, object]:
 
 
 def resolve_target(root: Path, identity: str) -> Path:
-    """解析 promotion/supersession 目标，并限制在 docs/ 内。"""
-
     if IDEA_ID_PATTERN.fullmatch(identity) or BACKLOG_ID_PATTERN.fullmatch(identity):
         return find_record(root, identity).path
     raw = Path(identity)
@@ -626,8 +560,6 @@ def resolve_target(root: Path, identity: str) -> Path:
 
 
 def command_promote(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    """把 Idea/Backlog 转换为已有的下一层治理文档。"""
-
     record = find_record(root, args.identity)
     kind = record.fields.get("document_type")
     state = record.fields.get("record_state")
@@ -666,8 +598,6 @@ def command_promote(args: argparse.Namespace, root: Path) -> dict[str, object]:
 
 
 def command_close(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    """关闭或取代一条 Idea/Backlog 记录。"""
-
     record = find_record(root, args.identity)
     kind = record.fields.get("document_type")
     allowed = {"closed", "superseded"} if kind == "idea" else {"done", "rejected", "superseded"}
@@ -699,14 +629,10 @@ def command_close(args: argparse.Namespace, root: Path) -> dict[str, object]:
 
 
 def add_output_arguments(parser: argparse.ArgumentParser) -> None:
-    """为查询命令添加输出格式参数。"""
-
     parser.add_argument("--format", choices=("text", "json"), default="text")
 
 
 def parse_args() -> argparse.Namespace:
-    """定义命令行接口。"""
-
     parser = argparse.ArgumentParser(description="Manage governed Idea and Backlog records.")
     parser.add_argument("--root", help="Target project root; defaults to the nearest Git root.")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -715,6 +641,7 @@ def parse_args() -> argparse.Namespace:
     idea_commands = idea.add_subparsers(dest="idea_command", required=True)
     idea_capture = idea_commands.add_parser("capture", help="Capture a durable idea.")
     idea_capture.add_argument("--title", required=True)
+    idea_capture.add_argument("--slug", help="Text for the file name instead of the title.")
     idea_capture.add_argument("--project")
     idea_capture.add_argument("--core-ideas", required=True)
     idea_capture.add_argument("--thought-trajectory", default="")
@@ -727,6 +654,7 @@ def parse_args() -> argparse.Namespace:
     backlog_commands = backlog.add_subparsers(dest="backlog_command", required=True)
     backlog_capture = backlog_commands.add_parser("capture", help="Capture future work.")
     backlog_capture.add_argument("--title", required=True)
+    backlog_capture.add_argument("--slug", help="Text for the file name instead of the title.")
     backlog_capture.add_argument("--summary", required=True)
     backlog_capture.add_argument("--source-idea", default="")
     backlog_capture.add_argument(
@@ -779,8 +707,6 @@ def parse_args() -> argparse.Namespace:
 
 
 def print_text(payload: dict[str, object]) -> None:
-    """以紧凑的人类可读格式输出结果。"""
-
     items = payload.get("items")
     if isinstance(items, list):
         print(f"{payload.get('action')}: {payload.get('count', len(items))} item(s)")
@@ -793,8 +719,6 @@ def print_text(payload: dict[str, object]) -> None:
 
 
 def dispatch(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    """分派已解析命令。"""
-
     if args.command == "idea" and args.idea_command == "capture":
         return command_idea_capture(args, root)
     if args.command == "backlog" and args.backlog_command == "capture":
@@ -815,8 +739,6 @@ def dispatch(args: argparse.Namespace, root: Path) -> dict[str, object]:
 
 
 def main() -> int:
-    """运行 Idea/Backlog CLI。"""
-
     args = parse_args()
     try:
         root = resolve_root(args.root)
