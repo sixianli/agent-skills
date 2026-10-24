@@ -177,6 +177,29 @@
         "on": "2026-10-24",
         "why": "修订方案评审时确认：codex-launch.sh 在没有进行中的任务时起不来，也没有只读跳过"
       }
+    },
+    {
+      "id": "F4-8",
+      "title": "完成条件限定主机、按主机筛掉全部记录时，status 说出别的主机上有几条通过记录、是哪些主机",
+      "goal_ref": [
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "long-task-planning/tests/test_longtask.py",
+          "name": "names_passes_on_other_hosts"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-24",
+        "why": "F4-6 查明 F24 是完成条件的主机名和记录里的不一致，提示没说别的主机上有通过记录"
+      }
     }
   ],
   "fingerprint": {

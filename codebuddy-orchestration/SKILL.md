@@ -217,6 +217,16 @@ Accept a review task like this:
   changes already in the worktree, then take the task back and finish it
   yourself, or discard it and `start` again with a larger `CB_MAX_TURNS`.
   For login, quota or model errors, stop and tell the user; do not retry.
+- A `429` frequency-limit error from the free model is a quota error. Stop
+  and tell the user the reset time from the error; do not retry, and do
+  not `resume`: the run has no session id, so `cb resume <id> <feedback>`
+  exits 1 with `no session_id recorded for '<id>'; start a fresh task
+  instead`. After the user agrees, run `cb clean <id> --discard`: it
+  removes the worktree but keeps the task directory and its logs, so the
+  same id cannot `start` again and the restart needs a new id. Then either
+  `start` again with a new id after the reset time, or, once the user has
+  confirmed another model is free for their account and it is on the
+  allow list, `start` again with `CB_MODEL=<model>` and a new id.
 
 ## Reporting to the user
 
@@ -344,3 +354,19 @@ rounds.
   starting with the session id, but after hitting the turn limit it wrote no
   result and the process did not exit for more than ten minutes and was
   stopped by hand, so the script still uses `json`.
+- Checked on 2026-10-24 with CLI 2.173.0: the free model
+  `deepseek-v4.1-flash` hitting its frequency limit prints only one line
+  to stderr, `429 usage exceeds frequency limit, but don't worry, your
+  usage will reset at <time>, alternatively, you can switch to the other
+  models to continue using it. (<request ids>)`, then exits 0 after about
+  five seconds with an empty stdout. In the two hours before that,
+  `ledger.jsonl` logged eight `deepseek-v4.1-flash` runs for the same
+  account from two projects; the reset time the error gave was about 7.5
+  hours later, and `hy3` for the same account ran normally in the
+  meantime. The script treats this as a run with no result: `start` exits
+  3, the report's first line is
+  `== cb-delegate report: <id> (round 0, exit 0) ==`, followed by a `!!`
+  line reporting that the tool-call and command records are missing and
+  ending with `(last stderr line: 429 usage exceeds ...)`, then a
+  `-- worker produced no valid JSON. stderr tail:` line that shows the
+  same line again; the worktree still exists but holds no change.
