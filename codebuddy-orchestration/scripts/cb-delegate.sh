@@ -142,7 +142,7 @@ run_worker() {
   local sd="$1" round="$2" prompt="$3" session="${4:-}"
   local raw="$sd/run-$round.out" out="$sd/run-$round.json" err="$sd/run-$round.err"
   local -a allowed denied args
-  local rule mode schema rules
+  local rule mode schema rules missing m
   mode="$(task_mode "$sd")"
   schema="$SKILL_DIR/templates/report.schema.json"
   rules="$SKILL_DIR/templates/worker-rules.md"
@@ -188,14 +188,31 @@ run_worker() {
   if valid_json "$out"; then
     cost="$(jq -c '.total_cost_usd // null' "$out")"
   fi
+  local auto=false
+  [ -f "$sd/rerun-$round.md" ] && auto=true
   ledger "$(jq -cn --arg id "$(basename "$sd")" --arg repo "$(basename "$(dirname "$sd")")" \
     --arg model "$CB_MODEL" --argjson round "$round" --argjson rc "$rc" --argjson secs "$secs" \
-    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson cost "$cost" --arg mode "$mode" \
-    '{ts:$ts,event:"run",repo:$repo,id:$id,model:$model,mode:$mode,round:$round,exit_code:$rc,seconds:$secs,cost_usd:$cost}')"
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson cost "$cost" --arg mode "$mode" --argjson auto "$auto" \
+    '{ts:$ts,event:"run",repo:$repo,id:$id,model:$model,mode:$mode,round:$round,exit_code:$rc,seconds:$secs,cost_usd:$cost,auto:$auto}')"
 
   report "$sd"
   if [ "$rc" -ne 0 ]; then return "$rc"; fi
   valid_json "$out" || return 3
+  if [ "$mode" = change ] && has_conversation "$raw" && [ -n "$sid" ] && [ ! -f "$sd/rerun-$round.md" ]; then
+    missing="$(missing_acceptance "$sd" "$round")"
+    if [ -n "$missing" ]; then
+      local next="$((round + 1))"
+      {
+        printf 'In the last round you did not run these acceptance commands from the brief exactly as written:\n'
+        while IFS= read -r m; do if [ -n "$m" ]; then printf -- '- %s\n' "$m"; fi; done <<<"$missing"
+        printf '\n'
+        printf 'Run each of them now, exactly as written, each as its own Bash call from your working directory: no `cd`, no `2>&1` or other redirection, no pipes, no `&&` or `;`. Permission rules match the whole command from its first word, so a rewritten command is denied; such a denial means only that the rewritten form is not allowed, and the Bash tool still works. Then return your report again, based on these runs.\n'
+      } >"$sd/rerun-$next.md"
+      echo "-- automatic rerun: acceptance commands were not run exactly as written; resuming the same session once (round $next)"
+      run_worker "$sd" "$next" "$sd/rerun-$next.md" "$sid"
+      return $?
+    fi
+  fi
   return 0
 }
 
@@ -221,8 +238,49 @@ tool_calls() {
       end' "$raw"
 }
 
+acceptance_commands() {
+  awk '
+    /^## /{ f = ($0 ~ /^## +[Aa]cceptance/); next }
+    f && /^[-*] +/ {
+      line = $0
+      sub(/^[-*] +/, "", line)
+      if (line ~ /^`.*`$/) { sub(/^`/, "", line); sub(/`$/, "", line) }
+      gsub(/^[ \t]+|[ \t]+$/, "", line)
+      if (line != "") print line
+    }
+  ' "$1/brief.md"
+}
+
+missing_acceptance() {
+  local sd="$1" round="$2" raw="$sd/run-$round.out" prev="$sd/run-$((round - 1)).out"
+  local prev_ids=""
+  if has_conversation "$prev"; then
+    prev_ids="$(jq -r '.[] | select(type == "object") | .callId // empty' "$prev" 2>/dev/null)"
+  fi
+  local this_cmds=""
+  if has_conversation "$raw"; then
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      local cid="${line%%$'\t'*}" cmd="${line#*$'\t'}"
+      if [ -n "$prev_ids" ] && [ -n "$cid" ] && printf '%s\n' "$prev_ids" | grep -qxF "$cid"; then
+        continue
+      fi
+      this_cmds="$this_cmds$cmd"$'\n'
+    done < <(jq -r '.[] | select(type == "object" and .type == "function_call" and .name == "Bash") | (.callId // "") + "\t" + (((.arguments | if type == "string" then (fromjson? // {}) else (. // {}) end).command // "") | gsub("\n"; " "))' "$raw" 2>/dev/null)
+  fi
+  acceptance_commands "$sd" | while IFS= read -r acmd; do
+    [ -n "$acmd" ] || continue
+    local found=0
+    while IFS= read -r c; do
+      c="$(printf '%s' "$c" | awk '{ sub(/^[ \t]+/, ""); sub(/[ \t]+$/, "") } 1')"
+      if [ "$c" = "$acmd" ]; then found=1; break; fi
+    done <<<"$this_cmds"
+    if [ "$found" -eq 0 ]; then printf '%s\n' "$acmd"; fi
+  done
+}
+
 report() {
-  local sd="$1" round rc out wt raw err wtr
+  local sd="$1" round rc out wt raw err wtr m
   round="$(cat "$sd/round" 2>/dev/null || echo 0)"
   rc="$(cat "$sd/last_rc" 2>/dev/null || echo '?')"
   out="$sd/run-$round.json"; wt="$sd/wt"
@@ -230,6 +288,8 @@ report() {
 
   if [ "$(task_mode "$sd")" = review ]; then
     echo "== cb-delegate report: $(basename "$sd") (review task, round $round, exit $rc) =="
+  elif [ -f "$sd/rerun-$round.md" ]; then
+    echo "== cb-delegate report: $(basename "$sd") (round $round, automatic rerun, exit $rc) =="
   else
     echo "== cb-delegate report: $(basename "$sd") (round $round, exit $rc) =="
   fi
@@ -241,6 +301,11 @@ report() {
       [ -n "$last" ] || last="none"
     fi
     echo "!! tool-call and command records are missing: the worker's output holds no conversation, so the files it read and the commands it ran are unknown (last stderr line: $last)"
+  fi
+  if [ "$(task_mode "$sd")" = change ] && has_conversation "$raw"; then
+    while IFS= read -r m; do
+      if [ -n "$m" ]; then echo "!! acceptance command not run exactly as written in this round: $m"; fi
+    done < <(missing_acceptance "$sd" "$round")
   fi
   if valid_json "$out"; then
     jq '{
@@ -372,7 +437,9 @@ cmd_resume() {
   sid="$(cat "$sd/session_id" 2>/dev/null || true)"
   [ -n "$sid" ] || die "no session_id recorded for '$id'; start a fresh task instead"
   round="$(cat "$sd/round")"
-  [ "$round" -lt "$CB_MAX_ROUNDS" ] || die "resume limit reached ($CB_MAX_ROUNDS). Take the task back or discard it."
+  local n=0
+  for f in "$sd"/rerun-*.md; do [ -f "$f" ] && n=$((n + 1)); done
+  [ "$((round - n))" -lt "$CB_MAX_ROUNDS" ] || die "resume limit reached ($CB_MAX_ROUNDS). Take the task back or discard it."
   round=$((round + 1))
   cp "$fb" "$sd/feedback-$round.md"
   run_worker "$sd" "$round" "$sd/feedback-$round.md" "$sid"

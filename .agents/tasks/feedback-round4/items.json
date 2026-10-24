@@ -200,6 +200,34 @@
         "on": "2026-10-24",
         "why": "F4-6 查明 F24 是完成条件的主机名和记录里的不一致，提示没说别的主机上有通过记录"
       }
+    },
+    {
+      "id": "F4-9",
+      "title": "cb-delegate.sh 在工作者这一轮没有照原样运行验收命令时打印 !! 提示，并自动接着同一个对话续跑一次，要它照原样重跑",
+      "goal_ref": [
+        "G2"
+      ],
+      "done_when": [
+        {
+          "type": "test",
+          "file": "codebuddy-orchestration/tests/test_cb_delegate.py",
+          "name": "reruns_acceptance_once"
+        },
+        {
+          "type": "test",
+          "file": "codebuddy-orchestration/tests/test_cb_delegate.py",
+          "name": "exact_acceptance_attempt"
+        },
+        {
+          "type": "review",
+          "by": "claude"
+        }
+      ],
+      "added": {
+        "by": "claude",
+        "on": "2026-10-24",
+        "why": "全局说明的重复错误规则：工作者改写验收命令后被拒、不照原样重跑已在四个任务里出现（其中两次就此放弃），简报和工作者规则里的提醒没拦住，要加脚本里的硬检查"
+      }
     }
   ],
   "fingerprint": {

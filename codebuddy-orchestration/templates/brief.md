@@ -19,7 +19,7 @@
 - <其他约束>
 
 ## Acceptance
-<!-- worker 会尝试运行；Claude 验收时一定会自己重跑。命令要能在仓库根目录直接执行。 -->
+<!-- worker 会照原样运行；每条一行、能在仓库根目录直接执行、2 分钟内跑完（CodeBuddy 的命令工具到 120 秒就结束命令），不要写 cd、管道、&&；Claude 验收时一定会自己重跑。 -->
 - ./mvnw -q -Dtest=OrderServiceTest test
 
 ## References

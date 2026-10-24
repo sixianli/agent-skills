@@ -72,7 +72,10 @@ before and after the smoke test when the model is supposed to be free.
    `## Allowed paths`
    is the only input to the scope check: list the narrowest globs that cover
    the change. `## Acceptance` holds commands that run from the repository
-   root. List any file outside the repository the worker must read under
+   root; each must finish within about two minutes, because the worker's
+   command tool ends a command at 120 seconds, so narrow a long test suite
+   with `-k` or similar and run the full suite yourself when you verify the
+   delegation. List any file outside the repository the worker must read under
    `## References`; the worker rules forbid other outside reads. The
    worktree is built from `HEAD`, so files that are uncommitted or ignored
    by git are absent from it: list those in `## References` by absolute
@@ -108,7 +111,14 @@ before and after the smoke test when the model is supposed to be free.
    that, never the worker's transcript. When the output holds no
    conversation, the report says in a `!!` line that the read and command
    records are missing and gives the last line of the worker's stderr. Print
-   it again later with `cb status <id>`.
+   it again later with `cb status <id>`. When, in a round, the worker did
+   not run some `## Acceptance` command exactly as written, the report has a
+   `!! acceptance command not run exactly as written in this round:` line for
+   it, and the script automatically resumes the same session once (the note
+   is saved as `rerun-<round>.md`, and the ledger marks the run `auto: true`);
+   this automatic rerun does not count toward `CB_MAX_ROUNDS`. If the rerun
+   still shows that line, run the acceptance command yourself and tell the
+   user the worker did not.
 5. **Accept** (see [Acceptance](#acceptance)), then either **land** (see
    [Landing](#landing)) or **rework** (see
    [Rework and taking the task back](#rework-and-taking-the-task-back)).
@@ -243,7 +253,7 @@ what the worker reported apart from what you verified.
 | `CB_ALLOWED_MODELS` | `$CB_HOME/allowed-models.txt` | File listing the models `CB_MODEL` may name |
 | `CB_TIMEOUT` | `1800` | Seconds per worker run |
 | `CB_MAX_TURNS` | `60` | Agent turns per worker run |
-| `CB_MAX_ROUNDS` | `2` | Resumes allowed after the first run |
+| `CB_MAX_ROUNDS` | `2` | Resumes allowed after the first run; automatic reruns are not counted |
 | `CB_HOME` | `~/.cache/cb-delegate` | Worktrees, run logs and `ledger.jsonl` |
 | `CB_BIN` | `codebuddy` | CLI executable |
 
@@ -370,3 +380,14 @@ rounds.
   ending with `(last stderr line: 429 usage exceeds ...)`, then a
   `-- worker produced no valid JSON. stderr tail:` line that shows the
   same line again; the worktree still exists but holds no change.
+- Checked on 2026-10-24 with CLI 2.174.0:
+  - The command tool ends a command at 120 seconds (the tool result shows
+    `"signal": "SIGTERM"`, `"interrupted": true` and `"tool_error_code":
+    "8013"` when no timeout was passed to the call).
+  - A resume round lists every tool call of the earlier rounds again, so the
+    report's "tool calls outside the worktree" and "shell commands" lists
+    also include the earlier rounds; the acceptance check counts only calls
+    whose `callId` is not in the previous round's output.
+  - In four tasks the worker (once `deepseek-v4.1-flash`, three times `hy3`)
+    rewrote an acceptance command despite the worker rules, and twice gave up
+    after a denial, so the script now checks and resumes automatically.

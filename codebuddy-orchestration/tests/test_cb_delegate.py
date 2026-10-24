@@ -20,6 +20,10 @@ STUB = textwrap.dedent(
     RESULT='{"type":"result","session_id":"sess-1","total_cost_usd":0,"is_error":false,"num_turns":3,"result":"","structured_output":{"status":"done","summary":"stub","files_changed":["src/order/A.java"],"commands_run":[],"acceptance_passed":true,"open_issues":[]}}'
     printf '%s\n' "$@" >"$STUB_ARGS"
     env | grep '^CODEBUDDY_' | sort >"$STUB_ENV"
+    call() {
+      printf '{"type":"function_call","callId":"%s","name":"%s","arguments":%s},' "$1" "$2" "$(jq -cn --argjson a "$3" '$a|tostring')"
+      printf '{"type":"function_call_result","callId":"%s","name":"%s","status":"%s","output":{}},' "$1" "$2" "$4"
+    }
     case "${STUB_MODE:-inscope}" in
       inscope)  mkdir -p src/order; echo "class A {}" > src/order/A.java ;;
       outscope) mkdir -p src/order; echo "class A {}" > src/order/A.java; echo x > build.gradle ;;
@@ -35,9 +39,7 @@ STUB = textwrap.dedent(
       noop)     ;;
       noresult) echo '[{"type":"message","role":"user"}]'; exit 0 ;;
       object)   printf '%s\n' "$RESULT"; exit 0 ;;
-      probe)    call() { printf '{"type":"function_call","callId":"%s","name":"%s","arguments":%s},' "$1" "$2" "$(jq -cn --argjson a "$3" '$a|tostring')"
-                         printf '{"type":"function_call_result","callId":"%s","name":"%s","status":"%s","output":{}},' "$1" "$2" "$4"; }
-                printf '[{"type":"message","role":"user"},'
+      probe)    printf '[{"type":"message","role":"user"},'
                 call c1 Read "{\"file_path\":\"$PWD/README.md\"}" completed
                 call c2 Read '{"file_path":"/etc/hosts"}' completed
                 call c3 Read '{"file_path":"../../secret.txt"}' incomplete
@@ -45,9 +47,37 @@ STUB = textwrap.dedent(
                 call c5 Glob '{"pattern":"**/*.java"}' completed
                 call c6 Glob '{"pattern":"*.txt","path":"/var"}' completed
                 call c7 Bash '{"command":"git status","description":"s"}' completed
+                callid="c8-$$-$RANDOM"
+                call "$callid" Bash '{"command":"true"}' completed
                 printf '%s]\n' "$RESULT"; exit 0 ;;
+      rewritten)
+                cid="b-$$-$RANDOM"
+                printf '[{"type":"message","role":"user"},'
+                call "$cid" Bash '{"command":"true 2>&1 | tail -5"}' incomplete
+                printf '{"type":"function_call","name":"StructuredOutput"},%s]\n' "$RESULT"
+                exit 0 ;;
+      denied)
+                cid="b-$$-$RANDOM"
+                printf '[{"type":"message","role":"user"},'
+                call "$cid" Bash '{"command":"true"}' incomplete
+                printf '{"type":"function_call","name":"StructuredOutput"},%s]\n' "$RESULT"
+                exit 0 ;;
+      history)
+                printf '[{"type":"message","role":"user"},'
+                call h-1 Bash '{"command":"true"}' completed
+                printf '{"type":"function_call","name":"StructuredOutput"},%s]\n' "$RESULT"
+                exit 0 ;;
+      multiline)
+                cid="b-$$-$RANDOM"
+                printf '[{"type":"message","role":"user"},'
+                call "$cid" Bash '{"command":"echo x\ntrue"}' incomplete
+                printf '{"type":"function_call","name":"StructuredOutput"},%s]\n' "$RESULT"
+                exit 0 ;;
     esac
-    printf '[{"type":"message","role":"user"},{"type":"function_call","name":"StructuredOutput"},%s]\n' "$RESULT"
+    cid="b-$$-$RANDOM"
+    printf '[{"type":"message","role":"user"},'
+    call "$cid" Bash '{"command":"true"}' completed
+    printf '{"type":"function_call","name":"StructuredOutput"},%s]\n' "$RESULT"
     """
 ).lstrip()
 
@@ -264,7 +294,7 @@ class CbDelegateTest(unittest.TestCase):
             ["ok      Read /etc/hosts", "failed  Read ../../secret.txt", "failed  Write /tmp/x", "ok      Glob /var"],
         )
         shell = start.stdout.split("-- shell commands:")[1].split("-- worktree changes")[0]
-        self.assertEqual(shell.strip().splitlines(), ["ok      git status"])
+        self.assertEqual(shell.strip().splitlines(), ["ok      git status", "ok      true"])
         self.assertIn("ok      Read /etc/hosts", self.cb("status", "t11").stdout)
 
     def test_resume_limit(self):
@@ -540,6 +570,81 @@ class CbDelegateTest(unittest.TestCase):
         self.assertNotIn("tool-call and command records are missing", start.stdout)
         self.assertIn("-- tool calls outside the worktree:", start.stdout)
         self.assertIn("-- shell commands:", start.stdout)
+
+    def test_rewritten_acceptance_command_reruns_acceptance_once(self):
+        start = self.cb("start", "t30", str(self.brief), mode="rewritten")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertEqual(
+            start.stdout.count("!! acceptance command not run exactly as written in this round: true"), 2
+        )
+        self.assertEqual(start.stdout.count("(round 1, automatic rerun"), 1)
+        runs = [e for e in self.ledger() if e["event"] == "run"]
+        self.assertEqual(len(runs), 2)
+        self.assertEqual([e["auto"] for e in runs], [False, True])
+        self.assertEqual((self.task_dir("t30") / "round").read_text(), "1")
+        rerun = self.task_dir("t30") / "rerun-1.md"
+        self.assertTrue(rerun.exists())
+        self.assertIn("- true", rerun.read_text())
+        self.assertIn("exactly as written", rerun.read_text())
+        args = Path(self.env["STUB_ARGS"]).read_text().splitlines()
+        self.assertEqual(args[args.index("--resume") + 1], "sess-1")
+
+    def test_exact_acceptance_attempt_counts_even_when_denied(self):
+        start = self.cb("start", "t31", str(self.brief), mode="denied")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        runs = [e for e in self.ledger() if e["event"] == "run"]
+        self.assertEqual(len(runs), 1)
+        self.assertNotIn("!! acceptance command", start.stdout)
+        self.assertEqual(len(list(self.task_dir("t31").glob("rerun-*.md"))), 0)
+
+    def test_acceptance_calls_from_earlier_rounds_do_not_count(self):
+        start = self.cb("start", "t32", str(self.brief), mode="history")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        runs = [e for e in self.ledger() if e["event"] == "run"]
+        self.assertEqual(len(runs), 1)
+        self.assertNotIn("!! acceptance command", start.stdout)
+
+        feedback = self.brief.parent / "fb.md"
+        feedback.write_text("redo\n")
+        resume = self.cb("resume", "t32", str(feedback), mode="history")
+        self.assertEqual(resume.returncode, 0, resume.stderr)
+        self.assertIn("!! acceptance command not run exactly as written in this round: true", resume.stdout)
+        self.assertIn("automatic rerun", resume.stdout)
+        runs = [e for e in self.ledger() if e["event"] == "run"]
+        self.assertEqual(len(runs), 3)
+        self.assertEqual((self.task_dir("t32") / "round").read_text(), "2")
+        self.assertTrue((self.task_dir("t32") / "rerun-2.md").exists())
+
+    def test_automatic_rerun_does_not_count_toward_resume_limit(self):
+        start = self.cb("start", "t33", str(self.brief), mode="rewritten", CB_MAX_ROUNDS="1")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        feedback = self.brief.parent / "fb.md"
+        feedback.write_text("redo\n")
+        resume = self.cb("resume", "t33", str(feedback), mode="inscope", CB_MAX_ROUNDS="1")
+        self.assertEqual(resume.returncode, 0, resume.stderr)
+        self.assertEqual((self.task_dir("t33") / "round").read_text(), "2")
+        runs = [e for e in self.ledger() if e["event"] == "run"]
+        self.assertEqual([e["auto"] for e in runs], [False, True, False])
+        feedback2 = self.brief.parent / "fb2.md"
+        feedback2.write_text("redo again\n")
+        third = self.cb("resume", "t33", str(feedback2), mode="inscope", CB_MAX_ROUNDS="1")
+        self.assertNotEqual(third.returncode, 0)
+        self.assertIn("resume limit reached", third.stderr)
+
+    def test_review_task_skips_the_acceptance_check(self):
+        start = self.cb("start", "r7", str(self.brief), "--review", mode="rewritten")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        runs = [e for e in self.ledger() if e["event"] == "run"]
+        self.assertEqual(len(runs), 1)
+        self.assertNotIn("!! acceptance command", start.stdout)
+        self.assertEqual(len(list(self.task_dir("r7").glob("rerun-*.md"))), 0)
+
+    def test_acceptance_command_inside_a_multiline_command_does_not_count(self):
+        start = self.cb("start", "t34", str(self.brief), mode="multiline")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertIn("!! acceptance command not run exactly as written in this round: true", start.stdout)
+        runs = [e for e in self.ledger() if e["event"] == "run"]
+        self.assertEqual(len(runs), 2)
 
     def test_failed_run_without_json_reports_last_stderr_line(self):
         start = self.cb("start", "t22", str(self.brief), mode="nojson")
