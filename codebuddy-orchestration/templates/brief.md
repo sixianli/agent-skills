@@ -23,4 +23,4 @@
 - ./mvnw -q -Dtest=OrderServiceTest test
 
 ## References
-- <可选：相关文件路径、已有的类似实现、issue 链接>
+- <可选：相关文件路径、已有的类似实现、issue 链接。工作副本从 HEAD 建出，未提交或被 git 忽略的文件请写绝对路径>

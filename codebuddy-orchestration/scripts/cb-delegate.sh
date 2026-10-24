@@ -71,6 +71,13 @@ check_model() {
 
 repo_root() { git rev-parse --show-toplevel 2>/dev/null || die "not inside a git repository"; }
 
+abs_path() {
+  case "$1" in
+    /*) printf '%s' "$1" ;;
+    *)  printf '%s/%s' "$PWD" "$1" ;;
+  esac
+}
+
 repo_key() {
   local root="$1" h
   h="$(printf '%s' "$root" | (shasum 2>/dev/null || sha1sum) | cut -c1-8)"
@@ -258,7 +265,7 @@ cmd_start() {
   local id="$1" brief="$2"; shift 2
   valid_id "$id"; need git; need jq
   command -v "$CB_BIN" >/dev/null 2>&1 || die "'$CB_BIN' not found (run doctor)"
-  [ -f "$brief" ] || die "brief not found: $brief"
+  [ -f "$brief" ] || die "brief not found: $brief (looked for $(abs_path "$brief"))"
   grep -qiE '^## +Allowed paths' "$brief" || die "brief has no '## Allowed paths' section"
   check_model
 
@@ -293,6 +300,7 @@ cmd_start() {
   } >"$sd/allowed"
   printf '%s' "$extra_deny" >"$sd/denied"
 
+  check_references "$sd/wt" "$sd/brief.md"
   run_worker "$sd" 0 "$sd/brief.md"
 }
 
@@ -301,7 +309,7 @@ cmd_resume() {
   local id="$1" fb="$2" sd round sid
   valid_id "$id"; sd="$(state_dir "$id")"
   [ -d "$sd/wt" ] || die "no active task '$id'"
-  [ -f "$fb" ] || die "feedback file not found: $fb"
+  [ -f "$fb" ] || die "feedback file not found: $fb (looked for $(abs_path "$fb"))"
   check_model
   sid="$(cat "$sd/session_id" 2>/dev/null || true)"
   [ -n "$sid" ] || die "no session_id recorded for '$id'; start a fresh task instead"
@@ -325,6 +333,31 @@ allowed_globs() {
     /^## /{ f = ($0 ~ /^## +[Aa]llowed paths/) ; next }
     f && /^[-*] +/ { sub(/^[-*] +/, ""); gsub(/`/, ""); sub(/[ \t]+#.*$/, ""); sub(/[ \t]+$/, ""); if ($0 != "") print }
   ' "$1"
+}
+
+reference_paths() {
+  awk '
+    /^## /{ f = ($0 ~ /^## +[Rr]eferences/) ; next }
+    f && /^[-*] +/ { sub(/^[-*] +/, ""); gsub(/`/, ""); sub(/[ \t]+$/, ""); if ($0 != "") print }
+  ' "$1"
+}
+
+check_references() {
+  local wt="$1" brief="$2" line word
+  while IFS= read -r line; do
+    word="${line%%[[:space:]]*}"
+    case "$word" in
+      *:[0-9]*-[0-9]*|*:[0-9]*) word="${word%:*}" ;;
+    esac
+    case "$word" in
+      /*|~*|'<'*|'$'*|*://*|*\**) continue ;;
+    esac
+    case "$word" in
+      */*|*.*) ;;
+      *) continue ;;
+    esac
+    [ -e "$wt/$word" ] || warn "References path '$word' is not in the worker's worktree (uncommitted or ignored by git); list it by absolute path"
+  done < <(reference_paths "$brief")
 }
 
 changed_paths() {

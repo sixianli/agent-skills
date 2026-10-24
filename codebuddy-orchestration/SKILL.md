@@ -65,11 +65,17 @@ before and after the smoke test when the model is supposed to be free.
 ## Workflow
 
 1. **Write the brief.** Copy [templates/brief.md](templates/brief.md) to a
-   temporary file outside the repository and fill it in. `## Allowed paths`
+   temporary file outside the repository and fill it in. Put it at an
+   absolute path that every shell you use resolves to the same location, and
+   do not put it under `$TMPDIR` (see [Known pitfalls](#known-pitfalls)).
+   `## Allowed paths`
    is the only input to the scope check: list the narrowest globs that cover
    the change. `## Acceptance` holds commands that run from the repository
    root. List any file outside the repository the worker must read under
-   `## References`; the worker rules forbid other outside reads.
+   `## References`; the worker rules forbid other outside reads. The
+   worktree is built from `HEAD`, so files that are uncommitted or ignored
+   by git are absent from it: list those in `## References` by absolute
+   path.
 2. **Choose the allow and deny lists.** By default the worker can read
    files, find files with Glob, write files only inside its worktree, and
    run read-only git commands, including `git grep` for search. Allow each
@@ -209,7 +215,15 @@ rounds.
 ## Known pitfalls
 
 - The worker starts from the main worktree's `HEAD` and cannot see
-  uncommitted changes; `cb start` warns when the main worktree is dirty.
+  uncommitted changes or files ignored by git, such as build output and
+  local scratch folders; `cb start` warns when the main worktree is dirty,
+  and warns about each relative path under `## References` that is missing
+  from the worker's worktree.
+- Some run environments execute part of their commands in a sandbox, and
+  `$TMPDIR` inside the sandbox can differ from `$TMPDIR` outside it. On
+  2026-10-22 a brief written to `$TMPDIR` inside a sandbox was not found by
+  `cb start` run outside it. Keep the brief at an absolute path that both
+  see; the error's `looked for` shows the path the script actually checked.
 - The worker cannot delete files. It lists needed deletions in
   `open_issues`; make them after landing.
 - Under `dontAsk`, writes to protected paths such as `.git`, `.mvn`,

@@ -285,6 +285,77 @@ class CbDelegateTest(unittest.TestCase):
         self.assertEqual(self.cb("clean", "t9", "--discard").returncode, 0)
         self.assertEqual(self.ledger()[-1]["event"], "discarded")
 
+    def assertLookedFor(self, stderr, path):
+        self.assertTrue(
+            f"looked for {path}" in stderr
+            or f"looked for {os.path.realpath(path)}" in stderr,
+            stderr,
+        )
+
+    def test_start_missing_relative_brief_reports_looked_for_path(self):
+        start = self.cb("start", "t12", "missing-brief.md")
+        self.assertNotEqual(start.returncode, 0)
+        self.assertIn("brief not found: missing-brief.md", start.stderr)
+        self.assertLookedFor(start.stderr, str(self.repo / "missing-brief.md"))
+
+    def test_start_missing_absolute_brief_reports_looked_for_path(self):
+        missing = self.brief.parent / "no-such-brief.md"
+        start = self.cb("start", "t13", str(missing))
+        self.assertNotEqual(start.returncode, 0)
+        self.assertIn(f"brief not found: {missing}", start.stderr)
+        self.assertLookedFor(start.stderr, str(missing))
+
+    def test_resume_missing_feedback_reports_looked_for_path(self):
+        self.assertEqual(self.cb("start", "t14", str(self.brief)).returncode, 0)
+        resume = self.cb("resume", "t14", "missing-feedback.md")
+        self.assertNotEqual(resume.returncode, 0)
+        self.assertIn("feedback file not found: missing-feedback.md", resume.stderr)
+        self.assertIn("looked for", resume.stderr)
+
+    def test_start_warns_about_references_missing_from_worktree(self):
+        (self.repo / ".gitignore").write_text("build/\n")
+        self.git("add", ".gitignore")
+        self.git("commit", "-qm", "ignore build")
+        (self.repo / "build").mkdir()
+        (self.repo / "build" / "out.txt").write_text("x\n")
+        (self.repo / "notes").mkdir()
+        (self.repo / "notes" / "todo.md").write_text("x\n")
+
+        brief = self.brief.parent / "refs.md"
+        brief.write_text(
+            BRIEF
+            + textwrap.dedent(
+                """
+                ## References
+                - `README.md:1-3` committed file
+                - build/out.txt ignored file
+                - notes/todo.md
+                - /etc/hosts
+                - ~/x/y.txt
+                - <optional: placeholder>
+                - none (all needed files are in the worktree)
+                - src/*.java
+                - https://example.com/a.b
+                """
+            )
+        )
+
+        start = self.cb("start", "t15", str(brief))
+        self.assertEqual(start.returncode, 0, start.stderr)
+        lines = [line for line in start.stderr.splitlines() if "References path" in line]
+        self.assertEqual(len(lines), 2, start.stderr)
+        words = [line.split("References path '")[1].split("'")[0] for line in lines]
+        self.assertEqual(words, ["build/out.txt", "notes/todo.md"])
+        self.assertIn("is not in the worker's worktree", lines[0])
+        self.assertIn("uncommitted or ignored by git", lines[0])
+        self.assertIn("list it by absolute path", lines[0])
+        self.assertFalse(any("README.md" in line for line in lines))
+
+    def test_start_without_references_section_prints_no_reference_warning(self):
+        start = self.cb("start", "t16", str(self.brief))
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertNotIn("References path", start.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
