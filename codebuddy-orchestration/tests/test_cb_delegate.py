@@ -7,6 +7,7 @@ import textwrap
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "cb-delegate.sh"
 
@@ -88,7 +89,7 @@ class CbDelegateTest(unittest.TestCase):
         self.review_brief.write_text(REVIEW_BRIEF)
         self.home = root / "cb-home"
         self.env = {
-            **os.environ,
+            **{key: value for key, value in os.environ.items() if not key.startswith("CB_")},
             "CB_BIN": str(self.stub),
             "CB_HOME": str(self.home),
             "STUB_ARGS": str(root / "args"),
@@ -611,6 +612,21 @@ class CbDelegateTest(unittest.TestCase):
         self.assertIn("linked", land.stderr)
         self.assertEqual(self.git("status", "--porcelain", "-uall"), "")
         self.assertEqual((self.worktree("ld1").parent / "status").read_text(), "ran")
+
+    def test_caller_cb_variables_do_not_reach_the_script(self):
+        with mock.patch.dict(
+            os.environ,
+            {
+                "CB_MODEL": "paid-model",
+                "CB_ALLOWED_MODELS": str(Path(self.tmp.name) / "missing-allowed-models.txt"),
+                "CB_MAX_ROUNDS": "0",
+            },
+        ):
+            result = unittest.TestResult()
+            CbDelegateTest("test_model_must_be_on_allowed_list").run(result)
+            CbDelegateTest("test_resume_limit").run(result)
+        self.assertEqual(result.testsRun, 2)
+        self.assertTrue(result.wasSuccessful(), result.failures + result.errors)
 
 
 if __name__ == "__main__":
