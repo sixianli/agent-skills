@@ -24,6 +24,7 @@ macOS bash 3.2.
 - [Workflow](#workflow)
 - [Acceptance](#acceptance)
 - [Landing](#landing)
+- [Review tasks](#review-tasks)
 - [Rework and taking the task back](#rework-and-taking-the-task-back)
 - [Reporting to the user](#reporting-to-the-user)
 - [Configuration](#configuration)
@@ -75,7 +76,9 @@ before and after the smoke test when the model is supposed to be free.
    `## References`; the worker rules forbid other outside reads. The
    worktree is built from `HEAD`, so files that are uncommitted or ignored
    by git are absent from it: list those in `## References` by absolute
-   path.
+   path. When the worker should only review and change no file, use
+   [templates/review-brief.md](templates/review-brief.md) instead and see
+   [Review tasks](#review-tasks).
 2. **Choose the allow and deny lists.** By default the worker can read
    files, find files with Glob, write files only inside its worktree, and
    run read-only git commands, including `git grep` for search. Allow each
@@ -115,7 +118,9 @@ failure means the task is not accepted:
 
 1. `cb check <id>`. It fails when the worker moved `HEAD` (committed or
    checked something out), changed a path outside `## Allowed paths`
-   (renames count on both sides), or changed nothing.
+   (renames count on both sides), or changed nothing. The last case is about
+   a task that changes code; a review task is judged differently, see
+   [Review tasks](#review-tasks).
 2. Read the report's outside tool calls and shell commands. An `ok` read
    of a path that is neither in the brief's `## References` nor a system
    or toolchain file the task plausibly needs is a finding: tell the user
@@ -142,13 +147,49 @@ failure means the task is not accepted:
    Delegation itself authorizes no commit, push or branch.
 4. `cb clean <id>` removes the task's worktree and keeps its logs.
 
+## Review tasks
+
+Use a review task when the worker should read code or documentation and
+report problems, without changing any file. What it reads is still sent to
+Tencent's model service, so the conditions under
+[When to delegate](#when-to-delegate) apply here too.
+
+Write the brief from [templates/review-brief.md](templates/review-brief.md).
+A review brief needs no `## Allowed paths` section; one that is present is
+ignored with a warning. List a file that is uncommitted or ignored by git by
+absolute path under `## What to review` or `## References`. A review that
+covers many files can need a larger `CB_MAX_TURNS`.
+
+`cb start <id> <brief> --review [--allow '<rule>']...` starts a review task.
+The worker gets no `Edit`, `MultiEdit`, `Write` or `NotebookEdit`: they are
+denied. Its rules come from [templates/review-rules.md](templates/review-rules.md)
+and its report format from
+[templates/review.schema.json](templates/review.schema.json), so each
+problem is one entry in `findings` with `file`, `lines`, `severity`,
+`problem`, `evidence` and `suggestion`. Allow only the commands the brief's
+`## Commands` section asks the worker to run.
+
+Accept a review task like this:
+
+1. `cb check <id>` passes only when `HEAD` has not moved and the worktree has
+   no change at all; any changed path means the worker overstepped.
+2. Read the outside tool calls as in step 2 of [Acceptance](#acceptance).
+3. Treat every finding as the worker's claim: read the code it quotes and
+   re-run the commands it cites yourself, and act on or relay a finding only
+   after that check. When you report to the user, keep apart what you
+   confirmed, what you refuted and what you could not verify.
+
+`cb land` refuses a review task. `cb clean <id>` removes it without
+`--discard`. Use `cb resume` as usual when you need more evidence.
+
 ## Rework and taking the task back
 
 - When acceptance fails for a concrete, describable reason, write a short
   feedback file (the failing command, the few lines of error that matter,
-  out-of-scope paths, what must change) and run
-  `cb resume <id> <feedback>` the same way as `start`. The script allows
-  `CB_MAX_ROUNDS` resumes (2 by default).
+  out-of-scope paths, what must change) and run `cb resume <id> <feedback>`
+  in the background, as for `start`. It accepts no `--allow`, `--deny` or
+  `--review`: the rules and the mode from `start` are reused. The script
+  allows `CB_MAX_ROUNDS` resumes (2 by default).
 - When the limit is reached, the worker reports `blocked`, or the problem
   needs a design judgment, take the task back: continue from the worktree's
   changes, or run `cb clean <id> --discard` and start over. Tell the user
@@ -179,11 +220,12 @@ what the worker reported apart from what you verified.
 The worker runs with `--permission-mode dontAsk`: only the allow list runs,
 everything else is denied without a prompt. `Edit`, `MultiEdit` and `Write`
 are allowed only by absolute-path rules for the task's worktree, so the
-worker cannot write anywhere else. Reads cannot be limited the same way:
-CodeBuddy allows `Read` and `Glob` on any path the user's account can read,
-whatever the allow list says. Reads are therefore guarded in three layers,
-as in the opencode-orchestration skill: the brief and the worker rules say
-what to read; deny rules stop reads of credential stores (`~/.ssh`,
+worker cannot write anywhere else. A review task does not get even these
+rules: all four file-writing tools are denied. Reads cannot be limited the
+same way: CodeBuddy allows `Read` and `Glob` on any path the user's account
+can read, whatever the allow list says. Reads are therefore guarded in three
+layers, as in the opencode-orchestration skill: the brief and the worker
+rules say what to read; deny rules stop reads of credential stores (`~/.ssh`,
 `~/.aws`, `~/.azure`, `~/.gnupg`, `~/.config`, `~/.docker`, `~/.kube`,
 `~/.password-store`, `~/Library/Keychains`, the home folders of CodeBuddy and
 the other agent harnesses listed in `scripts/cb-delegate.sh`, `~/.netrc`, `~/.npmrc`, `~/.pypirc`, `~/.git-credentials`)
@@ -191,12 +233,11 @@ and every `--deny` rule; and the report lists every outside read for
 review. The `Grep` tool is removed because it ignores path rules; the worker
 searches with `git grep`, which stays inside the repository, and
 `git grep --no-index` and `git diff --no-index` are denied. The script's
-deny list (commit,
-push, reset, checkout, stash, worktree, `rm`, `sudo`, `curl`, `wget`, `ssh`,
-web access) is evaluated before any allow rule, including allow rules in
-the user's own `~/.codebuddy/settings.json`. The script never passes
-`--fallback-model`, so a rate-limited free model cannot silently fall back
-to a paid one.
+deny list (commit, push, reset, checkout, stash, worktree, `rm`, `sudo`,
+`curl`, `wget`, `ssh`, `DeferExecuteTool`, web access) is evaluated before
+any allow rule, including allow rules in the user's own
+`~/.codebuddy/settings.json`. The script never passes `--fallback-model`, so
+a rate-limited free model cannot silently fall back to a paid one.
 
 `doctor`, `start` and `resume` refuse to run, with exit code 2 and
 `MODEL_NOT_ALLOWED`, when `CB_MODEL` is not allowed. The allowed models are
@@ -265,3 +306,13 @@ rounds.
     smoke tests and real runs reported `total_cost_usd` 0. A community post
     says this lasts until 2026-11-01. Still ask the user to compare the
     credit balance.
+- Checked on 2026-10-24 with CLI 2.173.0: a bare `Edit`, `MultiEdit` or
+  `Write` deny rule removes those tools even when a `Write(<dir>/**)` allow
+  rule is also given; with only the allow rule and the same prompt, the file
+  was written. Review tasks rely on this to keep the worker from writing.
+- `ToolSearch` lists tools that are not loaded, and `DeferExecuteTool` runs
+  one of them by name. A worker used that path to call denied tools: on
+  2026-10-22 `Grep` on a directory denied for reading, and on 2026-10-24
+  `Write` while every file-writing tool was denied. Both calls were refused
+  only because `DeferExecuteTool` was not on the allow list; the script now
+  denies it explicitly.

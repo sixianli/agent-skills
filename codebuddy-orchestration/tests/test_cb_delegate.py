@@ -26,6 +26,7 @@ STUB = textwrap.dedent(
                 git -c user.name=stub -c user.email=stub@example.com commit -qm stub ;;
       hang)     sleep 30 & echo $! > "$STUB_CHILD"; wait ;;
       nojson)   echo "Error: not logged in" >&2; exit 3 ;;
+      noop)     ;;
       noresult) echo '[{"type":"message","role":"user"}]'; exit 0 ;;
       object)   printf '%s\n' "$RESULT"; exit 0 ;;
       probe)    call() { printf '{"type":"function_call","callId":"%s","name":"%s","arguments":%s},' "$1" "$2" "$(jq -cn --argjson a "$3" '$a|tostring')"
@@ -57,6 +58,15 @@ BRIEF = textwrap.dedent(
     """
 ).lstrip()
 
+REVIEW_BRIEF = textwrap.dedent(
+    """
+    # Review: stub
+
+    ## What to review
+    - README.md
+    """
+).lstrip()
+
 
 class CbDelegateTest(unittest.TestCase):
     def setUp(self):
@@ -69,6 +79,8 @@ class CbDelegateTest(unittest.TestCase):
         self.stub.chmod(0o755)
         self.brief = root / "brief.md"
         self.brief.write_text(BRIEF)
+        self.review_brief = root / "review-brief.md"
+        self.review_brief.write_text(REVIEW_BRIEF)
         self.home = root / "cb-home"
         self.env = {
             **os.environ,
@@ -106,6 +118,15 @@ class CbDelegateTest(unittest.TestCase):
 
     def ledger(self):
         return [json.loads(line) for line in (self.home / "ledger.jsonl").read_text().splitlines()]
+
+    def stub_args(self):
+        return Path(self.env["STUB_ARGS"]).read_text()
+
+    def template(self, name):
+        return (SCRIPT.parent.parent / "templates" / name).read_text().rstrip("\n")
+
+    def task_dir(self, task_id):
+        return self.worktree(task_id).parent
 
     def test_start_check_land_clean(self):
         start = self.cb("start", "t1", str(self.brief), "--allow", "Bash(./mvnw:*)", "--deny", "Read(/opt/private/**)")
@@ -355,6 +376,110 @@ class CbDelegateTest(unittest.TestCase):
         start = self.cb("start", "t16", str(self.brief))
         self.assertEqual(start.returncode, 0, start.stderr)
         self.assertNotIn("References path", start.stderr)
+
+    def test_review_start_uses_review_templates_and_review_mode(self):
+        start = self.cb("start", "r1", str(self.review_brief), "--review", mode="noop")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        args = self.stub_args().splitlines()
+        allowed = args[args.index("--allowedTools") + 1 : args.index("--disallowedTools")]
+        denied = args[args.index("--disallowedTools") + 1 : args.index("--max-turns")]
+        self.assertEqual(
+            [rule for rule in allowed if rule.startswith(("Edit(", "MultiEdit(", "Write("))], []
+        )
+        for tool in ("Edit", "MultiEdit", "Write", "NotebookEdit", "DeferExecuteTool"):
+            self.assertIn(tool, denied)
+        text = self.stub_args()
+        self.assertIn(self.template("review-rules.md"), text)
+        self.assertIn(self.template("review.schema.json"), text)
+        self.assertNotIn(self.template("worker-rules.md"), text)
+        self.assertNotIn(self.template("report.schema.json"), text)
+        self.assertEqual((self.task_dir("r1") / "mode").read_text(), "review")
+        self.assertEqual(self.ledger()[-1]["mode"], "review")
+        self.assertIn("(review task, round 0, exit 0)", start.stdout)
+        self.assertNotIn("Allowed paths", start.stderr)
+
+    def test_change_start_rejects_brief_without_allowed_paths(self):
+        start = self.cb("start", "c4", str(self.review_brief), mode="noop")
+        self.assertNotEqual(start.returncode, 0)
+        self.assertIn("no '## Allowed paths'", start.stderr)
+
+    def test_change_start_keeps_worker_templates_and_change_mode(self):
+        start = self.cb("start", "c1", str(self.brief), mode="noop")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        text = self.stub_args()
+        self.assertIn(self.template("worker-rules.md"), text)
+        self.assertIn(self.template("report.schema.json"), text)
+        self.assertNotIn(self.template("review-rules.md"), text)
+        self.assertNotIn(self.template("review.schema.json"), text)
+        self.assertEqual((self.task_dir("c1") / "mode").read_text(), "change")
+        self.assertEqual(self.ledger()[-1]["mode"], "change")
+        args = text.splitlines()
+        denied = args[args.index("--disallowedTools") + 1 : args.index("--max-turns")]
+        self.assertIn("DeferExecuteTool", denied)
+        self.assertNotIn("review task", start.stdout)
+
+    def test_review_start_ignores_allowed_paths_section(self):
+        start = self.cb("start", "r6", str(self.brief), "--review", mode="noop")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertIn("'## Allowed paths' section is ignored", start.stderr)
+
+    def test_review_check_passes_when_nothing_changed(self):
+        start = self.cb("start", "r2", str(self.review_brief), "--review", mode="noop")
+        self.assertEqual(start.returncode, 0, start.stderr)
+        check = self.cb("check", "r2", mode="noop")
+        self.assertEqual(check.returncode, 0, check.stdout)
+        self.assertIn("SCOPE PASS (review task, no changes)", check.stdout)
+
+    def test_review_check_fails_on_any_change(self):
+        self.cb("start", "r3", str(self.review_brief), "--review", mode="inscope")
+        check = self.cb("check", "r3")
+        self.assertEqual(check.returncode, 1)
+        self.assertIn("OUT   src/order/A.java", check.stdout)
+        self.assertIn("SCOPE FAIL", check.stdout)
+
+    def test_review_task_cannot_land_and_cleans_without_discard(self):
+        self.cb("start", "r4", str(self.review_brief), "--review", mode="noop")
+        land = self.cb("land", "r4")
+        self.assertNotEqual(land.returncode, 0)
+        self.assertIn("is a review task and has nothing to land", land.stderr)
+        self.assertEqual(self.git("status", "--porcelain", "-uall"), "")
+        wt = self.worktree("r4")
+        clean = self.cb("clean", "r4")
+        self.assertEqual(clean.returncode, 0, clean.stderr)
+        self.assertNotIn(str(wt), self.git("worktree", "list"))
+        self.assertEqual((wt.parent / "status").read_text(), "cleaned")
+        self.assertEqual([entry["event"] for entry in self.ledger()], ["run"])
+
+    def test_review_resume_keeps_review_mode(self):
+        self.cb("start", "r5", str(self.review_brief), "--review", mode="noop")
+        feedback = self.brief.parent / "review-feedback.md"
+        feedback.write_text("add evidence\n")
+        resume = self.cb("resume", "r5", str(feedback), mode="noop")
+        self.assertEqual(resume.returncode, 0, resume.stderr)
+        text = self.stub_args()
+        self.assertIn(self.template("review-rules.md"), text)
+        args = text.splitlines()
+        denied = args[args.index("--disallowedTools") + 1 : args.index("--max-turns")]
+        self.assertIn("Write", denied)
+        self.assertEqual(args[args.index("--resume") + 1], "sess-1")
+        self.assertEqual([entry["mode"] for entry in self.ledger()], ["review", "review"])
+        self.assertIn("(review task, round 1", self.cb("status", "r5").stdout)
+
+    def test_resume_rejects_extra_options(self):
+        self.cb("start", "c2", str(self.brief), mode="noop")
+        feedback = self.brief.parent / "feedback-extra.md"
+        feedback.write_text("fix\n")
+        resume = self.cb("resume", "c2", str(feedback), "--allow", "Bash(x:*)", mode="noop")
+        self.assertNotEqual(resume.returncode, 0)
+        self.assertIn("usage: resume <id> <feedback.md>", resume.stderr)
+        self.assertIn("settings from start are reused", resume.stderr)
+
+    def test_missing_mode_file_is_treated_as_change(self):
+        self.assertEqual(self.cb("start", "c3", str(self.brief)).returncode, 0)
+        (self.task_dir("c3") / "mode").unlink()
+        check = self.cb("check", "c3")
+        self.assertEqual(check.returncode, 0, check.stdout)
+        self.assertIn("SCOPE PASS", check.stdout)
 
 
 if __name__ == "__main__":

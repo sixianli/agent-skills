@@ -17,7 +17,7 @@ BASE_DENIED=("Bash(git commit:*)" "Bash(git push:*)" "Bash(git reset:*)" "Bash(g
              "Bash(git restore:*)" "Bash(git rebase:*)" "Bash(git merge:*)" "Bash(git stash:*)" "Bash(git worktree:*)"
              "Bash(git clean:*)" "Bash(git branch:*)" "Bash(git tag:*)" "Bash(rm:*)" "Bash(sudo:*)" "Bash(curl:*)"
              "Bash(wget:*)" "Bash(ssh:*)" "Bash(scp:*)" "Bash(git grep --no-index:*)" "Bash(git diff --no-index:*)"
-             Grep WebFetch WebSearch)
+             Grep DeferExecuteTool WebFetch WebSearch)
 SECRET_PATHS=("~/.ssh/**" "~/.aws/**" "~/.azure/**" "~/.gnupg/**" "~/.config/**" "~/.docker/**" "~/.kube/**"
               "~/.password-store/**" "~/Library/Keychains/**" "~/.codebuddy/**" "~/.claude/**" "~/.codex/**"
               "~/.netrc" "~/.npmrc" "~/.pypirc" "~/.git-credentials")
@@ -28,7 +28,7 @@ cb-delegate.sh: delegate a scoped coding task to CodeBuddy Code in a detached gi
 
 Usage:
   cb-delegate.sh doctor
-  cb-delegate.sh start  <id> <brief.md> [--allow '<Tool rule>']... [--deny '<Tool rule>']...
+  cb-delegate.sh start  <id> <brief.md> [--review] [--allow '<Tool rule>']... [--deny '<Tool rule>']...
   cb-delegate.sh resume <id> <feedback.md>
   cb-delegate.sh status <id>
   cb-delegate.sh check  <id>
@@ -88,6 +88,12 @@ valid_id() { [[ "$1" =~ ^[a-z0-9][a-z0-9._-]{0,40}$ ]] || die "invalid task id '
 
 state_dir() { printf '%s/%s/%s' "$CB_HOME" "$(repo_key "$(repo_root)")" "$1"; }
 
+task_mode() {
+  local m=""
+  [ -f "$1/mode" ] && m="$(cat "$1/mode")"
+  if [ "$m" = review ]; then printf 'review'; else printf 'change'; fi
+}
+
 run_with_timeout() {
   local secs="$1" in="$2"; shift 2
   local impl="${CB_TIMEOUT_IMPL:-auto}"
@@ -120,20 +126,27 @@ run_worker() {
   local sd="$1" round="$2" prompt="$3" session="${4:-}"
   local raw="$sd/run-$round.out" out="$sd/run-$round.json" err="$sd/run-$round.err"
   local -a allowed denied args
-  local rule
+  local rule mode schema rules
+  mode="$(task_mode "$sd")"
+  schema="$SKILL_DIR/templates/report.schema.json"
+  rules="$SKILL_DIR/templates/worker-rules.md"
+  if [ "$mode" = review ]; then
+    schema="$SKILL_DIR/templates/review.schema.json"
+    rules="$SKILL_DIR/templates/review-rules.md"
+  fi
   while IFS= read -r rule; do [ -n "$rule" ] && allowed+=("$rule"); done <"$sd/allowed"
   denied=("${BASE_DENIED[@]}")
   for rule in "${SECRET_PATHS[@]}"; do denied+=("Read($rule)"); done
   while IFS= read -r rule; do [ -n "$rule" ] && denied+=("$rule"); done <"$sd/denied"
   args=(-p
         --output-format json
-        --json-schema "$(cat "$SKILL_DIR/templates/report.schema.json")"
+        --json-schema "$(cat "$schema")"
         --model "$CB_MODEL"
         --permission-mode dontAsk
         --allowedTools "${allowed[@]}"
         --disallowedTools "${denied[@]}"
         --max-turns "$CB_MAX_TURNS"
-        --append-system-prompt "$(cat "$SKILL_DIR/templates/worker-rules.md")")
+        --append-system-prompt "$(cat "$rules")")
   if [ -n "$session" ]; then args+=(--resume "$session"); fi
 
   local started rc=0
@@ -161,8 +174,8 @@ run_worker() {
   fi
   ledger "$(jq -cn --arg id "$(basename "$sd")" --arg repo "$(basename "$(dirname "$sd")")" \
     --arg model "$CB_MODEL" --argjson round "$round" --argjson rc "$rc" --argjson secs "$secs" \
-    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson cost "$cost" \
-    '{ts:$ts,event:"run",repo:$repo,id:$id,model:$model,round:$round,exit_code:$rc,seconds:$secs,cost_usd:$cost}')"
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson cost "$cost" --arg mode "$mode" \
+    '{ts:$ts,event:"run",repo:$repo,id:$id,model:$model,mode:$mode,round:$round,exit_code:$rc,seconds:$secs,cost_usd:$cost}')"
 
   report "$sd"
 }
@@ -195,7 +208,11 @@ report() {
   rc="$(cat "$sd/last_rc" 2>/dev/null || echo '?')"
   out="$sd/run-$round.json"; wt="$sd/wt"
 
-  echo "== cb-delegate report: $(basename "$sd") (round $round, exit $rc) =="
+  if [ "$(task_mode "$sd")" = review ]; then
+    echo "== cb-delegate report: $(basename "$sd") (review task, round $round, exit $rc) =="
+  else
+    echo "== cb-delegate report: $(basename "$sd") (round $round, exit $rc) =="
+  fi
   [ "$rc" = 124 ] && echo "!! worker TIMED OUT after ${CB_TIMEOUT}s"
   if valid_json "$out"; then
     jq '{
@@ -261,22 +278,30 @@ cmd_doctor() {
 }
 
 cmd_start() {
-  [ $# -ge 2 ] || die "usage: start <id> <brief.md> [--allow '<rule>']..."
+  [ $# -ge 2 ] || die "usage: start <id> <brief.md> [--review] [--allow '<rule>']..."
   local id="$1" brief="$2"; shift 2
   valid_id "$id"; need git; need jq
   command -v "$CB_BIN" >/dev/null 2>&1 || die "'$CB_BIN' not found (run doctor)"
   [ -f "$brief" ] || die "brief not found: $brief (looked for $(abs_path "$brief"))"
-  grep -qiE '^## +Allowed paths' "$brief" || die "brief has no '## Allowed paths' section"
   check_model
 
-  local extra="" extra_deny=""
+  local extra="" extra_deny="" mode=change
   while [ $# -gt 0 ]; do
     case "$1" in
+      --review) mode=review; shift ;;
       --allow) [ $# -ge 2 ] || die "--allow needs a value"; extra="$extra$2"$'\n'; shift 2 ;;
       --deny)  [ $# -ge 2 ] || die "--deny needs a value"; extra_deny="$extra_deny$2"$'\n'; shift 2 ;;
       *) die "unknown option: $1" ;;
     esac
   done
+
+  if [ "$mode" = review ]; then
+    if grep -qiE '^## +Allowed paths' "$brief"; then
+      warn "review task: the brief's '## Allowed paths' section is ignored; the worker gets no write tools"
+    fi
+  else
+    grep -qiE '^## +Allowed paths' "$brief" || die "brief has no '## Allowed paths' section"
+  fi
 
   local root sd base
   root="$(repo_root)"; sd="$(state_dir "$id")"
@@ -291,21 +316,27 @@ cmd_start() {
   printf '%s' "$root" >"$sd/root"
   printf '%s' "$base" >"$sd/base"
   printf '%s' "$CB_MODEL" >"$sd/model"
+  printf '%s' "$mode" >"$sd/mode"
   git -C "$root" worktree add --detach -q "$sd/wt" "$base"
   local wt_real tool; wt_real="$(cd "$sd/wt" && pwd -P)"
   {
     printf '%s\n' "${BASE_ALLOWED[@]}"
-    for tool in "${WRITE_TOOLS[@]}"; do printf '%s(%s/**)\n' "$tool" "$wt_real"; done
+    if [ "$mode" = change ]; then
+      for tool in "${WRITE_TOOLS[@]}"; do printf '%s(%s/**)\n' "$tool" "$wt_real"; done
+    fi
     printf '%s' "$extra"
   } >"$sd/allowed"
   printf '%s' "$extra_deny" >"$sd/denied"
+  if [ "$mode" = review ]; then
+    printf '%s\n' Edit MultiEdit Write NotebookEdit >>"$sd/denied"
+  fi
 
   check_references "$sd/wt" "$sd/brief.md"
   run_worker "$sd" 0 "$sd/brief.md"
 }
 
 cmd_resume() {
-  [ $# -eq 2 ] || die "usage: resume <id> <feedback.md>"
+  [ $# -eq 2 ] || die "usage: resume <id> <feedback.md> (no other options: the allow, deny and review settings from start are reused)"
   local id="$1" fb="$2" sd round sid
   valid_id "$id"; sd="$(state_dir "$id")"
   [ -d "$sd/wt" ] || die "no active task '$id'"
@@ -374,11 +405,20 @@ cmd_check() {
   [ $# -eq 1 ] || die "usage: check <id>"
   valid_id "$1"; local sd; sd="$(state_dir "$1")"
   [ -d "$sd/wt" ] || die "no active task '$1'"
-  local wt="$sd/wt" base fail=0 n=0 p g ok
-  base="$(cat "$sd/base")"
+  local wt="$sd/wt" base fail=0 n=0 p g ok mode
+  base="$(cat "$sd/base")"; mode="$(task_mode "$sd")"
 
   if [ "$(git -C "$wt" rev-parse HEAD)" != "$base" ]; then
     echo "FAIL  worker moved HEAD (created commits or checked out something)"; fail=1
+  fi
+
+  if [ "$mode" = review ]; then
+    while IFS= read -r p; do
+      [ -n "$p" ] || continue
+      echo "OUT   $p"; fail=1
+    done < <(changed_paths "$wt")
+    if [ "$fail" -eq 0 ]; then echo "SCOPE PASS (review task, no changes)"; else echo "SCOPE FAIL"; fi
+    return "$fail"
   fi
 
   local globs; globs="$(allowed_globs "$sd/brief.md")"
@@ -402,6 +442,9 @@ cmd_check() {
 cmd_land() {
   [ $# -eq 1 ] || die "usage: land <id>"
   valid_id "$1"; local sd; sd="$(state_dir "$1")"
+  if [ "$(task_mode "$sd")" = review ]; then
+    die "task '$1' is a review task and has nothing to land; read its report with 'status $1', then remove it with 'clean $1'"
+  fi
   [ -d "$sd/wt" ] || die "no active task '$1'"
   cmd_check "$1" >/dev/null || die "scope check fails; run 'check $1' and resolve before landing"
   local wt="$sd/wt" root base patch
@@ -426,21 +469,22 @@ cmd_land() {
 
 cmd_clean() {
   [ $# -ge 1 ] || die "usage: clean <id> [--discard]"
-  valid_id "$1"; local sd st; sd="$(state_dir "$1")"
+  valid_id "$1"; local sd st mode; sd="$(state_dir "$1")"
   [ -d "$sd" ] || die "no task '$1'"
   st="$(cat "$sd/status" 2>/dev/null || echo unknown)"
-  if [ "$st" != landed ] && [ "${2:-}" != --discard ]; then
+  mode="$(task_mode "$sd")"
+  if [ "$mode" != review ] && [ "$st" != landed ] && [ "${2:-}" != --discard ]; then
     die "task '$1' is '$st', not landed. Use 'clean $1 --discard' to throw the worker's changes away."
   fi
   if [ -d "$sd/wt" ]; then
     git -C "$(cat "$sd/root")" worktree remove --force "$sd/wt"
   fi
-  if [ "$st" != landed ]; then
+  if [ "$mode" = review ] || [ "$st" = landed ]; then
+    printf 'cleaned' >"$sd/status"
+  else
     printf 'discarded' >"$sd/status"
     ledger "$(jq -cn --arg id "$1" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
       --argjson rounds "$(cat "$sd/round" 2>/dev/null || echo 0)" '{ts:$ts,event:"discarded",id:$id,rounds:$rounds}')"
-  else
-    printf 'cleaned' >"$sd/status"
   fi
   echo "worktree removed; logs kept in $sd"
 }
