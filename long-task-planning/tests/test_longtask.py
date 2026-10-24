@@ -893,6 +893,35 @@ class StatusTests(Base):
         self.record_vitest(self.repo, self.passing(self.repo), "--fingerprint-file", str(fp_file))
         self.assertEqual(self.status_of(self.repo, "T-A1"), "verified")
 
+    def test_status_names_passes_on_other_hosts(self):
+        self.init_task(self.repo, [
+            item("T-A1", [tag_check("T-A1", host="cloud")]),
+            item("T-S1", [{"type": "test", "file": "test/app.test.ts", "name": "adds", "host": "cloud"}]),
+            item("T-C1", [{"type": "command", "run": "make check", "host": "cloud"}]),
+        ])
+        self.record_vitest(self.repo, self.passing(self.repo))
+        self.ok(self.cli(self.repo, "record", "--command", "make check", "--exit-code", "0"))
+        code, data = self.status(self.repo)
+        self.assertEqual(code, 0)
+        for tid in ("T-A1", "T-S1", "T-C1"):
+            entry = self.item_of(data, tid)
+            self.assertEqual(entry["status"], "not_done")
+            reasons = " ".join(entry["reasons"])
+            self.assertIn("另有 1 条通过记录在 mac-test 上", reasons)
+            self.assertIn("这条检查只认 cloud", reasons)
+        reasons_s = " ".join(self.item_of(data, "T-S1")["reasons"])
+        self.assertIn("（只认 cloud 上的结果）", reasons_s)
+        self.set_items(self.repo, [
+            item("T-A1", [tag_check("T-A1", host="cloud")]),
+            item("T-S1", [{"type": "test", "file": "test/app.test.ts", "name": "adds", "host": "cloud"}]),
+            item("T-C1", [{"type": "command", "run": "make check", "host": "cloud"}]),
+            item("T-A2", [tag_check("T-A1", host="mac-test")]),
+        ])
+        code, data = self.status(self.repo)
+        entry_a2 = self.item_of(data, "T-A2")
+        self.assertEqual(entry_a2["status"], "verified")
+        self.assertNotIn("另有", " ".join(entry_a2["reasons"]))
+
     def test_user_decision_states(self):
         self.init_task(self.repo, [
             item("T-U1", [{"type": "user", "ref": None, "question": "要不要做 X？"}]),
@@ -1195,6 +1224,15 @@ class EnvironmentCheckTests(Base):
     def record_run(self, exit_code, when):
         self.env["LONGTASK_NOW"] = when
         self.ok(self.cli(self.repo, "record", "--command", "bwrap --version", "--exit-code", str(exit_code)))
+
+    def test_environment_check_names_passes_on_other_hosts(self):
+        self.init_task(self.repo, [item("T-E1", [self.env_check(host="cloud")])])
+        self.record_run(0, "2026-10-02T10:00:00+08:00")
+        entry = self.item_of(self.status(self.repo)[1], "T-E1")
+        self.assertEqual(entry["status"], "not_done")
+        reasons = " ".join(entry["reasons"])
+        self.assertIn("还没有在 cloud 上跑", reasons)
+        self.assertIn("另有 1 条通过记录在 mac-test 上", reasons)
 
     def test_environment_command_check_follows_age_not_code(self):
         self.init_task(self.repo, [item("T-E1", [self.env_check()]), item("T-E2", [self.env_check(host="cloud")])])

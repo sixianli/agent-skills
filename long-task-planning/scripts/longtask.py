@@ -1012,6 +1012,12 @@ class Evaluation:
     def host_ok(self, record, host):
         return host is None or record.get("host") == host
 
+    def other_hosts_note(self, host, passed_elsewhere):
+        if not host or not passed_elsewhere:
+            return ""
+        hosts = "、".join(sorted({str(record.get("host")) for record in passed_elsewhere}))
+        return f"；另有 {len(passed_elsewhere)} 条通过记录在 {hosts} 上，这条检查只认 {host}，主机名要和记录里的完全一样"
+
     def current(self, record):
         return record.get("fingerprint") == self.fp["fingerprint"]
 
@@ -1116,7 +1122,15 @@ class Evaluation:
             if missing:
                 more = f" 等 {len(missing)} 个" if len(missing) > 3 else ""
                 return "not_done", f"当前版本上这些带 [{tag}] 的文件还没跑：{', '.join(missing[:3])}{more}", []
-        return self.older_or_missing(relevant, lambda record: record["tags"][tag], f"[{tag}] ", f"当前版本上没有 [{tag}] 的通过记录{host_note}")
+        passed_elsewhere = [
+            record for record in self.records
+            if record.get("kind") == "test" and not self.host_ok(record, host)
+            and tag in (record.get("tags") or {})
+            and record["tags"][tag].get("passed", 0) > 0
+            and not record["tags"][tag].get("failed", 0)
+        ]
+        return self.older_or_missing(relevant, lambda record: record["tags"][tag], f"[{tag}] ",
+                                     f"当前版本上没有 [{tag}] 的通过记录{host_note}" + self.other_hosts_note(host, passed_elsewhere))
 
     def older_or_missing(self, relevant, counts_of, what, missing_reason):
         seen = set()
@@ -1168,7 +1182,19 @@ class Evaluation:
                 if note:
                     return "verified", f"{label} 通过；{note}", untested
                 return "verified", f"{label} 在当前版本上通过", []
-        return self.older_or_missing(relevant, entry_of, label, f"当前版本上没有 {label} 的通过记录")
+        passed_elsewhere = []
+        for record in self.records:
+            if record.get("kind") != "test" or self.host_ok(record, host):
+                continue
+            entry = entry_of(record)
+            if entry is None:
+                continue
+            if entry.get("passed", 0) > 0 and not entry.get("failed", 0):
+                passed_elsewhere.append(record)
+        return self.older_or_missing(relevant, entry_of, label,
+                                     f"当前版本上没有 {label} 的通过记录"
+                                     + (f"（只认 {host} 上的结果）" if host else "")
+                                     + self.other_hosts_note(host, passed_elsewhere))
 
     def check_review(self, entry, check):
         reviewer = check.get("by")
@@ -1257,13 +1283,23 @@ class Evaluation:
         for record in reversed(relevant):
             if record.get("exit_code") == 0:
                 return self.older(record, f"“{run}”")
-        return "not_done", f"当前版本上还没有跑“{run}”" + (f"（只认 {host} 上的结果）" if host else ""), []
+        passed_elsewhere = [
+            record for record in self.records
+            if record.get("kind") == "command" and not self.host_ok(record, host)
+            and record.get("command") == run and record.get("exit_code") == 0
+        ]
+        return "not_done", f"当前版本上还没有跑“{run}”" + (f"（只认 {host} 上的结果）" if host else "") + self.other_hosts_note(host, passed_elsewhere), []
 
     def check_environment(self, run, host, days):
         records = [record for record in self.records if record.get("kind") == "command"
                    and record.get("command") == run and record.get("host") == host]
+        passed_elsewhere = [
+            record for record in self.records
+            if record.get("kind") == "command" and not self.host_ok(record, host)
+            and record.get("command") == run and record.get("exit_code") == 0
+        ]
         if not records:
-            return "not_done", f"还没有在 {host} 上跑“{run}”的记录", []
+            return "not_done", f"还没有在 {host} 上跑“{run}”的记录" + self.other_hosts_note(host, passed_elsewhere), []
         latest = records[-1]
         when = short_time(latest.get("time"))
         if latest.get("exit_code") != 0:
