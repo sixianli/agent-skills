@@ -924,7 +924,13 @@ class TaskFlagTests(Base):
     def new(self, *leading):
         return self.run_launch("new", *leading, str(self.brief), str(self.prefix), "provider/model")
 
-    def test_two_open_tasks_without_task_flag_refuses_the_brief(self):
+    def test_two_open_tasks_infer_the_task_from_the_brief(self):
+        result = self.new()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.calls(), 1)
+
+    def test_two_open_tasks_refuse_a_brief_matching_neither(self):
+        self.brief.write_text(f"# brief\n\n## 2. 范围\n\n- 本批条目：\n  - `T-Z9` 不存在的条目\n\n写停止文件 `{self.stop}`。\n")
         result = self.new()
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn("check-brief refused the brief", result.stderr)

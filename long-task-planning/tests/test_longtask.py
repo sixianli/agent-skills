@@ -1992,15 +1992,29 @@ class CheckBriefTests(Base):
         return "\n".join(["# 任务说明", "", "## 1. 为什么做", "", background, "", "## 2. 范围", "", "- 本批条目：",
                           *batch, "- 不做：其他条目", "", "## 3. 验收", "", accept, ""])
 
+    def make_task(self, name, prefix, items):
+        self.ok(self.cli(self.repo, "init", name, "--prefix", prefix, "--goal", "目标", "--date", "2026-10-01"))
+        task = self.repo / ".agents/tasks" / name
+        data = json.loads((task / "items.json").read_text(encoding="utf-8"))
+        data.pop("decisions", None)
+        data["items"] = list(items)
+        (task / "items.json").write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        return task
+
     def test_brief_naming_known_items_passes(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
         result = self.brief(self.scoped("  - `T-A1` 标题。"))
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("本批条目 T-A1", result.stdout)
+        self.assertNotIn("进行中的任务", result.stdout)
 
     def test_brief_without_items_fails(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
         self.assertEqual(self.brief("修一下那个问题").returncode, 1)
+        result = self.brief(self.scoped(*[f"  - `T-A{n}` 标题。" for n in range(1, 5)]))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("错误：本批条目有 4 个", result.stdout)
+        self.assertNotIn("请用 --task", result.stdout)
 
     def test_brief_with_unknown_item_fails(self):
         self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
@@ -2061,8 +2075,46 @@ class CheckBriefTests(Base):
         self.assertEqual(result.returncode, 1)
         self.assertIn("最多 3 个", result.stdout)
 
-    def test_brief_without_task_fails(self):
-        self.assertEqual(self.brief("本批：T-A1").returncode, 1)
+    def test_check_brief_infers_the_only_task_whose_items_match(self):
+        self.make_task("demo", "T", [item("T-A1", [tag_check("T-A1")])])
+        self.make_task("other", "U", [item("U-A1", [tag_check("U-A1")])])
+        broken = self.make_task("broken", "X", [item("X-A1", [tag_check("X-A1")])])
+        (broken / "items.json").write_text("{not json", encoding="utf-8")
+        result = self.brief(self.scoped("  - `T-A1` 标题。"))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("按简报里的条目用", result.stdout)
+        self.assertIn("demo", result.stdout)
+        self.assertIn("简报检查通过", result.stdout)
+
+    def test_check_brief_refuses_when_several_tasks_accept_or_none_does(self):
+        self.make_task("demo", "T", [item("T-A1", [tag_check("T-A1")])])
+        self.make_task("other", "T", [item("T-A1", [tag_check("T-A1")])])
+        result = self.brief(self.scoped("  - `T-A1` 标题。"))
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("demo：通过", result.stdout)
+        self.assertIn("other：通过", result.stdout)
+        self.assertIn("--task", result.stdout)
+        result = self.brief(self.scoped("  - `T-Z9` 标题。"))
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("--task", result.stdout)
+        for name in ("demo", "other"):
+            line = next(ln for ln in result.stdout.splitlines() if ln.startswith(f"- {name}："))
+            self.assertFalse(line.endswith("：通过"), line)
+
+    def test_check_brief_without_open_task_passes_with_a_note(self):
+        result = self.brief(self.scoped("  - `T-A1` 标题。"))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("没有进行中的长任务，不检查条目", result.stdout)
+        self.init_task(self.repo, [item("T-A1", [tag_check("T-A1")])])
+        with open(self.repo / TASK / "goal.md", "a", encoding="utf-8") as handle:
+            handle.write("\n## CLOSED 2026-10-03 用户原话\n\n> 验收通过\n")
+        result = self.brief(self.scoped("  - `T-A1` 标题。"))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("没有进行中的长任务，不检查条目", result.stdout)
+        brief_file = self.root / "missing.md"
+        brief_file.write_text(self.scoped("  - `T-A1` 标题。"), encoding="utf-8")
+        result = self.cli(self.repo, "check-brief", str(brief_file), "--task", "nope")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

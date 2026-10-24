@@ -105,13 +105,55 @@ class CodexLaunchTests(unittest.TestCase):
         self.assertIn("usage", result.stderr)
         self.assertFalse(self.args_file.exists())
 
-    def test_two_open_tasks_without_task_flag_refuses_to_launch(self):
+    def test_two_open_tasks_infer_the_task_from_the_brief(self):
         self.add_second_task()
         brief = self.brief("# 任务说明\n\n## 2. 范围\n\n- 本批条目：\n  - `T-A1` 先写红测试\n")
+        result = self.launch(brief, "handoff/stop-1.md", "--", "-m", "gpt-x")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(self.args_file.exists())
+
+    def test_two_open_tasks_refuse_a_brief_matching_neither(self):
+        self.add_second_task()
+        brief = self.brief("# 任务说明\n\n## 2. 范围\n\n- 本批条目：\n  - `T-Z9` 不存在的条目\n")
         result = self.launch(brief, "handoff/stop-1.md", "--", "-m", "gpt-x")
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.args_file.exists())
         self.assertIn("--task", result.stdout + result.stderr)
+
+    def test_read_only_brief_launches_without_items(self):
+        brief = self.brief("只读任务：是\n")
+        result = self.launch(brief, "handoff/stop-1.md", "--", "-m", "gpt-x", "-c", 'model_reasoning_effort="xhigh"')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.args_file.read_text().splitlines(), [
+            "-m", "gpt-x", "-c", 'model_reasoning_effort="xhigh"',
+            f"Read {brief} fully, then work per it. The first stop file is handoff/stop-1.md.",
+        ])
+        self.assertIn("READ_ONLY_BRIEF", result.stdout)
+        self.args_file.unlink()
+        fenced = self.brief("```\n只读任务：是\n```\n")
+        result = self.launch(fenced, "handoff/stop-1.md", "--", "-m", "gpt-x")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.args_file.exists())
+        indented = self.brief("  只读任务：是\n")
+        result = self.launch(indented, "handoff/stop-1.md", "--", "-m", "gpt-x")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.args_file.exists())
+        read_only = self.brief("只读任务：是\n")
+        with_task =self.launch("--task", "demo", read_only, "handoff/stop-1.md", "--", "-m", "gpt-x")
+        self.assertEqual(with_task.returncode, 0, with_task.stdout + with_task.stderr)
+        self.assertIn("READ_ONLY_BRIEF", with_task.stdout)
+        self.assertEqual(self.args_file.read_text().splitlines(), [
+            "-m", "gpt-x",
+            f"Read {read_only} fully, then work per it. The first stop file is handoff/stop-1.md.",
+        ])
+
+    def test_without_open_task_launches_a_plain_batch(self):
+        with open(self.repo / ".agents/tasks/demo/goal.md", "a", encoding="utf-8") as handle:
+            handle.write("\n## CLOSED 2026-10-03 用户原话\n\n> 验收通过\n")
+        brief = self.brief("# 任务说明\n\n没有写条目编号\n")
+        result = self.launch(brief, "handoff/stop-1.md", "--", "-m", "gpt-x")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(self.args_file.exists())
 
     def test_task_flag_selects_the_task_and_is_not_passed_to_codex(self):
         self.add_second_task()

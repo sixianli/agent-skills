@@ -291,7 +291,7 @@ mutant("brief withdrawn refused outside the batch",
        [('    withdrawn = [value for value in batch if value in items and items[value].get("withdrawn")]', '    withdrawn = [value for value in mentioned if value in items and items[value].get("withdrawn")]')],
        ["CheckBriefTests.test_withdrawn_item_outside_the_batch_only_warns"])
 mutant("brief withdrawn mention not warned",
-       [('    if noted:\n        print(', '    if False:\n        print(')],
+       [('        if noted:\n            print(', '        if False:\n            print(')],
        ["CheckBriefTests.test_withdrawn_item_outside_the_batch_only_warns"])
 mutant("brief batch taken from the whole brief",
        [('        bullet = None if level is None else re.match(', '        bullet = re.match(')],

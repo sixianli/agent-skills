@@ -119,8 +119,10 @@ file at all (reading code for a report, reviewing a document Claude wrote)
 needs no item: put a line that is exactly `只读任务：是` in the brief, outside
 fenced code, and `oc-launch.sh new` skips the check and prints
 `READ_ONLY_BRIEF`; every other check still runs. When the repository has more
-than one open long task, give `new --task <task>` to say which task the brief
-belongs to: the value goes unchanged to `longtask.py check-brief --task`.
+than one open long task, `check-brief` picks the task whose items the brief's
+`范围` section fits, so `new --task <task>` is only needed when the brief matches
+none or more than one of them; the value goes unchanged to
+`longtask.py check-brief --task`.
 opencode records test evidence with `longtask.py record --by opencode` and
 never edits `goal.md`, `items.json` or `plan.md`.
 
@@ -176,9 +178,11 @@ New session (one batch = one session):
 <skill>/scripts/oc-launch.sh new <brief path> <handoff>/<date>-<task>-oc-<N> '<provider/model>#<variant>' "<task>-<batch>"
 ```
 
-When the repository has more than one open long task, add `--task <task>`
-right after `new`; it is passed unchanged to `longtask.py check-brief --task`
-and never reaches opencode.
+When the repository has more than one open long task, `check-brief` picks the
+task whose items the brief's `范围` section fits, so add `--task <task>` right
+after `new` only when the brief matches none or more than one of them; it is
+passed unchanged to `longtask.py check-brief --task` and never reaches
+opencode.
 
 The run prefix always starts with the handoff directory. The task server's
 state goes next to the prefix (`<prefix dir>/oc-server/`), so on 2026-10-16

@@ -1977,17 +1977,11 @@ def brief_batch(text, pattern):
     return batch
 
 
-def cmd_check_brief(args):
-    repo = repo_from(args)
-    task = resolve_task(repo, args.task)
+def check_brief_for_task(task, text):
     data = load_items(task)
     prefix = data.get("prefix")
     if not isinstance(prefix, str) or not prefix:
         raise Fail("items.json 缺少 prefix")
-    try:
-        text = read_text(args.brief)
-    except OSError as error:
-        raise Fail(f"读不了简报 {args.brief}：{error}")
     items = {entry.get("id"): entry for entry in data["items"] if isinstance(entry, dict)}
     pattern = re.compile(rf"(?<![A-Za-z0-9]){re.escape(prefix)}-{ID_BODY}")
     mentioned = sorted(set(pattern.findall(text)))
@@ -2004,14 +1998,58 @@ def cmd_check_brief(args):
         problems.append(f"本批条目有 {len(batch)} 个（{'、'.join(batch)}），最多 3 个；同一次测试顺带验证的条目写在不以编号开头的一行里")
     if withdrawn:
         problems.append(f"本批条目 {'、'.join(withdrawn)} 已决定不做")
-    for problem in problems:
-        print(f"错误：{problem}")
-    if noted:
-        print(f"警告：简报提到的 {'、'.join(noted)} 已决定不做；它们不在本批条目里，只当说明")
-    if problems:
-        return 1
-    print(f"简报检查通过：本批条目 {'、'.join(batch)}")
-    return 0
+    return problems, noted, batch
+
+
+def cmd_check_brief(args):
+    repo = repo_from(args)
+    try:
+        text = read_text(args.brief)
+    except OSError as error:
+        raise Fail(f"读不了简报 {args.brief}：{error}")
+
+    def emit(problems, noted, batch):
+        for problem in problems:
+            print(f"错误：{problem}")
+        if noted:
+            print(f"警告：简报提到的 {'、'.join(noted)} 已决定不做；它们不在本批条目里，只当说明")
+        if problems:
+            return 1
+        print(f"简报检查通过：本批条目 {'、'.join(batch)}")
+        return 0
+
+    if args.task:
+        task = resolve_task(repo, args.task)
+        problems, noted, batch = check_brief_for_task(task, text)
+        return emit(problems, noted, batch)
+    active = active_tasks(repo)
+    if not active:
+        print("没有进行中的长任务，不检查条目：这个简报按不属于长任务的批次处理")
+        return 0
+    if len(active) == 1:
+        task = active[0]
+        problems, noted, batch = check_brief_for_task(task, text)
+        return emit(problems, noted, batch)
+    results = []
+    for task in active:
+        try:
+            problems, noted, batch = check_brief_for_task(task, text)
+        except Fail as error:
+            results.append((task, [str(error)], [], []))
+            continue
+        results.append((task, problems, noted, batch))
+    passed = [(task, problems, noted, batch) for task, problems, noted, batch in results if not problems]
+    if len(passed) == 1:
+        task, problems, noted, batch = passed[0]
+        print(f"有 {len(active)} 个进行中的任务，按简报里的条目用 {task.name}（要指定就用 --task）")
+        return emit(problems, noted, batch)
+    print(f"有 {len(active)} 个进行中的任务，简报没有恰好对应其中一个，请用 --task 指定：")
+    for task, problems, noted, batch in results:
+        if problems:
+            print(f"- {task.name}：{'；'.join(problems)}")
+        else:
+            print(f"- {task.name}：通过")
+    return 1
 
 
 def cmd_init(args):

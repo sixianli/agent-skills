@@ -228,7 +228,7 @@ Add a `SessionStart` hook that runs `python3 <skill-dir>/scripts/longtask.py hoo
 | `lint [--task T]` | Check the rules in [Full mode files](#full-mode-files) |
 | `context [--task T]` | Print what the hook injects |
 | `fingerprint [--json \| --list] [--include P] [--exclude P]` | Current fingerprint, or the per-file lines it hashes |
-| `check-brief <brief> [--task T]` | Check the batch a brief names (ID-led bullets in its `范围` section) before an agent starts |
+| `check-brief <brief> [--task T]` | Check the batch a brief names (ID-led bullets in its `范围` section) before an agent starts; without `--task` it checks the one open task, passes with a note when no task is open, and with several open tasks uses the one the brief's items fit, refusing when none or more than one fit |
 | `find-tests --vitest F \| --junit F [--commit C] [--grep W]` | Print paste-ready `file` + `name` checks for the tests in a report |
 | `hook` | Session-start hook; reads the hook JSON on stdin |
 
