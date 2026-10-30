@@ -756,15 +756,19 @@ class ValidateDocsTests(unittest.TestCase):
             "spec-template.md": "docs/execution/specs/2026-07-19-topic-design.md",
             "plan-template.md": "docs/execution/plans/2026-07-19-topic-plan.md",
             "runbook-template.md": "docs/runbooks/topic-runbook.md",
-            "idea-note-template.md": "docs/ideas/IDEA-20260719-001-idea.md",
-            "backlog-item-template.md": "docs/backlog/BL-20260719-001-item.md",
+            "idea-note-template.md": "docs/ideas/IDEA-20260719-a2b3c4-idea.md",
+            "backlog-item-template.md": "docs/backlog/BL-20260719-a2b3c4-item.md",
             "lessons-template.md": "docs/lessons.md",
         }
         for source_name, destination_name in destinations.items():
             content = (templates / source_name).read_text(encoding="utf-8")
             content = (
-                content.replace("IDEA-YYYYMMDD-NNN", "IDEA-20260719-001")
-                .replace("BL-YYYYMMDD-NNN", "BL-20260719-001")
+                content.replace("IDEA-YYYYMMDD-xxxxxx", "IDEA-20260719-a2b3c4")
+                .replace("BL-YYYYMMDD-xxxxxx", "BL-20260719-a2b3c4")
+                .replace("IDEA-YYYYMMDD-NNN", "IDEA-20260719-a2b3c4")
+                .replace("BL-YYYYMMDD-NNN", "BL-20260719-a2b3c4")
+                .replace("vX.Y", "v0.1")
+                .replace("NNNN-short-title", "0001-decision")
                 .replace("YYYY-MM-DD", "2026-07-19")
                 .replace("<project>", "demo")
                 .replace("<repo-relative-authoritative-path>", "README.md")
@@ -807,6 +811,331 @@ class ValidateDocsTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, payload)
         self.assertTrue(payload["ok"])
+
+    def write_raw(self, relative: str, content: str | bytes) -> Path:
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if isinstance(content, bytes):
+            path.write_bytes(content)
+        else:
+            path.write_text(content, encoding="utf-8")
+        return path
+
+    def idea_fields(self, record_id: str, **overrides: str) -> dict[str, str]:
+        fields = {
+            "record_id": record_id,
+            "record_state": "captured",
+            "updated": "2026-07-19",
+            "promoted_to": "",
+        }
+        fields.update(overrides)
+        return fields
+
+    def test_utf8_bom_frontmatter_is_recognized(self) -> None:
+        self.write_raw(
+            "docs/prd-v0.1.md",
+            "\ufeff---\nstatus: active\ndocument_type: prd\nsupersedes: \"\"\n"
+            "superseded_by: \"\"\ndate: \"2026-07-19\"\n---\n\n# Product\n",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+
+    def test_unmaintained_todo_and_index_are_notices_not_strict_errors(self) -> None:
+        self.write_raw("docs/TODO.md", "- [ ] add pagination\n")
+        self.write_raw("docs/ideas/INDEX.md", "# Ideas\n")
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        notices = "\n".join(payload["warnings"])
+        self.assertIn("docs/TODO.md: not maintained by document-governance", notices)
+        self.assertIn("docs/ideas/INDEX.md: not maintained by document-governance", notices)
+
+    def test_non_utf8_file_reports_error_and_keeps_json(self) -> None:
+        self.write_raw("docs/prd-v0.1.md", b"---\nstatus: active\n---\n\xff\xfe bad\n")
+
+        result, payload = self.run_validator(strict=False)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("not valid UTF-8", "\n".join(payload["errors"]))
+
+    def test_broken_and_looping_symlinks_are_errors(self) -> None:
+        (self.root / "docs/broken.md").symlink_to(self.root / "docs/nowhere.md")
+        loop = self.root / "docs/loop.md"
+        loop.symlink_to(loop)
+
+        result, payload = self.run_validator(strict=False)
+
+        self.assertEqual(result.returncode, 1)
+        rendered = "\n".join(payload["errors"])
+        self.assertIn("docs/broken.md: symbolic link does not resolve", rendered)
+        self.assertIn("docs/loop.md: symbolic link does not resolve", rendered)
+
+    def test_date_must_be_iso_format(self) -> None:
+        self.write_raw(
+            "docs/prd-v0.1.md",
+            "---\nstatus: active\ndocument_type: prd\nsupersedes: \"\"\n"
+            "superseded_by: \"\"\ndate: \"July 19\"\n---\n\n# Product\n",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(
+            "date must be YYYY-MM-DD, found 'July 19'", "\n".join(payload["errors"])
+        )
+        _, relaxed = self.run_validator(strict=False)
+        self.assertIn("date must be YYYY-MM-DD", "\n".join(relaxed["warnings"]))
+
+    def test_empty_required_fields_are_missing(self) -> None:
+        self.write_raw(
+            "docs/archive/specs/old.md",
+            "---\nstatus:\ndocument_type: spec\nsupersedes: \"\"\n"
+            "superseded_by: \"\"\ndate: \"\"\n---\n\n# Old\n",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(
+            "docs/archive/specs/old.md: missing frontmatter fields: date, status",
+            "\n".join(payload["errors"]),
+        )
+
+    def test_unfilled_template_placeholders_are_reported(self) -> None:
+        self.write_document("docs/adr/NNNN-real.md", "# Real", decision_status="accepted")
+        self.write_document(
+            "docs/prd-v0.1.md",
+            "# Product\n"
+            "- [SOURCE: docs/architecture-vX.Y.md#section]\n"
+            "- [SOURCE: docs/adr/NNNN-real.md]\n"
+            "- [SOURCE: docs/<missing>.md]\n"
+            "- [SOURCE: docs/gone.md]",
+            document_type="prd",
+        )
+        self.write_document(
+            "docs/ideas/IDEA-20260719-001-x.md",
+            "# Idea",
+            document_type="idea",
+            extra_fields=self.idea_fields("IDEA-20260719-001", updated="YYYY-MM-DD"),
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        rendered = "\n".join(payload["errors"])
+        self.assertIn(
+            "unfilled template placeholder in SOURCE target docs/architecture-vX.Y.md",
+            rendered,
+        )
+        self.assertIn(
+            "unfilled template placeholder in SOURCE target docs/<missing>.md",
+            rendered,
+        )
+        self.assertNotIn("NNNN-real", rendered)
+        self.assertIn("missing SOURCE target docs/gone.md", rendered)
+        self.assertIn("unfilled template placeholder in updated", rendered)
+        _, relaxed = self.run_validator(strict=False)
+        self.assertIn(
+            "unfilled template placeholder in SOURCE target",
+            "\n".join(relaxed["warnings"]),
+        )
+
+    def test_non_record_markdown_in_ideas_names_record_rule(self) -> None:
+        self.write_raw("docs/ideas/README.md", "# Ideas\n")
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(
+            "every Markdown file in docs/ideas/ is a record; move non-record notes elsewhere",
+            "\n".join(payload["errors"]),
+        )
+
+    def test_typed_root_documents_must_live_at_their_paths(self) -> None:
+        self.write_document("docs/notes/lessons.md", "# Lessons", document_type="lessons")
+        self.write_document("docs/notes/product.md", "# Product", document_type="prd")
+        self.write_document(
+            "docs/architecture.md", "# Arch", document_type="architecture"
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        rendered = "\n".join(payload["errors"])
+        self.assertIn(
+            "docs/notes/lessons.md: document_type 'lessons' requires path docs/lessons.md",
+            rendered,
+        )
+        self.assertIn(
+            "docs/notes/product.md: document_type 'prd' requires path docs/prd-v<version>.md",
+            rendered,
+        )
+        self.assertIn(
+            "docs/architecture.md: document_type 'architecture' requires path "
+            "docs/architecture-v<version>.md",
+            rendered,
+        )
+
+    def test_plan_source_spec_requires_heading_or_spec_source(self) -> None:
+        self.write_document("docs/execution/specs/s.md", "# Spec", document_type="spec")
+        self.write_document("docs/prd-v0.1.md", "# Product", document_type="prd")
+        self.write_document(
+            "docs/execution/plans/mention.md",
+            "# Plan\n\nWe have no Source Spec yet.\n\n- [SOURCE: docs/prd-v0.1.md]",
+            document_type="plan",
+        )
+        self.write_document(
+            "docs/execution/plans/heading.md",
+            "# Plan\n\n## Source Spec\n\nTBD",
+            document_type="plan",
+        )
+        self.write_document(
+            "docs/execution/plans/linked.md",
+            "# Plan\n\n- [SOURCE: docs/execution/specs/s.md]",
+            document_type="plan",
+        )
+
+        _, payload = self.run_validator(strict=True)
+
+        rendered = "\n".join(payload["errors"])
+        self.assertIn("plans/mention.md: plan should link to its source spec", rendered)
+        self.assertNotIn("plans/heading.md", rendered)
+        self.assertNotIn("plans/linked.md", rendered)
+
+    def test_runbook_archive_fallback_preserves_subpath(self) -> None:
+        self.write_document(
+            "docs/archive/runbooks/other/2026-07-18-deploy.md",
+            "# Other",
+            status="archived",
+            document_type="runbook",
+            extra_fields={"archive_reason": "Retired"},
+        )
+        self.write_document(
+            "docs/archive/runbooks/ops/2026-07-18-deploy.md",
+            "# Ops",
+            status="archived",
+            document_type="runbook",
+            extra_fields={"archive_reason": "Retired"},
+        )
+        self.write_document(
+            "docs/prd-v0.1.md",
+            "# Product\n\n- [SOURCE: docs/runbooks/ops/deploy.md]\n"
+            "- [SOURCE: docs/runbooks/web/deploy.md]",
+            document_type="prd",
+        )
+
+        _, payload = self.run_validator(strict=True)
+
+        rendered = "\n".join(payload["errors"])
+        self.assertNotIn("runbooks/ops/deploy.md", rendered)
+        self.assertIn("missing SOURCE target docs/runbooks/web/deploy.md", rendered)
+
+    def test_both_record_id_formats_are_accepted(self) -> None:
+        self.write_document(
+            "docs/ideas/IDEA-20260719-a2b3c4-new.md",
+            "# New",
+            document_type="idea",
+            extra_fields=self.idea_fields("IDEA-20260719-a2b3c4"),
+        )
+        self.write_document(
+            "docs/ideas/IDEA-20260719-001-legacy.md",
+            "# Legacy",
+            document_type="idea",
+            extra_fields=self.idea_fields("IDEA-20260719-001"),
+        )
+        self.write_document(
+            "docs/ideas/IDEA-20260719-a0b3c4-bad.md",
+            "# Bad alphabet",
+            document_type="idea",
+            extra_fields=self.idea_fields("IDEA-20260719-a0b3c4"),
+        )
+
+        _, payload = self.run_validator(strict=True)
+
+        rendered = "\n".join(payload["errors"])
+        self.assertEqual(
+            [line for line in payload["errors"] if "invalid record_id" in line],
+            ["docs/ideas/IDEA-20260719-a0b3c4-bad.md: invalid record_id 'IDEA-20260719-a0b3c4'"],
+            rendered,
+        )
+
+    def test_archived_records_and_archive_link_mapping(self) -> None:
+        self.write_document(
+            "docs/archive/specs/s.md", "# Spec", status="archived", document_type="spec"
+        )
+        idea = "docs/ideas/IDEA-20260719-001-thought.md"
+        self.write_document(
+            "docs/archive/ideas/IDEA-20260719-001-thought.md",
+            "# Thought",
+            status="archived",
+            document_type="idea",
+            extra_fields=self.idea_fields(
+                "IDEA-20260719-001",
+                record_state="promoted",
+                promoted_to="docs/execution/specs/s.md",
+            ),
+        )
+        self.write_document(
+            "docs/archive/backlog/BL-20260719-001-item.md",
+            f"# Item\n\n- [SOURCE: {idea}]",
+            status="archived",
+            document_type="backlog",
+            extra_fields={
+                "record_id": "BL-20260719-001",
+                "record_state": "done",
+                "updated": "2026-07-19",
+                "priority": "normal",
+                "item_type": "task",
+                "source_idea": idea,
+                "review_after": "",
+                "promoted_to": "",
+                "result": "Shipped",
+                "reason": "",
+            },
+        )
+
+        result, payload = self.run_validator(strict=True)
+        self.assertEqual(result.returncode, 0, payload)
+
+        self.write_document(
+            "docs/archive/ideas/IDEA-20260719-002-open.md",
+            "# Open",
+            status="archived",
+            document_type="idea",
+            extra_fields=self.idea_fields("IDEA-20260719-002"),
+        )
+        self.write_document(
+            "docs/ideas/IDEA-20260719-001-dup.md",
+            "# Dup",
+            document_type="idea",
+            extra_fields=self.idea_fields("IDEA-20260719-001"),
+        )
+        result, payload = self.run_validator(strict=True)
+        rendered = "\n".join(payload["errors"])
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(
+            "IDEA-20260719-002-open.md: archived record must have a terminal record_state",
+            rendered,
+        )
+        self.assertIn("duplicate record_id 'IDEA-20260719-001'", rendered)
+    def test_unfilled_record_template_outside_templates_reports_placeholder(self) -> None:
+        templates = SKILL_ROOT / "assets" / "templates"
+        for name, dest in (
+            ("idea-note-template.md", "docs/ideas/IDEA-20260719-a2b3c4-idea.md"),
+            ("backlog-item-template.md", "docs/backlog/BL-20260719-a2b3c4-item.md"),
+            ("plan-template.md", "docs/execution/plans/p.md"),
+        ):
+            self.write_raw(dest, (templates / name).read_text(encoding="utf-8"))
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        rendered = "\n".join(payload["errors"])
+        self.assertIn("unfilled template placeholder in record_id", rendered)
+        self.assertIn("unfilled template placeholder in SOURCE target", rendered)
 
 
 if __name__ == "__main__":

@@ -27,6 +27,9 @@ These conditions fail in every mode:
 - A governed Markdown file or SOURCE compatibility target resolves through a
   symbolic link outside the project's `docs/` directory.
 - The supplied project root does not exist or is not a directory.
+- A governed Markdown file is not valid UTF-8 or cannot be read (a UTF-8 BOM
+  is accepted), or is a symbolic link that does not resolve (broken or
+  looping).
 - An active Runbook declares an invalid `execution_risk` or malformed
   `contract_sha256`.
 - A declared active Runbook fingerprint does not match its current Runbook and
@@ -44,14 +47,28 @@ These conditions fail in every mode:
   them.
 - A governed Markdown document has missing, unterminated, malformed, nested,
   duplicate, or multiline frontmatter.
-- Frontmatter lacks `status`, `supersedes`, `superseded_by`, or `date`.
+- Frontmatter lacks `status`, `supersedes`, `superseded_by`, or `date`; an
+  empty `status` or `date` counts as missing.
+- `date` is not `YYYY-MM-DD`.
 - A document in archive is not marked `status: archived`.
 - An active Spec or Plan is marked `status: superseded` instead of being
   closed and archived.
 - A `document_type`, when present, conflicts with the document's governed
-  directory.
+  directory, or `document_type: lessons` is not `docs/lessons.md`, or
+  `document_type: prd`/`architecture` is not `docs/prd-v<version>.md` /
+  `docs/architecture-v<version>.md`.
 - A structured Idea/Backlog record has a missing, duplicate, malformed, or
-  path-inconsistent `record_id`, `document_type`, or `record_state`.
+  path-inconsistent `record_id`, `document_type`, or `record_state`. Both
+  `IDEA|BL-YYYYMMDD-NNN` (legacy) and `IDEA|BL-YYYYMMDD-xxxxxx` (6 chars from
+  `23456789abcdefghijkmnpqrstuvwxyz`) are valid. Every Markdown file in
+  `docs/ideas/` or `docs/backlog/` is a record; non-record notes belong
+  elsewhere. Duplicate detection covers active and archive record dirs.
+- An archived record in `docs/archive/ideas/` or `docs/archive/backlog/` has a
+  non-terminal `record_state` (Idea: closed, promoted, superseded; Backlog:
+  done, rejected, converted, superseded). Archived records keep
+  `status: archived`.
+- An Idea/Backlog field such as `record_id`, `date`, or `updated` still holds
+  template text (`unfilled template placeholder`).
 - A Backlog omits any field in its complete template header, uses a priority
   other than `urgent`, `high`, `normal`, or `low`, or has an empty
   `item_type`.
@@ -62,8 +79,11 @@ These conditions fail in every mode:
   inconsistent `status`, `decision_status`, and supersession links, including a
   `superseded_by` chain that loops or ends at an ADR that is not active and
   accepted.
-- A Plan lacks a Source Spec section or SOURCE reference.
-- A SOURCE target does not exist under `docs/`.
+- A Plan has neither a heading matching `#+ Source Spec` nor a SOURCE
+  reference into `docs/execution/specs/` or `docs/archive/specs/`.
+- A SOURCE target does not exist under `docs/`; when the missing target
+  contains a template placeholder (`YYYY`, `NNNN`, `X.Y`, `<...>`, `{{...}}`)
+  it is reported as `unfilled template placeholder in SOURCE target`.
 - An old active Runbook lacks `document_type: runbook`, `execution_risk`,
   `contract_sha256`, its unique contract block, or a required Runbook section.
 - `docs/runbooks/` contains a superseded or archived Runbook rather than only
@@ -74,20 +94,32 @@ These conditions fail in every mode:
 Strict mode must leave these findings in `errors`, not `warnings`; a strict run
 with any such finding must report `ok: false` and return exit code 1.
 
+## Skill Policy Notices
+
+A file named `TODO.md` or `INDEX.md` anywhere under `docs/` is not a governed
+document. The validator reports it once as a warning in every mode, including
+`--strict`, and does not check its frontmatter: this skill does not maintain
+these files and must not delete them, so their presence must not block strict
+validation. Offer to migrate their items into Backlog records.
+
 ## SOURCE Resolution
 
 - Resolve `docs/...` from the project root.
 - Resolve paths without the `docs/` prefix from the project `docs/` directory.
 - Never fall back to a same-named file at the project root.
-- Recognize active Spec/Plan paths whose files moved to the corresponding
-  archive directory.
+- Recognize missing `docs/execution/specs|plans/X`, `docs/ideas/X`, and
+  `docs/backlog/X` paths whose files moved to the matching `docs/archive/...`
+  directory. This applies to SOURCE links and to the record fields
+  `promoted_to`, `source_idea`, `superseded_by`, and `supersedes`.
 - Recognize a missing legacy active Runbook path when there is an exact
-  undated archive match or exactly one dated archive match. Multiple dated
+  undated archive match or exactly one dated archive match, keeping the
+  subpath under `runbooks/` (a date prefix applies to the filename only). Multiple dated
   matches are ambiguous and require an exact archive SOURCE path.
 - Recognize legacy ADR paths whose files already live in `docs/archive/adr/`,
   but do not archive ADRs going forward.
-- Skip external HTTP(S) URLs and explicit template placeholders after enforcing
-  local path-boundary rules.
+- Skip external HTTP(S) URLs after enforcing local path-boundary rules.
+  Placeholder-looking targets are not skipped: they pass when the file
+  exists and are otherwise reported as unfilled template placeholders.
 - Do not validate heading anchors.
 
 ## Files Considered

@@ -27,6 +27,7 @@ REQUIRED_DIRS = [
 ]
 REQUIRED_FRONTMATTER = {"status", "supersedes", "superseded_by", "date"}
 VALID_STATUSES = {"active", "superseded", "archived"}
+UNMAINTAINED_FILE_NAMES = {"TODO.MD", "INDEX.MD"}
 VALID_DOCUMENT_TYPES = {
     "prd",
     "architecture",
@@ -41,8 +42,13 @@ VALID_DOCUMENT_TYPES = {
 VALID_DECISION_STATUSES = {"proposed", "accepted", "superseded"}
 IDEA_DIR = "docs/ideas"
 BACKLOG_DIR = "docs/backlog"
-IDEA_ID_PATTERN = re.compile(r"^IDEA-(\d{8})-(\d{3})$")
-BACKLOG_ID_PATTERN = re.compile(r"^BL-(\d{8})-(\d{3})$")
+RECORD_ID_SUFFIX = r"([0-9]{3}|[23456789abcdefghijkmnpqrstuvwxyz]{6})"
+IDEA_ID_PATTERN = re.compile(rf"^IDEA-(\d{{8}})-{RECORD_ID_SUFFIX}$")
+BACKLOG_ID_PATTERN = re.compile(rf"^BL-(\d{{8}})-{RECORD_ID_SUFFIX}$")
+ARCHIVE_IDEA_DIR = "docs/archive/ideas"
+ARCHIVE_BACKLOG_DIR = "docs/archive/backlog"
+TERMINAL_IDEA_STATES = {"closed", "promoted", "superseded"}
+TERMINAL_BACKLOG_STATES = {"done", "rejected", "converted", "superseded"}
 VALID_IDEA_STATES = {"captured", "promoted", "closed", "superseded"}
 VALID_BACKLOG_STATES = {
     "open",
@@ -54,11 +60,22 @@ VALID_BACKLOG_STATES = {
     "superseded",
 }
 SOURCE_PATTERN = re.compile(r"\[SOURCE:\s*([^\]#]+)(?:#[^\]]+)?\]")
-TEMPLATE_PLACEHOLDER_TOKENS = ("YYYY", "NNNN", "<", ">", "{{", "X.Y")
+TEMPLATE_PLACEHOLDER_PATTERN = re.compile(r"YYYY|NNNN|X\.Y|<[^<>]*>|\{\{.*?\}\}")
 ARCHIVE_COMPATIBILITY = {
     "execution/specs/": "archive/specs/",
     "execution/plans/": "archive/plans/",
     "adr/": "archive/adr/",
+    "ideas/": "archive/ideas/",
+    "backlog/": "archive/backlog/",
+}
+PLAN_SOURCE_SPEC_HEADING = re.compile(r"^#+\s*Source Spec", re.MULTILINE)
+ROOT_DOCUMENT_PATHS = {
+    "lessons": (re.compile(r"docs/lessons\.md"), "docs/lessons.md"),
+    "prd": (re.compile(r"docs/prd-v[^/]+\.md"), "docs/prd-v<version>.md"),
+    "architecture": (
+        re.compile(r"docs/architecture-v[^/]+\.md"),
+        "docs/architecture-v<version>.md",
+    ),
 }
 
 
@@ -109,13 +126,27 @@ def is_within(path: Path, directory: Path) -> bool:
     return True
 
 
-def iter_markdown_files(root: Path) -> list[Path]:
+def has_template_placeholder(value: str) -> bool:
+    return bool(TEMPLATE_PLACEHOLDER_PATTERN.search(value))
+
+
+def iter_markdown_files(root: Path, errors: list[str]) -> list[Path]:
     docs = root / "docs"
     if not docs.exists():
         return []
     files: list[Path] = []
     for path in docs.rglob("*.md"):
-        if not path.is_file() or is_under(path, root, "docs/templates"):
+        if is_under(path, root, "docs/templates"):
+            continue
+        if path.is_symlink():
+            try:
+                path.resolve(strict=True)
+            except (OSError, RuntimeError):
+                errors.append(
+                    f"{rel_path(path, root)}: symbolic link does not resolve"
+                )
+                continue
+        if not path.is_file():
             continue
         files.append(path)
     return sorted(files)
@@ -130,7 +161,7 @@ def parse_scalar(value: str) -> str:
 
 
 def read_frontmatter(path: Path) -> tuple[dict[str, str], str, list[str]]:
-    text = path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8-sig")
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
         return {}, text, ["missing frontmatter"]
@@ -241,19 +272,39 @@ def validate_frontmatter(
     strict: bool,
     warnings: list[str],
     errors: list[str],
-) -> tuple[dict[str, str], str]:
-    fields, body, problems = read_frontmatter(path)
+) -> tuple[dict[str, str], str] | None:
     relative = rel_path(path, root)
+    try:
+        fields, body, problems = read_frontmatter(path)
+    except UnicodeDecodeError:
+        errors.append(f"{relative}: not valid UTF-8")
+        return None
+    except OSError as error:
+        errors.append(f"{relative}: read error: {error.strerror or error}")
+        return None
     if problems:
         for problem in problems:
             report_compat(f"{relative}: {problem}", strict, warnings, errors)
         if not fields:
             return fields, body
 
-    missing = sorted(REQUIRED_FRONTMATTER - fields.keys())
+    missing = sorted(
+        key
+        for key in REQUIRED_FRONTMATTER
+        if key not in fields or (key in {"status", "date"} and not fields[key])
+    )
     if missing:
         report_compat(
             f"{relative}: missing frontmatter fields: {', '.join(missing)}",
+            strict,
+            warnings,
+            errors,
+        )
+
+    date_value = fields.get("date", "")
+    if date_value and not is_iso_date(date_value):
+        report_compat(
+            f"{relative}: date must be YYYY-MM-DD, found {date_value!r}",
             strict,
             warnings,
             errors,
@@ -315,6 +366,15 @@ def validate_frontmatter(
             warnings,
             errors,
         )
+    elif declared_type in ROOT_DOCUMENT_PATHS:
+        pattern, expected = ROOT_DOCUMENT_PATHS[declared_type]
+        if not pattern.fullmatch(relative):
+            report_compat(
+                f"{relative}: document_type {declared_type!r} requires path {expected}",
+                strict,
+                warnings,
+                errors,
+            )
 
     if inferred_type == "adr" or declared_type == "adr":
         decision_status = fields.get("decision_status", "")
@@ -383,15 +443,15 @@ def validate_record_target(
         errors.append(f"{relative}: invalid {field_name} target {value}: {problem}")
         return None
     assert candidate is not None
-    if not candidate.is_file():
-        report_compat(
-            f"{relative}: {field_name} target does not exist: {value}",
-            strict,
-            warnings,
-            errors,
-        )
+    resolved = resolve_with_archive(root, candidate)
+    if resolved is None:
+        if has_template_placeholder(value):
+            message = f"{relative}: unfilled template placeholder in {field_name} target {value}"
+        else:
+            message = f"{relative}: {field_name} target does not exist: {value}"
+        report_compat(message, strict, warnings, errors)
         return None
-    return candidate
+    return resolved
 
 
 def validate_structured_record(
@@ -404,10 +464,15 @@ def validate_structured_record(
     seen_ids: dict[str, Path],
 ) -> None:
     path_kind: str | None = None
-    if is_under(path, root, IDEA_DIR):
+    if is_under(path, root, IDEA_DIR) or is_under(path, root, ARCHIVE_IDEA_DIR):
         path_kind = "idea"
-    elif is_under(path, root, BACKLOG_DIR):
+    elif is_under(path, root, BACKLOG_DIR) or is_under(
+        path, root, ARCHIVE_BACKLOG_DIR
+    ):
         path_kind = "backlog"
+    in_record_archive = is_under(path, root, ARCHIVE_IDEA_DIR) or is_under(
+        path, root, ARCHIVE_BACKLOG_DIR
+    )
 
     declared_kind = fields.get("document_type", "")
     if path_kind is None and declared_kind not in {"idea", "backlog"}:
@@ -423,9 +488,34 @@ def validate_structured_record(
             warnings,
             errors,
         )
+    for key in sorted(fields):
+        if key in {
+            "record_id",
+            "record_state",
+            "updated",
+            "date",
+            "review_after",
+        } and has_template_placeholder(fields[key]):
+            report_compat(
+                f"{relative}: unfilled template placeholder in {key}: {fields[key]!r}",
+                strict,
+                warnings,
+                errors,
+            )
     if declared_kind not in {"idea", "backlog"}:
+        hint = ""
+        if path_kind is not None:
+            record_dir = IDEA_DIR if path_kind == "idea" else BACKLOG_DIR
+            if in_record_archive:
+                record_dir = (
+                    ARCHIVE_IDEA_DIR if path_kind == "idea" else ARCHIVE_BACKLOG_DIR
+                )
+            hint = (
+                f"; every Markdown file in {record_dir}/ is a record; "
+                "move non-record notes elsewhere"
+            )
         report_compat(
-            f"{relative}: invalid record document_type {declared_kind!r}",
+            f"{relative}: invalid record document_type {declared_kind!r}{hint}",
             strict,
             warnings,
             errors,
@@ -505,7 +595,7 @@ def validate_structured_record(
             seen_ids[record_id] = path.resolve()
 
     updated = fields.get("updated", "")
-    if updated and not is_iso_date(updated):
+    if updated and not is_iso_date(updated) and not has_template_placeholder(updated):
         report_compat(
             f"{relative}: updated must be YYYY-MM-DD, found {updated!r}",
             strict,
@@ -530,6 +620,18 @@ def validate_structured_record(
             warnings,
             errors,
         )
+    if in_record_archive:
+        terminal = (
+            TERMINAL_IDEA_STATES if declared_kind == "idea" else TERMINAL_BACKLOG_STATES
+        )
+        if state not in terminal:
+            report_compat(
+                f"{relative}: archived record must have a terminal record_state, "
+                f"found {state!r}",
+                strict,
+                warnings,
+                errors,
+            )
 
     promoted_target = validate_record_target(
         root,
@@ -557,7 +659,11 @@ def validate_structured_record(
         warnings,
         errors,
     )
-    if source_idea is not None and not is_under(source_idea, root, IDEA_DIR):
+    if (
+        source_idea is not None
+        and not is_under(source_idea, root.resolve(), IDEA_DIR)
+        and not is_under(source_idea, root.resolve(), ARCHIVE_IDEA_DIR)
+    ):
         report_compat(
             f"{relative}: source_idea must point under {IDEA_DIR}",
             strict,
@@ -610,7 +716,7 @@ def validate_structured_record(
                 warnings,
                 errors,
             )
-        if fields.get("status") != "superseded":
+        if fields.get("status") != "superseded" and not in_record_archive:
             report_compat(
                 f"{relative}: superseded record must set status: superseded",
                 strict,
@@ -636,7 +742,12 @@ def validate_plan(
 ) -> None:
     if inferred_document_type(path, root) != "plan":
         return
-    if "Source Spec" not in body and "[SOURCE:" not in body:
+    has_heading = bool(PLAN_SOURCE_SPEC_HEADING.search(body))
+    has_spec_source = any(
+        re.match(r"(docs/)?(execution|archive)/specs/", match.group(1).strip())
+        for match in SOURCE_PATTERN.finditer(body)
+    )
+    if not has_heading and not has_spec_source:
         report_compat(
             f"{rel_path(path, root)}: plan should link to its source spec",
             strict,
@@ -705,42 +816,54 @@ def normalize_local_target(root: Path, target: str) -> tuple[Path | None, str | 
     return candidate, None
 
 
-def source_target_result(root: Path, target: str) -> tuple[str, str]:
-    candidate, problem = normalize_local_target(root, target)
-    if problem:
-        return "invalid", problem
-    assert candidate is not None
+def safe_docs_file(docs_root: Path, path: Path) -> bool:
+    try:
+        resolved = path.resolve(strict=True)
+    except (OSError, RuntimeError):
+        return False
+    return is_within(resolved, docs_root) and resolved.is_file()
 
-    if any(token in target for token in TEMPLATE_PLACEHOLDER_TOKENS):
-        return "ok", ""
+
+def resolve_with_archive(root: Path, candidate: Path) -> Path | None:
     if candidate.is_file():
-        return "ok", ""
-
+        return candidate
     docs_root = (root / "docs").resolve()
-
-    def safe_docs_file(path: Path) -> bool:
-        try:
-            resolved = path.resolve(strict=True)
-        except (OSError, RuntimeError):
-            return False
-        return is_within(resolved, docs_root) and resolved.is_file()
-
     relative = candidate.relative_to(docs_root).as_posix()
     for active_prefix, archive_prefix in ARCHIVE_COMPATIBILITY.items():
         if relative.startswith(active_prefix):
             archived = docs_root / relative.replace(
                 active_prefix, archive_prefix, 1
             )
-            if safe_docs_file(archived):
-                return "ok", ""
+            if safe_docs_file(docs_root, archived):
+                return archived.resolve()
+    return None
+
+
+def source_target_result(root: Path, target: str) -> tuple[str, str]:
+    candidate, problem = normalize_local_target(root, target)
+    if problem:
+        return "invalid", problem
+    assert candidate is not None
+
+    if resolve_with_archive(root, candidate) is not None:
+        return "ok", ""
+
+    docs_root = (root / "docs").resolve()
+    relative = candidate.relative_to(docs_root).as_posix()
     if relative.startswith("runbooks/"):
-        basename = Path(relative).name
-        archive_root = docs_root / "archive/runbooks"
-        legacy = archive_root / basename
-        if safe_docs_file(legacy):
+        subpath = Path(relative[len("runbooks/") :])
+        archive_dir = docs_root / "archive/runbooks" / subpath.parent
+        legacy = archive_dir / subpath.name
+        if safe_docs_file(docs_root, legacy):
             return "ok", ""
-        dated_matches = sorted(archive_root.glob(f"????-??-??-{basename}"))
-        dated_files = [path for path in dated_matches if safe_docs_file(path)]
+        dated_matches = (
+            sorted(archive_dir.glob(f"????-??-??-{subpath.name}"))
+            if archive_dir.is_dir()
+            else []
+        )
+        dated_files = [
+            path for path in dated_matches if safe_docs_file(docs_root, path)
+        ]
         if len(dated_files) == 1:
             return "ok", ""
         if len(dated_files) > 1:
@@ -748,6 +871,8 @@ def source_target_result(root: Path, target: str) -> tuple[str, str]:
                 "missing",
                 f"ambiguous archived Runbook SOURCE target {target}; update it to an exact archive path",
             )
+    if has_template_placeholder(target):
+        return "missing", f"unfilled template placeholder in SOURCE target {target}"
     return "missing", f"missing SOURCE target {target}"
 
 
@@ -797,7 +922,8 @@ def resolved_relationships(
             errors.append(f"{prefix} is invalid: {problem}")
             continue
         assert candidate is not None
-        if not candidate.is_file():
+        mapped = resolve_with_archive(root, candidate)
+        if mapped is None:
             report_compat(
                 f"{prefix} does not exist",
                 strict,
@@ -805,7 +931,7 @@ def resolved_relationships(
                 errors,
             )
             continue
-        resolved.append(candidate)
+        resolved.append(mapped)
     return resolved
 
 
@@ -1205,16 +1331,26 @@ def main() -> int:
         documents: dict[Path, dict[str, str]] = {}
         seen_record_ids: dict[str, Path] = {}
         docs_root = (root / "docs").resolve()
-        for path in iter_markdown_files(root):
+        for path in iter_markdown_files(root, errors):
             resolved_path = path.resolve()
             if not is_within(resolved_path, docs_root):
                 errors.append(
                     f"{rel_path(path, root)}: governed Markdown resolves outside docs/"
                 )
                 continue
-            fields, body = validate_frontmatter(
+            if path.name.upper() in UNMAINTAINED_FILE_NAMES:
+                warnings.append(
+                    f"{rel_path(path, root)}: not maintained by "
+                    "document-governance; future work belongs in Backlog "
+                    "records (offer to migrate its items, do not delete it)"
+                )
+                continue
+            parsed = validate_frontmatter(
                 root, path, args.strict, warnings, errors
             )
+            if parsed is None:
+                continue
+            fields, body = parsed
             documents[resolved_path] = fields
             validate_structured_record(
                 root,

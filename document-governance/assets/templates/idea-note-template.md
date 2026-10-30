@@ -1,7 +1,7 @@
 ---
 status: active
 document_type: idea
-record_id: IDEA-YYYYMMDD-NNN
+record_id: IDEA-YYYYMMDD-xxxxxx
 record_state: captured
 date: "YYYY-MM-DD"
 updated: "YYYY-MM-DD"

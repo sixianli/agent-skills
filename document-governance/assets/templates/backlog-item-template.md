@@ -1,7 +1,7 @@
 ---
 status: active
 document_type: backlog
-record_id: BL-YYYYMMDD-NNN
+record_id: BL-YYYYMMDD-xxxxxx
 record_state: open
 date: "YYYY-MM-DD"
 updated: "YYYY-MM-DD"
