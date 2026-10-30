@@ -294,6 +294,82 @@ class RunbookTests(RunbookFixture, unittest.TestCase):
         self.assertNotEqual(secret_check.returncode, 0)
         self.assertIn("secret or credential", secret_check.stderr)
 
+    def test_files_with_excluded_names_count_outside_git(self) -> None:
+        (self.root / "src").mkdir()
+        (self.root / "src/build").write_text("v1\n", encoding="utf-8")
+        (self.root / "src/target").mkdir()
+        (self.root / "src/target/out.bin").write_bytes(b"built")
+        path = self.write_runbook(contract=["src"])
+        first = compute_contract_fingerprint(self.root, path)
+        self.assertIn("src/build", [record.path for record in first.records])
+        self.assertNotIn("src/target", [record.path for record in first.records])
+
+        (self.root / "src/build").write_text("v2\n", encoding="utf-8")
+        self.assertNotEqual(
+            compute_contract_fingerprint(self.root, path).fingerprint,
+            first.fingerprint,
+        )
+
+    def test_selectors_that_include_the_runbook_itself_are_rejected(self) -> None:
+        for selector in ("docs", "docs/runbooks", "docs/runbooks/test-runbook.md"):
+            with self.subTest(selector=selector):
+                path = self.write_runbook(contract=[selector])
+                with self.assertRaisesRegex(
+                    RunbookContractError,
+                    f"selector '{re.escape(selector)}' includes the Runbook itself",
+                ):
+                    compute_contract_fingerprint(self.root, path)
+                sealed = self.seal(path)
+                self.assertNotEqual(sealed.returncode, 0)
+                self.assertIn("includes the Runbook itself", sealed.stdout + sealed.stderr)
+                self.assertNotIn("post-write verification", sealed.stdout + sealed.stderr)
+
+    def test_broken_symlink_in_selected_tree_is_a_contract_error(self) -> None:
+        (self.root / "src").mkdir()
+        (self.root / "src/dangling").symlink_to("missing-target")
+        path = self.write_runbook(contract=["src"])
+
+        with self.assertRaisesRegex(
+            RunbookContractError, "contract symlink is broken: src/dangling"
+        ):
+            compute_contract_fingerprint(self.root, path)
+
+    def test_failed_post_write_verification_restores_exact_bytes(self) -> None:
+        import runbook
+
+        (self.root / "contract.txt").write_text("v1\n", encoding="utf-8")
+        path = self.write_runbook()
+        original = path.read_bytes().replace(b"\n", b"\r\n")
+        path.write_bytes(original)
+        real_audit = runbook.audit_active_runbook
+        calls = {"count": 0}
+
+        def failing_third_audit(*args, **kwargs):
+            calls["count"] += 1
+            result = real_audit(*args, **kwargs)
+            if calls["count"] == 3:
+                return runbook.RunbookAudit(
+                    result.fields,
+                    result.body,
+                    (runbook.Finding("forced", "forced failure", "error"),),
+                    result.contract,
+                )
+            return result
+
+        with mock.patch.object(
+            runbook, "audit_active_runbook", side_effect=failing_third_audit
+        ), mock.patch("sys.stdout"):
+            code = runbook.main(
+                ["seal", str(self.root), str(path), "--confirm-reconciled", "--apply"]
+            )
+
+        self.assertEqual(calls["count"], 3)
+        self.assertEqual(code, 1)
+        self.assertEqual(path.read_bytes(), original)
+        self.assertEqual(
+            [item.name for item in path.parent.iterdir()], ["test-runbook.md"]
+        )
+
     def test_fenced_or_duplicate_structure_cannot_satisfy_contract(self) -> None:
         """Ignore examples and reject duplicate executable sections."""
 
@@ -626,14 +702,49 @@ class GitWorkTreeContractTests(RunbookFixture, unittest.TestCase):
                     self.git("add", "--all")
                     self.git("commit", "-q", "--allow-empty", "-m", f"remove {label}")
 
-    def test_tracked_files_under_excluded_names_stay_out_without_errors(self) -> None:
-        (self.root / "src/build").mkdir()
-        (self.root / "src/build/out.py").write_text("OUT = 1\n", encoding="utf-8")
+    def test_tracked_host_metadata_files_stay_out_without_errors(self) -> None:
         (self.root / "src/.DS_Store").write_bytes(b"\0")
         self.git("add", "--all")
-        self.git("commit", "-q", "-m", "excluded names")
+        self.git("commit", "-q", "-m", "host metadata")
 
         self.assertEqual(self.fingerprint(), self.baseline)
+
+    def test_tracked_content_in_excluded_directories_fails_closed(self) -> None:
+        for directory in ("build", "Target"):
+            with self.subTest(directory=directory):
+                (self.root / "src" / directory).mkdir()
+                (self.root / "src" / directory / "out.py").write_text(
+                    "OUT = 1\n", encoding="utf-8"
+                )
+                self.git("add", "--all")
+                self.git("commit", "-q", "-m", f"tracked {directory}")
+                try:
+                    with self.assertRaisesRegex(
+                        RunbookContractError,
+                        f"src/{directory}/out.py.*excluded directory cannot be sealed",
+                    ):
+                        self.fingerprint()
+                finally:
+                    shutil.rmtree(self.root / "src" / directory)
+                    self.git("add", "--all")
+                    self.git("commit", "-q", "-m", f"remove {directory}")
+
+    def test_untracked_excluded_directories_stay_skipped(self) -> None:
+        (self.root / "src/dist").mkdir()
+        (self.root / "src/dist/bundle.js").write_text("built\n", encoding="utf-8")
+
+        self.assertEqual(self.fingerprint(), self.baseline)
+
+    def test_tracked_files_with_excluded_names_are_fingerprinted(self) -> None:
+        build = self.root / "src/build"
+        build.write_text("make all\n", encoding="utf-8")
+        self.git("add", "--all")
+        self.git("commit", "-q", "-m", "build script")
+        sealed = self.fingerprint()
+        self.assertNotEqual(sealed, self.baseline)
+
+        build.write_text("make other\n", encoding="utf-8")
+        self.assertNotEqual(self.fingerprint(), sealed)
 
     def test_inherited_discovery_config_and_pathspec_variables_are_ignored(self) -> None:
         site = self.root / "site"

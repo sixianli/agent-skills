@@ -172,9 +172,12 @@ Real secrets and credentials are rejected, including `.env`, non-example
 `.env.*`, private-key formats, common private-key names, and explicit
 credentials/secrets JSON files. `.env.example`, `.env.sample`, and
 `.env.template` are allowed. VCS metadata, evidence roots, build output, and
-caches cannot be selected. When a known cache, build, VCS, or evidence-named
-subtree occurs below an otherwise safe selected source directory, traversal
-skips it deterministically. Fixed host metadata such as `.DS_Store` is skipped
+caches cannot be selected, and a selector may not include the Runbook
+itself, directly or through a parent directory. The cache, build, VCS, and
+evidence name list applies to directories only: when such a directory occurs
+below an otherwise safe selected source directory, traversal skips it
+deterministically, but Git-tracked content inside it is rejected because it
+cannot be sealed. Fixed host metadata such as `.DS_Store` is skipped
 by the same rule. A real secret found elsewhere inside the selected
 directory fails the whole contract rather than being silently omitted. This
 includes a secret that Git ignores: files skipped under rule 6 are checked by

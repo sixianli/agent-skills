@@ -51,10 +51,10 @@ CONTRACT_HASH_LINE_PATTERN = re.compile(
     r"^contract_sha256:\s*.*$", re.MULTILINE
 )
 
-# These names are never contract inputs.  Selecting one explicitly is an
-# error; when one appears below a selected source directory it is ignored so
-# local caches and build products cannot make a clean source contract
-# machine-dependent.
+# These directory names are never contract inputs.  Selecting one explicitly
+# is an error; when an untracked one appears below a selected source directory
+# it is ignored so local caches and build products cannot make a clean source
+# contract machine-dependent.  Tracked content inside one is rejected.
 EXCLUDED_DIRECTORY_NAMES = {
     ".git",
     ".hg",
@@ -428,7 +428,10 @@ def _validate_selector(root: Path, value: str) -> tuple[Path, Path]:
         raise RunbookContractError(
             f"contract path does not exist: {value}"
         ) from exc
-    resolved = lexical.resolve(strict=True)
+    try:
+        resolved = lexical.resolve(strict=True)
+    except (FileNotFoundError, RuntimeError) as exc:
+        raise RunbookContractError(f"contract symlink is broken: {value}") from exc
     if not _is_within(resolved, root):
         raise RunbookContractError(
             f"contract path escapes project root through symlink: {value}"
@@ -449,7 +452,12 @@ def _record_for_path(root: Path, path: Path, logical: Path) -> ContractRecord:
             raise RunbookContractError(
                 f"contract symlink target must be repository-relative: {relative} -> {target}"
             )
-        resolved = path.resolve(strict=True)
+        try:
+            resolved = path.resolve(strict=True)
+        except (FileNotFoundError, RuntimeError) as exc:
+            raise RunbookContractError(
+                f"contract symlink is broken: {relative}"
+            ) from exc
         if not _is_within(resolved, root):
             raise RunbookContractError(
                 f"contract symlink escapes project root: {relative} -> {target}"
@@ -495,7 +503,7 @@ def _first_error_line(completed: subprocess.CompletedProcess[bytes]) -> str:
 
 def _git_visible_paths(
     root: Path, selectors: list[str]
-) -> tuple[frozenset[str], frozenset[str]] | None:
+) -> tuple[frozenset[str], frozenset[str], frozenset[str]] | None:
     environment = _git_environment()
     git = ["git", "-C", str(root)]
     git_entry = _nearest_git_entry(root)
@@ -560,6 +568,20 @@ def _git_visible_paths(
             "Git could not list the tracked and non-ignored contract files: "
             + _first_error_line(listing)
         )
+    tracked_listing = subprocess.run(
+        [*git, "--literal-pathspecs", "ls-files", "-z", "--cached", "--", *selectors],
+        capture_output=True,
+        check=False,
+        env=environment,
+    )
+    if tracked_listing.returncode != 0:
+        raise RunbookContractError(
+            "Git could not list the tracked contract files: "
+            + _first_error_line(tracked_listing)
+        )
+    tracked = frozenset(
+        os.fsdecode(raw) for raw in tracked_listing.stdout.split(b"\0") if raw
+    )
     visible: set[str] = set()
     entries: set[str] = set()
     for raw in listing.stdout.split(b"\0"):
@@ -577,15 +599,20 @@ def _git_visible_paths(
         entries.add(relative.as_posix())
         visible.add(relative.as_posix())
         visible.update(parent.as_posix() for parent in relative.parents if parent.parts)
-    return frozenset(visible), frozenset(entries)
+    return frozenset(visible), frozenset(entries), tracked
 
 
-def _skipped_by_name(relative: str) -> bool:
-    return any(
-        part.lower() in EXCLUDED_DIRECTORY_NAMES
-        or part.lower() in EXCLUDED_CACHE_FILE_NAMES
-        for part in relative.split("/")
-    )
+def _skipped_by_name(relative: str, tracked: frozenset[str]) -> bool:
+    parts = relative.split("/")
+    if parts[-1].lower() in EXCLUDED_CACHE_FILE_NAMES:
+        return True
+    if relative in tracked:
+        return False
+    return any(part.lower() in EXCLUDED_DIRECTORY_NAMES for part in parts[:-1])
+
+
+def _is_real_directory(path: Path) -> bool:
+    return stat.S_ISDIR(path.lstat().st_mode)
 
 
 def _reject_hidden_secrets(path: Path, logical: Path) -> None:
@@ -596,12 +623,19 @@ def _reject_hidden_secrets(path: Path, logical: Path) -> None:
         )
     if stat.S_ISDIR(mode):
         for child in path.iterdir():
-            if child.name.lower() not in EXCLUDED_DIRECTORY_NAMES:
+            if not (
+                child.name.lower() in EXCLUDED_DIRECTORY_NAMES
+                and _is_real_directory(child)
+            ):
                 _reject_hidden_secrets(child, logical / child.name)
 
 
 def _walk_contract_path(
-    root: Path, path: Path, logical: Path, visible: frozenset[str] | None
+    root: Path,
+    path: Path,
+    logical: Path,
+    visible: frozenset[str] | None,
+    tracked: frozenset[str] = frozenset(),
 ) -> list[ContractRecord]:
     """Walk one selector deterministically without following symlink dirs."""
 
@@ -613,14 +647,27 @@ def _walk_contract_path(
     children = sorted(path.iterdir(), key=lambda item: item.name.encode("utf-8"))
     for child in children:
         child_logical = logical / child.name
-        if child.name.lower() in EXCLUDED_DIRECTORY_NAMES:
+        if child.name.lower() in EXCLUDED_DIRECTORY_NAMES and _is_real_directory(child):
+            prefix = child_logical.as_posix() + "/"
+            inside = sorted(
+                (entry for entry in tracked if entry.startswith(prefix)),
+                key=lambda item: item.encode("utf-8"),
+            )
+            if inside:
+                raise RunbookContractError(
+                    f"Git tracks {inside[0]}, but tracked content in an excluded "
+                    f"directory cannot be sealed ({child_logical.as_posix()}); move it "
+                    "out of the cache, build, VCS, or evidence directory or stop tracking it"
+                )
             continue
         if child.name.lower() in EXCLUDED_CACHE_FILE_NAMES:
             continue
         if visible is not None and child_logical.as_posix() not in visible:
             _reject_hidden_secrets(child, child_logical)
             continue
-        records.extend(_walk_contract_path(root, child, child_logical, visible))
+        records.extend(
+            _walk_contract_path(root, child, child_logical, visible, tracked)
+        )
     return records
 
 
@@ -703,10 +750,24 @@ def compute_contract_fingerprint(
         (value, *_validate_selector(root, value))
         for value in sorted(contract_paths, key=lambda item: item.encode("utf-8"))
     ]
+    runbook_relative = _normalized_repo_path(root, runbook_path)
+    for value, lexical, logical in selectors:
+        selected = logical.as_posix()
+        resolved = lexical.resolve(strict=True)
+        if (
+            runbook_relative == selected
+            or runbook_relative.startswith(selected + "/")
+            or _is_within(runbook_path, resolved)
+        ):
+            raise RunbookContractError(
+                f"selector '{value}' includes the Runbook itself; "
+                "a Runbook cannot fingerprint itself"
+            )
     listing = _git_visible_paths(
         root, [logical.as_posix() for _, _, logical in selectors]
     )
     visible = listing[0] if listing is not None else None
+    tracked = listing[2] if listing is not None else frozenset()
     record_map: dict[tuple[str, str], ContractRecord] = {}
     for value, lexical, logical in selectors:
         if visible is not None and logical.as_posix() not in visible:
@@ -714,12 +775,12 @@ def compute_contract_fingerprint(
                 "contract path is ignored by Git or holds no tracked or non-ignored file "
                 f"in the work tree: {value}"
             )
-        for record in _walk_contract_path(root, lexical, logical, visible):
+        for record in _walk_contract_path(root, lexical, logical, visible, tracked):
             record_map[(record.path, record.object_type)] = record
     if listing is not None:
         recorded = {path for path, _ in record_map}
         for entry in sorted(listing[1], key=lambda item: item.encode("utf-8")):
-            if entry not in recorded and not _skipped_by_name(entry):
+            if entry not in recorded and not _skipped_by_name(entry, tracked):
                 raise RunbookContractError(
                     f"Git lists {entry}, but the file system shows it under a different name "
                     "(letter case or Unicode normalization); rename it on disk to match Git"
@@ -732,7 +793,6 @@ def compute_contract_fingerprint(
         )
     )
 
-    runbook_relative = _normalized_repo_path(root, runbook_path)
     runbook_mode = runbook_path.stat().st_mode
     runbook_record = ContractRecord(
         runbook_relative,
@@ -1089,23 +1149,12 @@ def run_seal(args: argparse.Namespace) -> int:
             _emit(payload, args.format)
             return 1
         payload["fingerprint"] = fresh.contract.fingerprint
+        original_bytes = path.read_bytes()
         after = replace_contract_hash(before, fresh.contract.fingerprint)
-        descriptor, temporary_name = tempfile.mkstemp(
-            prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
-        )
-        temporary = Path(temporary_name)
-        try:
-            with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
-                handle.write(after)
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.chmod(temporary, stat.S_IMODE(path.stat().st_mode))
-            os.replace(temporary, path)
-        finally:
-            temporary.unlink(missing_ok=True)
+        _atomic_write_bytes(path, after.encode("utf-8"))
         verified = audit_active_runbook(root, path)
         if verified.findings:
-            path.write_text(before, encoding="utf-8")
+            _atomic_write_bytes(path, original_bytes)
             payload["ok"] = False
             payload["errors"] = [
                 "post-write verification failed; original Runbook restored",
@@ -1115,6 +1164,24 @@ def run_seal(args: argparse.Namespace) -> int:
             payload["applied"] = True
     _emit(payload, args.format)
     return 0 if payload["ok"] else 1
+
+
+def _atomic_write_bytes(path: Path, data: bytes) -> None:
+    """Replace path with exact bytes through a same-directory temporary file."""
+
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(temporary, stat.S_IMODE(path.stat().st_mode))
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def main(argv: list[str] | None = None) -> int:
