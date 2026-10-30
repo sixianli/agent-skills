@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import secrets
 import sys
 import unicodedata
 from collections.abc import Iterable
@@ -12,8 +13,15 @@ from pathlib import Path
 
 IDEA_DIR = Path("docs/ideas")
 BACKLOG_DIR = Path("docs/backlog")
-IDEA_ID_PATTERN = re.compile(r"^IDEA-(\d{8})-(\d{3})$")
-BACKLOG_ID_PATTERN = re.compile(r"^BL-(\d{8})-(\d{3})$")
+ARCHIVE_IDEA_DIR = Path("docs/archive/ideas")
+ARCHIVE_BACKLOG_DIR = Path("docs/archive/backlog")
+ID_ALPHABET = "23456789abcdefghijkmnpqrstuvwxyz"
+ID_SUFFIX = rf"([0-9]{{3}}|[{ID_ALPHABET}]{{6}})"
+IDEA_ID_PATTERN = re.compile(rf"^IDEA-(\d{{8}})-{ID_SUFFIX}$")
+BACKLOG_ID_PATTERN = re.compile(rf"^BL-(\d{{8}})-{ID_SUFFIX}$")
+ANY_ID_PATTERN = re.compile(rf"^(IDEA|BL)-\d{{8}}-{ID_SUFFIX}$")
+TERMINAL_IDEA_STATES = {"closed", "promoted", "superseded"}
+TERMINAL_BACKLOG_STATES = {"done", "rejected", "converted", "superseded"}
 VALID_IDEA_STATES = {"captured", "promoted", "closed", "superseded"}
 VALID_BACKLOG_STATES = {
     "open",
@@ -161,21 +169,35 @@ def read_record(path: Path) -> Record:
     return Record(path=path, fields=fields, body=body)
 
 
-def iter_records(root: Path, kind: str = "all") -> list[Record]:
-    directories: list[Path]
-    if kind == "idea":
-        directories = [root / IDEA_DIR]
-    elif kind == "backlog":
-        directories = [root / BACKLOG_DIR]
-    else:
-        directories = [root / IDEA_DIR, root / BACKLOG_DIR]
+def warn(message: str) -> None:
+    print(f"WARNING: {message}", file=sys.stderr)
+
+
+def iter_records(
+    root: Path,
+    kind: str = "all",
+    include_archived: bool = False,
+) -> list[Record]:
+    directories: list[Path] = []
+    if kind in {"all", "idea"}:
+        directories.append(root / IDEA_DIR)
+        if include_archived:
+            directories.append(root / ARCHIVE_IDEA_DIR)
+    if kind in {"all", "backlog"}:
+        directories.append(root / BACKLOG_DIR)
+        if include_archived:
+            directories.append(root / ARCHIVE_BACKLOG_DIR)
 
     records: list[Record] = []
     for directory in directories:
         if not directory.is_dir():
             continue
         for path in sorted(directory.glob("*.md")):
-            record = read_record(path)
+            try:
+                record = read_record(path)
+            except RecordError as exc:
+                warn(f"skipping malformed record {repo_relative(path, root)}: {exc}")
+                continue
             if record.fields.get("document_type") in {"idea", "backlog"}:
                 records.append(record)
     return records
@@ -207,7 +229,7 @@ def slugify(text: str, max_tokens: int = 8) -> str:
     if current:
         segments.append(current)
     kept = segments[:max_tokens]
-    slug = "-".join(kept).encode("utf-8")[:120].decode("utf-8", "ignore")
+    slug = "-".join(kept).encode("utf-8")[:120].decode("utf-8", "ignore").rstrip("-")
     return slug or "untitled"
 
 
@@ -224,6 +246,8 @@ def is_cjk(character: str) -> bool:
 
 
 def validate_iso_date(value: str, field_name: str) -> str:
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        raise RecordError(f"{field_name} must be YYYY-MM-DD: {value!r}")
     try:
         date.fromisoformat(value)
     except ValueError as exc:
@@ -240,17 +264,29 @@ def next_record_id(
     validate_iso_date(record_date, "date")
     prefix = "IDEA" if kind == "idea" else "BL"
     compact_date = record_date.replace("-", "")
-    pattern = IDEA_ID_PATTERN if kind == "idea" else BACKLOG_ID_PATTERN
-    occupied = set(reserved or set())
-    for record in iter_records(root, kind):
-        record_id = record.fields.get("record_id", "")
-        if pattern.fullmatch(record_id):
-            occupied.add(record_id)
+    occupied = set(reserved or set()) | occupied_record_ids(root)
+    while True:
+        suffix = "".join(secrets.choice(ID_ALPHABET) for _ in range(6))
+        candidate = f"{prefix}-{compact_date}-{suffix}"
+        if candidate not in occupied:
+            return candidate
 
-    sequence = 1
-    while f"{prefix}-{compact_date}-{sequence:03d}" in occupied:
-        sequence += 1
-    return f"{prefix}-{compact_date}-{sequence:03d}"
+
+def occupied_record_ids(root: Path) -> set[str]:
+    occupied: set[str] = set()
+    docs = root / "docs"
+    if not docs.is_dir():
+        return occupied
+    field = re.compile(r"^record_id:\s*(.*)$", re.MULTILINE)
+    for path in sorted(docs.rglob("*.md")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            warn(f"cannot scan {repo_relative(path, root)} for record IDs: {exc}")
+            continue
+        for match in field.finditer(text):
+            occupied.add(parse_scalar(match.group(1)))
+    return occupied
 
 
 def record_path(root: Path, kind: str, record_id: str, slug_source: str) -> Path:
@@ -287,6 +323,18 @@ def normalize_quotes(raw: str) -> list[str]:
     return [item.strip() for item in decoded if item.strip()][:3]
 
 
+def require_single_line(value: str, option: str) -> str:
+    if "\n" in value or "\r" in value:
+        raise RecordError(f"{option} must be a single line")
+    if not value.strip():
+        raise RecordError(f"{option} must not be empty")
+    return value
+
+
+def render_quote(quote: str) -> str:
+    return "\n".join(f"> {line}".rstrip() for line in quote.splitlines())
+
+
 def render_idea_body(
     title: str,
     project: str,
@@ -295,7 +343,7 @@ def render_idea_body(
     quotes: list[str],
     open_questions: str,
 ) -> str:
-    quote_block = "\n".join(f'> "{quote}"' for quote in quotes) or "- None recorded."
+    quote_block = "\n>\n".join(render_quote(quote) for quote in quotes) or "- None recorded."
     trajectory = thought_trajectory.strip() or "- Not recorded."
     questions = open_questions.strip() or "- None at the moment."
     return (
@@ -358,10 +406,18 @@ def update_record(record: Record) -> None:
     record.path.write_text(render_document(record.fields, record.body), encoding="utf-8")
 
 
+def slug_source(args: argparse.Namespace) -> str:
+    require_single_line(args.title, "--title")
+    if args.slug is not None:
+        return require_single_line(args.slug, "--slug")
+    return args.title
+
+
 def command_idea_capture(args: argparse.Namespace, root: Path) -> dict[str, object]:
     record_date = validate_iso_date(args.date, "date")
+    source_text = slug_source(args)
     record_id = next_record_id(root, "idea", record_date)
-    path = record_path(root, "idea", record_id, args.slug or args.title)
+    path = record_path(root, "idea", record_id, source_text)
     project = args.project.strip() if args.project else root.name
     fields = base_fields("idea", record_id, record_date)
     fields["project"] = project
@@ -388,6 +444,9 @@ def resolve_source_idea(root: Path, identity: str) -> Record:
     record = find_record(root, identity)
     if record.fields.get("document_type") != "idea":
         raise RecordError(f"source record is not an Idea: {identity}")
+    state = record.fields.get("record_state")
+    if state != "captured":
+        raise RecordError(f"source Idea must be captured; found {state!r}")
     return record
 
 
@@ -395,15 +454,19 @@ def command_backlog_capture(args: argparse.Namespace, root: Path) -> dict[str, o
     record_date = validate_iso_date(args.date, "date")
     if args.review_after:
         validate_iso_date(args.review_after, "review_after")
+    item_type = args.item_type.strip()
+    if not item_type:
+        raise RecordError("--item-type must not be blank")
+    source_text = slug_source(args)
     source = resolve_source_idea(root, args.source_idea) if args.source_idea else None
     record_id = next_record_id(root, "backlog", record_date)
-    path = record_path(root, "backlog", record_id, args.slug or args.title)
+    path = record_path(root, "backlog", record_id, source_text)
     source_path = repo_relative(source.path, root) if source else ""
     fields = base_fields("backlog", record_id, record_date)
     fields.update(
         {
             "priority": args.priority,
-            "item_type": args.item_type,
+            "item_type": item_type,
             "source_idea": source_path,
             "review_after": args.review_after,
             "reason": "",
@@ -453,14 +516,15 @@ def filter_records(
 
 
 def command_list(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    items = filter_records(iter_records(root, args.kind), root, args.state)
+    records = iter_records(root, args.kind, args.include_archived)
+    items = filter_records(records, root, args.state)
     return {"action": "list", "count": len(items), "items": items}
 
 
 def command_review(args: argparse.Namespace, root: Path) -> dict[str, object]:
     as_of = validate_iso_date(args.as_of, "as_of")
     candidates: list[dict[str, str]] = []
-    for record in iter_records(root):
+    for record in iter_records(root, include_archived=args.include_archived):
         item = record_payload(record, root)
         if item["kind"] == "idea" and item["state"] == "captured":
             item["review_reason"] = "untriaged-idea"
@@ -503,6 +567,8 @@ def command_start(args: argparse.Namespace, root: Path) -> dict[str, object]:
     record.fields["record_state"] = "in_progress"
     record.fields["updated"] = validate_iso_date(args.date, "date")
     record.fields["review_after"] = ""
+    if state == "deferred":
+        record.fields["reason"] = ""
     if not args.dry_run:
         update_record(record)
     return {
@@ -544,8 +610,21 @@ def command_defer(args: argparse.Namespace, root: Path) -> dict[str, object]:
     }
 
 
-def resolve_target(root: Path, identity: str) -> Path:
-    if IDEA_ID_PATTERN.fullmatch(identity) or BACKLOG_ID_PATTERN.fullmatch(identity):
+def resolve_target(root: Path, identity: str, source: Record | None = None) -> Path:
+    target = locate_target(root, identity)
+    if source is not None and target.resolve() == source.path.resolve():
+        raise RecordError("a record cannot target itself")
+    try:
+        fields = read_record(target).fields
+    except RecordError as exc:
+        raise RecordError(f"target has invalid frontmatter: {identity}: {exc}") from exc
+    if not fields.get("document_type") or not fields.get("status"):
+        raise RecordError(f"target lacks governed frontmatter: {identity}")
+    return target
+
+
+def locate_target(root: Path, identity: str) -> Path:
+    if ANY_ID_PATTERN.fullmatch(identity):
         return find_record(root, identity).path
     raw = Path(identity)
     if raw.is_absolute() or ".." in raw.parts:
@@ -570,17 +649,24 @@ def command_promote(args: argparse.Namespace, root: Path) -> dict[str, object]:
             "Backlog must be open, in_progress, or deferred before conversion; "
             f"found {state!r}"
         )
-    target = resolve_target(root, args.target)
-    if target.resolve() == record.path.resolve():
-        raise RecordError("a record cannot promote to itself")
+    target = resolve_target(root, args.target, record)
     target_relative = repo_relative(target, root)
+    target_record = read_record(target)
+    if kind == "idea" and target_record.fields.get("document_type") == "backlog":
+        target_state = target_record.fields.get("record_state")
+        if target_state in TERMINAL_BACKLOG_STATES:
+            raise RecordError(f"target Backlog is terminal ({target_state!r})")
+        existing_source = target_record.fields.get("source_idea", "")
+        if existing_source and existing_source != repo_relative(record.path, root):
+            raise RecordError(
+                f"target Backlog already has a different source_idea: {existing_source}"
+            )
     record.fields["record_state"] = "promoted" if kind == "idea" else "converted"
     record.fields["promoted_to"] = target_relative
     record.fields["updated"] = validate_iso_date(args.date, "date")
 
     if not args.dry_run:
         update_record(record)
-        target_record = read_record(target)
         if (
             kind == "idea"
             and target_record.fields.get("document_type") == "backlog"
@@ -603,6 +689,15 @@ def command_close(args: argparse.Namespace, root: Path) -> dict[str, object]:
     allowed = {"closed", "superseded"} if kind == "idea" else {"done", "rejected", "superseded"}
     if args.state not in allowed:
         raise RecordError(f"state {args.state!r} is invalid for {kind!r}")
+    current = record.fields.get("record_state")
+    closable = {"captured"} if kind == "idea" else {"open", "in_progress", "deferred"}
+    if current not in closable:
+        raise RecordError(
+            f"{kind} in state {current!r} cannot be closed; allowed from: "
+            + ", ".join(sorted(closable))
+        )
+    if args.superseded_by and args.state != "superseded":
+        raise RecordError("--superseded-by is only valid with --state superseded")
     if args.state == "done" and not args.result.strip():
         raise RecordError("done Backlog requires --result")
     if args.state in {"closed", "rejected"} and not (args.result.strip() or args.reason.strip()):
@@ -610,11 +705,13 @@ def command_close(args: argparse.Namespace, root: Path) -> dict[str, object]:
     if args.state == "superseded" and not args.superseded_by:
         raise RecordError("superseded record requires --superseded-by")
 
-    successor = resolve_target(root, args.superseded_by) if args.superseded_by else None
+    successor = resolve_target(root, args.superseded_by, record) if args.superseded_by else None
     record.fields["record_state"] = args.state
     record.fields["updated"] = validate_iso_date(args.date, "date")
-    record.fields["result"] = args.result.strip()
-    record.fields["reason"] = args.reason.strip()
+    if args.result.strip():
+        record.fields["result"] = args.result.strip()
+    if args.reason.strip():
+        record.fields["reason"] = args.reason.strip()
     if successor:
         record.fields["status"] = "superseded"
         record.fields["superseded_by"] = repo_relative(successor, root)
@@ -670,10 +767,20 @@ def parse_args() -> argparse.Namespace:
     list_parser = commands.add_parser("list", help="List records from source files.")
     list_parser.add_argument("--kind", choices=("all", "idea", "backlog"), default="all")
     list_parser.add_argument("--state")
+    list_parser.add_argument(
+        "--include-archived",
+        action="store_true",
+        help="Also scan docs/archive/ideas and docs/archive/backlog.",
+    )
     add_output_arguments(list_parser)
 
     review = commands.add_parser("review", help="Review untriaged and actionable records.")
     review.add_argument("--as-of", default=local_today_iso())
+    review.add_argument(
+        "--include-archived",
+        action="store_true",
+        help="Also scan docs/archive/ideas and docs/archive/backlog.",
+    )
     add_output_arguments(review)
 
     start = commands.add_parser("start", help="Mark an open or deferred Backlog in progress.")

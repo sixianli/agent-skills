@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Archive governed Spec, Plan, or Runbook documents.
+"""Archive governed Spec, Plan, Runbook, Idea, or Backlog documents.
 
 ADRs are never archived. Runbooks use explicit snapshot, successor, or retire
 modes and update reciprocal lineage without silently resealing active files.
@@ -24,6 +24,14 @@ ACTIVE_TO_ARCHIVE = {
 }
 RUNBOOK_ACTIVE_DIR = "docs/runbooks"
 RUNBOOK_ARCHIVE_DIR = "docs/archive/runbooks"
+RECORD_TO_ARCHIVE = {
+    "docs/ideas": ("idea", "docs/archive/ideas"),
+    "docs/backlog": ("backlog", "docs/archive/backlog"),
+}
+TERMINAL_RECORD_STATES = {
+    "idea": {"closed", "promoted", "superseded"},
+    "backlog": {"done", "rejected", "converted", "superseded"},
+}
 
 
 @dataclass(frozen=True)
@@ -39,7 +47,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse archive modes while retaining the existing Spec/Plan interface."""
 
     parser = argparse.ArgumentParser(
-        description="Archive a closed Spec, Plan, or governed Runbook."
+        description=(
+            "Move a Spec or Plan into docs/archive/, archive a terminal Idea or "
+            "Backlog record, or archive a governed Runbook."
+        )
     )
     parser.add_argument("root", help="Target project root.")
     parser.add_argument(
@@ -426,7 +437,7 @@ def _print_plan(
 def archive_spec_or_plan(
     root: Path, source: Path, args: argparse.Namespace
 ) -> int:
-    """Preserve the existing closed Spec/Plan archive behavior safely."""
+    """Preserve the existing Spec/Plan archive behavior safely."""
 
     if (
         args.snapshot
@@ -482,6 +493,83 @@ def archive_spec_or_plan(
         apply_transaction(writes, [source])
         print("archived.")
     return 0
+
+
+def archive_record(
+    root: Path, source: Path, args: argparse.Namespace, prefix: str
+) -> int:
+    """Archive one terminal Idea or Backlog record with minimal byte changes."""
+
+    if (
+        args.snapshot
+        or args.retire
+        or args.reason is not None
+        or args.archive_date is not None
+        or args.superseded_by is not None
+    ):
+        raise SystemExit(
+            "Idea/Backlog archive accepts no lifecycle options; close the record first"
+        )
+    kind, archive_prefix = RECORD_TO_ARCHIVE[prefix]
+    relative = _relative(root, source)
+    if source.parent.resolve() != (root / prefix).resolve():
+        raise SystemExit(f"refusing to archive: {relative} is not directly under {prefix}/")
+    data = source.read_bytes()
+    text = data.decode("utf-8")
+    fields = _frontmatter(text, relative)
+    if fields.get("document_type") != kind:
+        raise SystemExit(
+            f"refusing to archive {relative}: document_type must be {kind}"
+        )
+    state = fields.get("record_state", "")
+    if state not in TERMINAL_RECORD_STATES[kind]:
+        raise SystemExit(
+            f"refusing to archive {relative}: record_state {state!r} is not terminal "
+            f"({', '.join(sorted(TERMINAL_RECORD_STATES[kind]))})"
+        )
+    destination = root / archive_prefix / source.name
+    if destination.exists():
+        raise SystemExit(
+            f"refusing to overwrite existing archive target: {destination}"
+        )
+    archived = _set_status_bytes(data, "archived")
+    _print_plan(
+        root,
+        source,
+        destination,
+        [PlannedWrite(destination, archived.decode("utf-8"), 0)],
+        move_source=True,
+        dry_run=args.dry_run,
+    )
+    if not args.dry_run:
+        mode = stat.S_IMODE(source.stat().st_mode)
+        try:
+            _write_atomic(destination, archived, mode)
+            source.unlink()
+        except OSError as exc:
+            if source.exists():
+                destination.unlink(missing_ok=True)
+            raise SystemExit(f"archive failed: {exc}") from exc
+        print("archived.")
+    return 0
+
+
+def _set_status_bytes(data: bytes, value: str) -> bytes:
+    """Replace or add the status field inside frontmatter, keeping line endings."""
+
+    lines = data.splitlines(keepends=True)
+    newline = b"\r\n" if lines and lines[0].endswith(b"\r\n") else b"\n"
+    pattern = re.compile(rb"^status\s*:.*?(\r?\n)?$", re.DOTALL)
+    for index, line in enumerate(lines[1:], start=1):
+        if line.strip() == b"---":
+            lines.insert(index, f'status: "{value}"'.encode() + newline)
+            return b"".join(lines)
+        match = pattern.match(line)
+        if match:
+            ending = match.group(1) or b""
+            lines[index] = f'status: "{value}"'.encode() + ending
+            return b"".join(lines)
+    raise SystemExit("refusing to archive: unterminated frontmatter")
 
 
 def archive_runbook(
@@ -625,6 +713,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"document not found: {source}")
     if _is_under(root, source, RUNBOOK_ACTIVE_DIR):
         return archive_runbook(root, source, args)
+    for prefix in RECORD_TO_ARCHIVE:
+        if _is_under(root, source, prefix):
+            return archive_record(root, source, args, prefix)
     return archive_spec_or_plan(root, source, args)
 
 

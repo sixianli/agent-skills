@@ -416,5 +416,62 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertEqual(second.read_text(encoding="utf-8"), "second-before\n")
 
 
+    def write_record(self, relative: str, kind: str, state: str) -> Path:
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(
+            (
+                "---\r\n"
+                'status: "active"\r\n'
+                f'document_type: "{kind}"\r\n'
+                'record_id: "BL-20260721-abcdef"\r\n'
+                f'record_state: "{state}"\r\n'
+                "---\r\n\r\n# Record\r\n"
+            ).encode()
+        )
+        return path
+
+    def test_archives_terminal_backlog_and_idea_preserving_bytes(self) -> None:
+        for relative, kind, state, archive_dir in (
+            ("docs/backlog/BL-20260721-abcdef-x.md", "backlog", "done", "docs/archive/backlog"),
+            ("docs/ideas/IDEA-20260721-001-y.md", "idea", "promoted", "docs/archive/ideas"),
+        ):
+            source = self.write_record(relative, kind, state)
+            original = source.read_bytes()
+            result = self.run_archiver(relative)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(source.exists())
+            archived = self.root / archive_dir / source.name
+            data = archived.read_bytes()
+            self.assertEqual(
+                data, original.replace(b'status: "active"', b'status: "archived"')
+            )
+            self.assertIn(f'record_state: "{state}"'.encode(), data)
+
+    def test_refuses_non_terminal_record_and_overwrite(self) -> None:
+        source = self.write_record("docs/backlog/BL-20260721-001-a.md", "backlog", "open")
+        result = self.run_archiver("docs/backlog/BL-20260721-001-a.md")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("terminal", result.stderr)
+        self.assertTrue(source.exists())
+        self.write_record("docs/backlog/BL-20260721-002-b.md", "backlog", "done")
+        self.write_record("docs/archive/backlog/BL-20260721-002-b.md", "backlog", "done")
+        result = self.run_archiver("docs/backlog/BL-20260721-002-b.md")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("overwrite", result.stderr)
+        self.assertTrue((self.root / "docs/backlog/BL-20260721-002-b.md").exists())
+
+    def test_record_dry_run_changes_nothing(self) -> None:
+        source = self.write_record("docs/ideas/IDEA-20260721-001-z.md", "idea", "closed")
+        result = self.run_archiver("docs/ideas/IDEA-20260721-001-z.md", "--dry-run")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(source.exists())
+        self.assertFalse((self.root / "docs/archive/ideas").exists())
+
+    def test_help_does_not_claim_closure_verification(self) -> None:
+        result = self.run_archiver("--help")
+        self.assertNotIn("closed", result.stdout.lower())
+        self.assertIn("Backlog", result.stdout)
+
 if __name__ == "__main__":
     unittest.main()
