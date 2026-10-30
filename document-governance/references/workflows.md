@@ -152,23 +152,35 @@ Live-State Preflight, evidence, mutation-boundary, and archive rules.
 - Record intended future work as a Backlog item.
 - Link an Idea to a derived Backlog item or formal governed artifact when it is
   promoted; do not duplicate the original reasoning.
+- When a record reaches a terminal state, archive it in the same operation with
+  `scripts/archive_doc.py` and tell the user it was archived and where. If the
+  archive step fails, leave the record in place in its terminal state and report
+  why.
 - Query source files with `scripts/idea_backlog.py`; do not maintain `INDEX.md`.
 - See `references/idea-backlog-workflow.md` for capture quality, transitions,
   review behavior, and closure evidence.
 
 ## Agent Lessons
 
+Before governing, read the lessons relevant to the task as described in
+`SKILL.md` Required Workflow step 3; do not load a long lessons file whole.
+
 Maintain `docs/lessons.md` only when evidence shows that coding agents
 frequently or repeatedly make the same mistake. Each lesson must describe the recurring
-pattern, why it matters, and a concrete prevention rule. Do not add project
+pattern, why it matters, and a concrete prevention rule, under one heading that
+states the mistake itself. Before adding a lesson, check whether an existing one
+already covers the same mistake and extend it instead of duplicating. Do not add project
 status, general knowledge, one-off incidents, or future work. Put future work
 in Backlog instead.
 
 ## Conflict Handling
 
 1. Inspect current code and repository evidence.
-2. Apply the authority order in `references/sop.md` to the document domains.
-3. Treat ADRs as decision history rather than current implementation inventory.
-4. Reconcile stale current-truth documents with verified implementation.
-5. Stop and request human direction only when available evidence cannot resolve
+2. When a repository instruction conflicts with this skill, apply the Rule
+   Layers in `SKILL.md`: follow the repository for Default Conventions, keep
+   Skill Policy and tell the user, and stop and ask for Safety Invariants.
+3. Apply the authority order in `references/sop.md` to the document domains.
+4. Treat ADRs as decision history rather than current implementation inventory.
+5. Reconcile stale current-truth documents with verified implementation.
+6. Stop and request human direction only when available evidence cannot resolve
    a material product or decision conflict.

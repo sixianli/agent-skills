@@ -8,7 +8,8 @@ Use this reference only when preserving an idea or managing future work.
   Idea under `docs/ideas/`.
 - “以后要做”“加入待办”“记录优化点” creates a Backlog item under
   `docs/backlog/`.
-- “列出/评审待办” queries records with `idea_backlog.py list` or `review`.
+- “列出/评审待办” queries records with `idea_backlog.py list` or `review`
+  (active records only; add `--include-archived` to include archived ones).
 - “开始处理这条待办” changes an open or deferred Backlog to `in_progress`.
 - “推进/落地/转成正式工作” promotes a record to a linked Backlog, Spec, Plan,
   ADR, or other appropriate governed artifact.
@@ -32,7 +33,9 @@ Plan, not in Backlog.
 ## Frontmatter and States
 
 Both types use `status: active`, a type-specific `document_type`, a globally
-unique `record_id`, `record_state`, `date`, `updated`, `promoted_to`,
+unique `record_id` (`IDEA-YYYYMMDD-xxxxxx` or `BL-YYYYMMDD-xxxxxx`, where
+`xxxxxx` is six random characters, so records created on different branches
+never collide; legacy `-NNN` IDs stay valid and are never migrated), `record_state`, `date`, `updated`, `promoted_to`,
 `supersedes`, and `superseded_by`.
 
 - Idea: `document_type: idea`; states are `captured`, `promoted`, `closed`, and
@@ -55,6 +58,33 @@ Required transition evidence:
 - `closed` requires `result` or `reason`.
 - `superseded` requires `superseded_by` and `status: superseded`.
 
+Allowed source states for `close`: an Idea only from `captured`; a Backlog only
+from `open`, `in_progress`, or `deferred`. A terminal record cannot be closed
+again and there is no reopen command; create a new record and link the old one
+instead. `--superseded-by` is accepted only with `--state superseded`. A source
+Idea for `backlog capture --source-idea` must still be `captured`.
+
+## Archive
+
+Terminal states are: Idea `closed`, `promoted`, `superseded`; Backlog `done`,
+`rejected`, `converted`, `superseded`. As soon as a record reaches a terminal
+state, archive it in the same operation:
+
+```text
+archive_doc.py <project> docs/backlog/<record-file>.md
+archive_doc.py <project> docs/ideas/<record-file>.md
+```
+
+The file moves to `docs/archive/backlog/` or `docs/archive/ideas/` under the
+same name with `status: archived`; `record_state` keeps its terminal value.
+Non-terminal records and existing targets are refused. Tell the user which
+records were archived and where. If archiving fails, the record stays in place
+in its terminal state; report the failure and its reason.
+
+Links keep working after archiving: the validator maps a missing active path to
+the same file name under the matching archive directory, for SOURCE links and
+for `promoted_to`, `source_idea`, `supersedes`, and `superseded_by`.
+
 Open or overdue items do not fail strict validation. They are surfaced by the
 review command so CI validates structure without pretending all future work
 must be completed.
@@ -70,8 +100,8 @@ Resolve this skill's actual source directory, verify Python 3.10+, and invoke
 ```text
 idea_backlog.py --root <project> idea capture ...
 idea_backlog.py --root <project> backlog capture ...
-idea_backlog.py --root <project> list --kind all
-idea_backlog.py --root <project> review
+idea_backlog.py --root <project> list --kind all [--include-archived]
+idea_backlog.py --root <project> review [--include-archived]
 idea_backlog.py --root <project> start <BL-ID>
 idea_backlog.py --root <project> defer <BL-ID> --review-after YYYY-MM-DD
 idea_backlog.py --root <project> promote <ID> --target docs/...
@@ -79,11 +109,16 @@ idea_backlog.py --root <project> close <ID> --state ...
 ```
 
 `idea capture` and `backlog capture` name the new file `<record_id>-<slug>.md`.
+Dates passed to `--date`, `--review-after`, and `--as-of` must be written
+`YYYY-MM-DD`. Titles and slugs must be one line; an empty `--slug` is refused.
 The slug takes ASCII alphanumeric words and contiguous CJK character runs from
 `--title`, joins them with `-`, and keeps at most 8 segments and 120 bytes. To
 name the file with different text (for example an English short name for a
 Chinese title), pass `--slug`; the title stored in the record stays `--title`.
 
 When a Backlog is captured with `--source-idea`, the script promotes the Idea
-and writes bidirectional links. A promotion target must already exist; the
-script will not fabricate the semantic content of a Spec, ADR, or Plan.
+and writes bidirectional links. A promotion target must already exist with valid
+frontmatter and must not be the record itself; a Backlog target must not be
+terminal or already linked to a different Idea. The script will not fabricate
+the semantic content of a Spec, ADR, or Plan. Because promotion is terminal for
+the Idea, archive the Idea right after promoting it.

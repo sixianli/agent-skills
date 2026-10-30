@@ -21,7 +21,8 @@ ADR supersession, and SOURCE-path rules.
 4. Separate design from implementation sequencing.
 5. Archive closed Specs and Plans, retain ADR decision history in place, and
    move Runbook history out of the active execution directory.
-6. Follow user scope and repository instructions before this default taxonomy.
+6. Follow user scope and repository instructions before this default taxonomy,
+   within the Rule Layers in `SKILL.md`: they override Default Conventions only.
 
 ## Document Layers
 
@@ -37,12 +38,15 @@ ADR supersession, and SOURCE-path rules.
 | Idea            | `docs/ideas/IDEA-*.md`                            | A durable insight and its thinking context | A commitment to implement                 |
 | Backlog Item    | `docs/backlog/BL-*.md`                            | Future work, priority, state, and outcome  | File-level execution steps                |
 | Agent Lessons   | `docs/lessons.md`                                 | Repeated agent mistakes and prevention     | Status, one-off issues, future work       |
-| Archive         | `docs/archive/specs/`, `docs/archive/plans/`, `docs/archive/runbooks/` | Closed execution and Runbook history | Active source-of-truth content |
+| Archive         | `docs/archive/specs/`, `docs/archive/plans/`, `docs/archive/runbooks/`, `docs/archive/ideas/`, `docs/archive/backlog/` | Closed execution, Runbook, and terminal Idea/Backlog history | Active source-of-truth content |
 
 Do not create or maintain `docs/TODO.md`; Backlog is the only durable future-work
-inventory. Maintain `docs/lessons.md` only for mistakes coding agents make
+inventory. This is Skill Policy and repository conventions do not override it (see
+`SKILL.md`, Rule Layers). Maintain `docs/lessons.md` only for mistakes coding agents make
 frequently or repeatedly and the explicit rules that prevent recurrence. Do not add
-project status, general knowledge, one-off incidents, or future work there.
+project status, general knowledge, one-off incidents, or future work there. Give each
+lesson one heading that states the mistake itself, so an agent can choose relevant
+lessons from the headings alone.
 
 Recognize existing `docs/archive/adr/` documents for backward compatibility,
 but do not move new or superseded ADRs there.
@@ -72,7 +76,7 @@ version: "X.Y"             # PRD/Architecture only
 decision_status: accepted  # ADR only: proposed | accepted | superseded
 execution_risk: critical   # Active Runbook only: standard | high | critical
 contract_sha256: "sha256:<64-hex>" # Active Runbook static contract
-record_id: IDEA-YYYYMMDD-NNN
+record_id: IDEA-YYYYMMDD-xxxxxx  # 6 random chars; legacy -NNN stays valid
 record_state: captured      # State set depends on document_type
 updated: "YYYY-MM-DD"       # Structured Idea/Backlog only
 priority: normal            # Backlog only: urgent | high | normal | low
@@ -85,8 +89,9 @@ Use the lifecycle fields consistently:
 - `superseded`: replaced by a named successor. ADRs retain this state in
   `docs/adr/`; non-executable Runbook history is represented as `archived`
   under `docs/archive/runbooks/`, not left in the active directory.
-- `archived`: a closed Spec/Plan or historical/retired Runbook under its
-  matching `docs/archive/` directory.
+- `archived`: a closed Spec/Plan, a historical/retired Runbook, or a terminal
+  Idea/Backlog record under its matching `docs/archive/` directory. An archived
+  Idea/Backlog keeps the `record_state` it had when archived.
 - For a superseded ADR, set both `status: superseded` and
   `decision_status: superseded`, keep it in `docs/adr/`, and populate
   `superseded_by`.
@@ -121,12 +126,15 @@ Rules:
 - Treat anchors as kebab-case heading slugs; the validator does not verify the
   anchor itself.
 - Skip external `http://` and `https://` targets.
-- Skip explicit template placeholders such as `NNNN`, `YYYY-MM-DD`, and
-  `<topic>` after path-boundary validation.
+- Do not leave template placeholders such as `NNNN`, `YYYY-MM-DD`, and
+  `<topic>` in a governed document. Only files under `docs/templates/` may keep
+  them; elsewhere the validator reports an unfilled placeholder.
 - Permit ordinary Markdown links for prose, but use SOURCE for authoritative
   cross-document dependencies.
-- Preserve links to closed Specs and Plans through the active-to-archive
-  compatibility mapping. Resolve a missing legacy active Runbook path to an
+- Preserve links to closed Specs, Plans, and archived Idea/Backlog records
+  through the active-to-archive compatibility mapping. The mapping also applies
+  to the record fields `promoted_to`, `source_idea`, `supersedes`, and
+  `superseded_by`. Resolve a missing legacy active Runbook path to an
   exact undated archive or one unambiguous dated archive; otherwise require an
   exact archive path. Preserve legacy ADR links similarly, but do not archive
   ADRs going forward.
@@ -171,8 +179,8 @@ authoritative document rather than blindly trusting stale prose.
 | Plan            | `YYYY-MM-DD-topic-plan.md`                                       |
 | Runbook         | `topic-runbook.md`, `topic-setup.md`, `topic-troubleshooting.md` |
 | Archived Runbook | `YYYY-MM-DD-{stable-runbook-name}.md`; legacy undated names remain readable |
-| Idea            | `IDEA-YYYYMMDD-NNN-short-title.md` under `docs/ideas/`           |
-| Backlog         | `BL-YYYYMMDD-NNN-short-title.md` under `docs/backlog/`           |
+| Idea            | `IDEA-YYYYMMDD-xxxxxx-short-title.md` under `docs/ideas/`        |
+| Backlog         | `BL-YYYYMMDD-xxxxxx-short-title.md` under `docs/backlog/`        |
 | Agent Lessons   | `docs/lessons.md`                                                |
 
 ```text
@@ -190,7 +198,9 @@ docs/
 └── archive/
     ├── specs/
     ├── plans/
-    └── runbooks/
+    ├── runbooks/
+    ├── ideas/
+    └── backlog/
 ```
 
 Keep only pending or executing work in `docs/execution/specs/` and
@@ -200,6 +210,10 @@ directory after completing the closure checklist.
 Keep a current Runbook at a stable path under `docs/runbooks/`. Use
 `scripts/archive_doc.py` with one of its explicit Runbook modes for snapshots,
 supersession, or retirement. Never execute from `docs/archive/runbooks/`.
+
+Move a terminal Idea or Backlog record to `docs/archive/ideas/` or
+`docs/archive/backlog/` with `scripts/archive_doc.py` as soon as it reaches its
+terminal state. The file name does not change.
 
 Do not create a hand-maintained Idea or Backlog index. Query the
 frontmatter-bearing source records with `scripts/idea_backlog.py list` or
