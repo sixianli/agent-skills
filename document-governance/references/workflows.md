@@ -31,7 +31,7 @@ rollback, and conflict handling.
    it in the Spec's `Delivery Order` section.
 6. Implement and verify the change.
 7. Reconcile affected long-lived and operational documents.
-8. Archive the Spec in the change set that completes the work.
+8. Delete the Spec in the change set that completes the work.
 
 ## Drift Reconciliation
 
@@ -91,18 +91,14 @@ A three-ADR chain records one link per pair:
 ## Spec and Plan Closure
 
 Closure is part of finishing the work, not a separate later task. The change
-set that completes, rejects, supersedes, or abandons the work also archives
-its Spec:
-
-- Run `scripts/archive_doc.py` for the Spec.
-- Run strict validation after the move.
+set that completes, rejects, supersedes, or abandons the work also deletes
+its Spec; see Closing by Deletion below.
 
 Plans are a legacy document type. This skill no longer creates them, but a
 project may still hold Plans written earlier. Do not update a legacy Plan to
-track progress. Archive it with `scripts/archive_doc.py` together with its
-Spec, or at once when its work is already closed. Unfinished Plan steps do not
-block closure: archive the Plan as it is and record any work that is still
-wanted as a Backlog item.
+track progress. Delete it together with its Spec, or at once when its work is
+already closed. Unfinished Plan steps do not block closure: delete the Plan as
+it is and record any work that is still wanted as a Backlog item.
 
 Updating PRD, Architecture, README, Runbooks, and Backlog items for what the
 work changed is Drift Reconciliation. It belongs to the change sets that made
@@ -110,9 +106,37 @@ those changes and is not repeated at closure.
 
 When governing a project, look for Specs and Plans left under
 `docs/execution/` whose work the repository shows is already closed. Report
-them and offer to archive them; archive only within the authorized scope.
+them and offer to delete them; delete only within the authorized scope.
 
-Never use the archive script on an ADR.
+## Closing by Deletion
+
+A closed document that stays in the repository keeps being found, read, and
+validated, and readers mistake it for current truth. An archive directory has
+the same effect. Version control already keeps every past version, so the
+default is to delete:
+
+1. Confirm the document is closed: the work is complete or abandoned, the
+   Runbook is retired or replaced, or the Idea/Backlog record is terminal.
+2. Find everything that points at it: other documents, code, tests, and
+   configuration that name its path.
+3. Fix each reference. Drop it when it only pointed at history. When the
+   reader still needs the old text, link to the document at a fixed commit in
+   the repository host. When a fact in the document is still current and has
+   no other home, move that fact to its owner document first.
+4. Delete the file with the version-control remove command, in the same change
+   set as the reference fixes.
+5. Run strict validation and state in the commit message what was deleted and
+   why.
+
+Never delete an ADR: supersede it in place so the decision history stays
+readable. Never delete a document only because it is old; delete it because
+it is closed.
+
+A repository may keep `docs/archive/` instead of deleting. Then use
+`scripts/archive_doc.py` for every move, run strict validation after it, and
+never use the archive script on an ADR. The archive rules in the other
+reference files apply only to such repositories and to archives that already
+exist.
 
 ## Runbook Lifecycle and Execution
 
@@ -136,7 +160,9 @@ Runbooks use event-driven reconciliation, not calendar renewal:
 When operational truth changes, reconcile the Runbook in the same change set
 because of the event. Never refresh a date or invent a review window.
 
-Use `scripts/archive_doc.py` with exactly one Runbook mode:
+Delete a Runbook when it is retired or replaced; see Closing by Deletion. In
+a repository that keeps `docs/archive/`, use `scripts/archive_doc.py` with
+exactly one Runbook mode instead:
 
 - `--snapshot --archive-date DATE` before a major revision at the same stable
   path;
@@ -165,10 +191,11 @@ Live-State Preflight, evidence, mutation-boundary, and archive rules.
 - Record intended future work as a Backlog item.
 - Link an Idea to a derived Backlog item or formal governed artifact when it is
   promoted; do not duplicate the original reasoning.
-- When a record reaches a terminal state, archive it in the same operation with
-  `scripts/archive_doc.py` and tell the user it was archived and where. If the
-  archive step fails, leave the record in place in its terminal state and report
-  why.
+- When a record reaches a terminal state, delete it in the same operation and
+  tell the user it was deleted and which commit holds its last version. In a
+  repository that keeps `docs/archive/`, archive it with
+  `scripts/archive_doc.py` instead; if the archive step fails, leave the record
+  in place in its terminal state and report why.
 - Query source files with `scripts/idea_backlog.py`; do not maintain `INDEX.md`.
 - See `references/idea-backlog-workflow.md` for capture quality, transitions,
   review behavior, and closure evidence.

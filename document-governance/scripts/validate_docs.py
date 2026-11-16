@@ -18,8 +18,6 @@ from runbook import (
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
-    "docs/archive/specs",
-    "docs/archive/runbooks",
     "docs/runbooks",
 ]
 REQUIRED_FRONTMATTER = {"status", "supersedes", "superseded_by", "date"}

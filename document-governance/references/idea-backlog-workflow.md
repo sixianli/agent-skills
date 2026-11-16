@@ -64,11 +64,18 @@ again and there is no reopen command; create a new record and link the old one
 instead. `--superseded-by` is accepted only with `--state superseded`. A source
 Idea for `backlog capture --source-idea` must still be `captured`.
 
-## Archive
+## Closing Records
 
 Terminal states are: Idea `closed`, `promoted`, `superseded`; Backlog `done`,
 `rejected`, `converted`, `superseded`. As soon as a record reaches a terminal
-state, archive it in the same operation:
+state, delete it in the same operation, following Closing by Deletion in
+`references/workflows.md`, and tell the user which records were deleted and
+which commit holds their last version. One exception: while an open record
+still links to a terminal one, for example an open Backlog item whose
+`source_idea` is a promoted Idea, keep the terminal record and delete it
+together with the record that links to it.
+
+In a repository that keeps `docs/archive/`, archive instead:
 
 ```text
 archive_doc.py <project> docs/backlog/<record-file>.md
@@ -121,4 +128,4 @@ and writes bidirectional links. A promotion target must already exist with valid
 frontmatter and must not be the record itself; a Backlog target must not be
 terminal or already linked to a different Idea. The script will not fabricate
 the semantic content of a Spec, ADR, or Plan. Because promotion is terminal for
-the Idea, archive the Idea right after promoting it.
+the Idea, close the Idea as described in Closing Records.

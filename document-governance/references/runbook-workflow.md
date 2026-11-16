@@ -180,9 +180,15 @@ rollback that has not been proven available by live readback.
 
 ## Snapshot, Supersession, and Retirement
 
-`docs/runbooks/` contains only active stable entry paths.
-`docs/archive/runbooks/` contains `status: archived` history. New archive files
-are dated; unique legacy undated files remain readable for compatibility.
+`docs/runbooks/` contains only active stable entry paths. A Runbook that is
+retired or replaced is deleted, following Closing by Deletion in
+`references/workflows.md`; version control keeps its history, and a major
+revision needs no snapshot for the same reason.
+
+The rest of this section applies only to a repository that keeps
+`docs/archive/`. There, `docs/archive/runbooks/` contains `status: archived`
+history. New archive files are dated; unique legacy undated files remain
+readable for compatibility.
 
 Use only these mutually exclusive archive operations:
 

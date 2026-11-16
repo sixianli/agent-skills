@@ -2,7 +2,7 @@
 name: document-governance
 description: "Govern the project's documentation system under the repository's `docs/` root, including creating, reconciling, validating, superseding, archiving, and closing PRDs, Architecture documents, ADRs, Specs, Plans, Runbooks, user-authored Ideas, and Backlog items. Use this skill when the user explicitly requests documentation governance or any of these document-lifecycle operations, when an adopted Runbook is being checked or used to guide an operation, when the user wants to persist one of their own ideas as project documentation, or proactively when there is clear evidence that governed project documentation has drifted out of sync with the project's current state. Do not use this skill for ordinary code or documentation edits that do not require documentation governance or lifecycle management, casual brainstorming with no intent to persist the outcome, or routine project-status or progress reporting."
 metadata:
-  version: "2026.11.16-1"
+  version: "2026.11.16-2"
 ---
 # document-governance
 
@@ -24,8 +24,8 @@ This skill governs only project documentation that has explicitly adopted its ru
   Do not create manually maintained indexes.
 * Run `scripts/runbook.py check` before using an active Runbook. It checks structure only; compare the Runbook
   with its current sources yourself.
-* Use only `scripts/archive_doc.py` to archive closed Specs, Plans, and terminal Idea/Backlog records, and to
-  snapshot, supersede, or retire Runbooks. Never use it for ADRs.
+* Delete closed documents instead of archiving them; version control keeps the history. In a repository that
+  keeps `docs/archive/`, move documents there only with `scripts/archive_doc.py`. Never use it for ADRs.
 
 ## Required Workflow
 
@@ -59,13 +59,14 @@ This skill governs only project documentation that has explicitly adopted its ru
 5. Classify the work and read only the reference sections that match it.
 6. Preserve answer-only or review-only scope. Once editing is authorized, keep affected code and documentation
    consistent within the same change set.
-7. Supersede ADRs in place within `docs/adr/`; never archive ADRs. Archive a Spec in the change set
-   that completes or abandons its work, and do not update it afterwards. Do not create Plan documents; archive
-   legacy Plans with their Spec. Keep only active Runbooks in
-   `docs/runbooks/` and use the dedicated Runbook archive modes.
-   When an Idea or Backlog record reaches a terminal state, archive it in the same operation with
-   `scripts/archive_doc.py` and tell the user it was archived and where. If archiving fails, leave the record
-   in place in its terminal state and report the failure and its reason; never claim it was archived.
+7. Supersede ADRs in place within `docs/adr/`; never delete or archive ADRs. Delete a Spec in the change set
+   that completes or abandons its work, following Closing by Deletion in `references/workflows.md`. Do not
+   create Plan documents; delete legacy Plans with their Spec. Keep only active Runbooks in `docs/runbooks/`
+   and delete a Runbook when it is retired or replaced.
+   When an Idea or Backlog record reaches a terminal state, delete it in the same operation and tell the user
+   it was deleted and which commit holds its last version; keep it only while an open record still links to it. In a repository that keeps `docs/archive/`, archive
+   with `scripts/archive_doc.py` instead; if archiving fails, leave the record in place in its terminal state
+   and report the failure and its reason.
 8. Every `scripts/`, `references/`, and `assets/` path in this file is relative to this skill's directory, the
    directory that contains this `SKILL.md` (the agent harness reports it when it loads the skill), not to the project.
    Before running scripts bundled with the skill, confirm that Python 3.10 or later is available via `python3`, then
@@ -76,7 +77,7 @@ This skill governs only project documentation that has explicitly adopted its ru
     conventions. Pushing, opening a pull request, or merging requires the user's explicit decision: after
     committing, ask. When the working copy will not outlive the session, the work is not complete until the user
     has decided whether to push; say so instead of reporting completion.
-11. Report which documents were updated and intentionally left unchanged, which records were archived, which checks
+11. Report which documents were updated and intentionally left unchanged, which documents were deleted or archived, which checks
     were skipped, any unresolved drift, and any required ADR follow-up work.
 12. When a Runbook guides an operation, apply all three execution gates from
     `references/runbook-workflow.md`: consistency with current sources, fresh target
@@ -127,8 +128,10 @@ say which default you departed from.
 * Directory layout, file naming, and the templates in `assets/templates/`.
 * Plan documents are not created: the coding agent plans execution order itself and the project's task tracker
   records progress. A repository may keep writing Plans; existing Plans stay valid and archivable either way.
-* Ideas that need to be persisted live under `docs/ideas/`, future work under `docs/backlog/`, and terminal
-  records under `docs/archive/ideas/` and `docs/archive/backlog/`.
+* Closed documents are deleted, not archived: a closed Spec, a legacy Plan, a retired or replaced Runbook, and a
+  terminal Idea or Backlog record. Version control is the archive. A repository may keep `docs/archive/`
+  instead; existing archives stay valid either way. Superseded ADRs are never deleted.
+* Ideas that need to be persisted live under `docs/ideas/` and future work under `docs/backlog/`.
 * `docs/lessons.md` records only mistakes that coding agents make frequently or repeatedly, along with explicit
   rules that prevent the same class of mistake from recurring. Do not record one-off issues, project state, or
   general knowledge there. Each lesson has one heading that states the mistake itself.
