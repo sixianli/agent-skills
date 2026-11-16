@@ -13,8 +13,6 @@ RUNBOOK = SKILL_ROOT / "scripts" / "runbook.py"
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
-    "docs/archive/specs",
-    "docs/archive/runbooks",
     "docs/runbooks",
 ]
 
@@ -729,6 +727,7 @@ class ValidateDocsTests(unittest.TestCase):
         outside = self.sandbox / "outside.md"
         outside.write_text("outside\n", encoding="utf-8")
         archive = self.root / "docs/archive/runbooks/old-runbook.md"
+        archive.parent.mkdir(parents=True, exist_ok=True)
         archive.symlink_to(outside)
         self.write_document(
             "docs/prd-v0.1.md",
@@ -961,7 +960,7 @@ class ValidateDocsTests(unittest.TestCase):
     def test_project_without_plan_directories_is_valid(self) -> None:
         self.write_document("docs/prd-v0.1.md", "# Product", document_type="prd")
         self.assertFalse((self.root / "docs/execution/plans").exists())
-        self.assertFalse((self.root / "docs/archive/plans").exists())
+        self.assertFalse((self.root / "docs/archive").exists())
 
         result, payload = self.run_validator(strict=True)
 

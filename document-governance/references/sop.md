@@ -19,8 +19,8 @@ ADR supersession, and SOURCE-path rules.
 2. Keep code and current-truth documents consistent.
 3. Separate stable truth from temporary execution artifacts.
 4. Separate design from implementation sequencing.
-5. Archive closed Specs and Plans, retain ADR decision history in place, and
-   move Runbook history out of the active execution directory.
+5. Delete closed Specs, Plans, Runbooks, and terminal Idea/Backlog records;
+   version control keeps their history. Retain ADR decision history in place.
 6. Follow user scope and repository instructions before this default taxonomy,
    within the Rule Layers in `SKILL.md`: they override Default Conventions only.
 
@@ -38,7 +38,7 @@ ADR supersession, and SOURCE-path rules.
 | Idea            | `docs/ideas/IDEA-*.md`                            | A durable insight and its thinking context | A commitment to implement                 |
 | Backlog Item    | `docs/backlog/BL-*.md`                            | Future work, priority, state, and outcome  | File-level execution steps                |
 | Agent Lessons   | `docs/lessons.md`                                 | Repeated agent mistakes and prevention     | Status, one-off issues, future work       |
-| Archive         | `docs/archive/specs/`, `docs/archive/plans/`, `docs/archive/runbooks/`, `docs/archive/ideas/`, `docs/archive/backlog/` | Closed execution, Runbook, and terminal Idea/Backlog history | Active source-of-truth content |
+| Archive (optional) | `docs/archive/specs/`, `docs/archive/plans/`, `docs/archive/runbooks/`, `docs/archive/ideas/`, `docs/archive/backlog/` | Closed documents, only in a repository that keeps an archive instead of deleting | Active source-of-truth content |
 
 Do not create or maintain `docs/TODO.md`; Backlog is the only durable future-work
 inventory. This is Skill Policy and repository conventions do not override it (see
@@ -211,29 +211,25 @@ docs/
 ├── runbooks/
 ├── ideas/
 ├── backlog/
-├── lessons.md
-└── archive/
-    ├── specs/
-    ├── plans/
-    ├── runbooks/
-    ├── ideas/
-    └── backlog/
+└── lessons.md
 ```
 
-Keep only pending or executing work in `docs/execution/specs/`. Archive a
+Keep only pending or executing work in `docs/execution/specs/`. Delete a
 Spec, and any legacy Plan that belongs to it, in the same change set that
-completes or abandons its work; see Spec and Plan Closure in
-`references/workflows.md`. A Spec is a point-in-time record: once its work is
-closed, do not keep updating it to match later code. `docs/execution/plans/`
-and `docs/archive/plans/` exist only in projects that hold legacy Plans.
+completes or abandons its work; see Spec and Plan Closure and Closing by
+Deletion in `references/workflows.md`. A Spec is a point-in-time record: it is
+not updated to match later code. `docs/execution/plans/` exists only in
+projects that hold legacy Plans.
 
-Keep a current Runbook at a stable path under `docs/runbooks/`. Use
-`scripts/archive_doc.py` with one of its explicit Runbook modes for snapshots,
-supersession, or retirement. Never execute from `docs/archive/runbooks/`.
+Keep a current Runbook at a stable path under `docs/runbooks/` and delete it
+when it is retired or replaced. Never execute from `docs/archive/runbooks/`.
 
-Move a terminal Idea or Backlog record to `docs/archive/ideas/` or
-`docs/archive/backlog/` with `scripts/archive_doc.py` as soon as it reaches its
-terminal state. The file name does not change.
+Delete a terminal Idea or Backlog record as soon as it reaches its terminal
+state.
+
+`docs/archive/` and every archive rule in this file apply only to a repository
+that chooses to keep an archive, and to archives that already exist. Such a
+repository moves documents there only with `scripts/archive_doc.py`.
 
 Do not create a hand-maintained Idea or Backlog index. Query the
 frontmatter-bearing source records with `scripts/idea_backlog.py list` or
