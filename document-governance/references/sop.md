@@ -75,7 +75,6 @@ document_type: spec        # prd | architecture | adr | spec | plan | runbook | 
 version: "X.Y"             # PRD/Architecture only
 decision_status: accepted  # ADR only: proposed | accepted | superseded
 execution_risk: critical   # Active Runbook only: standard | high | critical
-contract_sha256: "sha256:<64-hex>" # Active Runbook static contract
 record_id: IDEA-YYYYMMDD-xxxxxx  # 6 random chars; legacy -NNN stays valid
 record_state: captured      # State set depends on document_type
 updated: "YYYY-MM-DD"       # Structured Idea/Backlog only
@@ -106,8 +105,8 @@ Use the lifecycle fields consistently:
 - A retired Runbook without a successor sets a one-line `archive_reason`.
 - Runbook `date` is document metadata, never execution freshness. Do not add
   Runbook `last_reviewed`, `review_after`, or periodic trust windows.
-- Read `references/runbook-workflow.md` for the risk, fingerprint, execution,
-  evidence, and archive contract.
+- Read `references/runbook-workflow.md` for the risk, execution, evidence,
+  and archive rules.
 
 ## Cross-Document References
 
@@ -141,6 +140,19 @@ Rules:
 
 ## ADR Rules
 
+- Write an ADR only for a decision that passes both tests: reversing it later
+  would be costly, and a future reader would otherwise ask why it was made.
+  Typical subjects are system structure, non-functional qualities such as
+  security or durability, dependencies, interfaces and contracts, construction
+  techniques, and durable product-scope choices.
+- Do not write an ADR for a routine, cheaply reversible change such as tuning a
+  limit, resizing a machine, adjusting a pipeline setting, or upgrading a
+  dependency without a design consequence. Record its reason in the change
+  description. When unsure, ask whether anyone would need the reason a year
+  from now; if not, do not write an ADR.
+- Keep an ADR to one or two pages. It states the forces, the decision, and the
+  consequences. Put detailed design in a Spec and link it instead of growing
+  the ADR.
 - Record exactly one durable decision per ADR.
 - Do not rewrite an ADR's recorded decision, context, options, or consequences.
   Permit only typo, formatting, broken-link, and cross-reference repairs that
@@ -204,8 +216,10 @@ docs/
 ```
 
 Keep only pending or executing work in `docs/execution/specs/` and
-`docs/execution/plans/`. Move closed Specs and Plans to the matching archive
-directory after completing the closure checklist.
+`docs/execution/plans/`. Archive a Spec or Plan in the same change set that
+completes or abandons its work; see Spec and Plan Closure in
+`references/workflows.md`. A Spec or Plan is a point-in-time record: once its
+work is closed, do not keep updating it to match later code.
 
 Keep a current Runbook at a stable path under `docs/runbooks/`. Use
 `scripts/archive_doc.py` with one of its explicit Runbook modes for snapshots,

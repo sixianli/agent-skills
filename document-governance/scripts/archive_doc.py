@@ -2,7 +2,7 @@
 """Archive governed Spec, Plan, Runbook, Idea, or Backlog documents.
 
 ADRs are never archived. Runbooks use explicit snapshot, successor, or retire
-modes and update reciprocal lineage without silently resealing active files.
+modes and update reciprocal lineage.
 """
 
 from __future__ import annotations
@@ -402,9 +402,8 @@ def _print_plan(
     *,
     move_source: bool,
     dry_run: bool,
-    invalidated_active: list[Path] | None = None,
 ) -> None:
-    """Print every affected path and the explicit reseal boundary."""
+    """Print every affected path."""
 
     action = "move" if move_source else "snapshot"
     print(f"will {action}: {_relative(root, source)}")
@@ -420,16 +419,6 @@ def _print_plan(
         ):
             if key in fields:
                 print(f"  {key}: {fields[key]}")
-    if invalidated_active:
-        for path in invalidated_active:
-            print(
-                "NOTICE: active Runbook lineage changed and its seal is now invalid: "
-                f"{_relative(root, path)}"
-            )
-        print(
-            "Reconcile and explicitly run runbook.py seal --confirm-reconciled --apply; "
-            "the archive tool never reseals automatically."
-        )
     if dry_run:
         print("(dry-run; no changes applied)")
 
@@ -611,7 +600,6 @@ def archive_runbook(
 
     writes = list(predecessor_writes)
     removals: list[Path] = []
-    invalidated_active: list[Path] = []
     if args.snapshot:
         archived = rewrite_frontmatter(
             source_text,
@@ -629,7 +617,6 @@ def archive_runbook(
                 PlannedWrite(source, active, source_mode),
             ]
         )
-        invalidated_active.append(source)
     elif args.superseded_by is not None:
         successor, successor_relative = _normalize_docs_target(
             root, args.superseded_by
@@ -673,7 +660,6 @@ def archive_runbook(
             ]
         )
         removals.append(source)
-        invalidated_active.append(successor)
     else:
         archived = rewrite_frontmatter(
             source_text,
@@ -693,7 +679,6 @@ def archive_runbook(
         writes,
         move_source=not args.snapshot,
         dry_run=args.dry_run,
-        invalidated_active=invalidated_active,
     )
     if not args.dry_run:
         apply_transaction(writes, removals)

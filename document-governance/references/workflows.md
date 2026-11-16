@@ -19,13 +19,18 @@ rollback, and conflict handling.
 
 1. Update or create the PRD when product scope changes.
 2. Update or create Architecture when current system behavior changes.
-3. Create or supersede an ADR for a durable technical decision.
-4. Write an Execution Spec under `docs/execution/specs/`.
-5. Confirm the Spec before writing an Implementation Plan under
-   `docs/execution/plans/`.
+3. Create or supersede an ADR for a durable decision that meets the ADR
+   threshold in `references/sop.md`.
+4. Write an Execution Spec under `docs/execution/specs/` when the design is
+   not obvious from the request. Skip the Spec for a change whose design fits
+   in the change description.
+5. Write an Implementation Plan under `docs/execution/plans/` only when the
+   work spans several change sets or sessions and its order must survive
+   between them. Confirm the Spec first. Do not write a Plan that only repeats
+   progress the project's task tracker or change history already records.
 6. Implement and verify the change.
 7. Reconcile affected long-lived and operational documents.
-8. Archive the closed Spec and Plan only after completing closure.
+8. Archive the Spec and Plan in the change set that completes the work.
 
 ## Drift Reconciliation
 
@@ -84,16 +89,24 @@ A three-ADR chain records one link per pair:
 
 ## Spec and Plan Closure
 
-Before archiving a Spec or Plan:
+Closure is part of finishing the work, not a separate later task. The change
+set that completes, rejects, supersedes, or abandons the work also archives
+its Spec and Plan:
 
-- Confirm the work is merged, rejected, superseded, or otherwise closed.
-- Run and record relevant verification.
-- Update PRD, Architecture, README, and Runbooks where the completed work
-  changed their truth.
-- Update or close affected Backlog items when the work changes their state.
-- Preserve links to current truth.
-- Run `scripts/archive_doc.py` for the closed Spec or Plan.
+- Run `scripts/archive_doc.py` for the Spec or Plan.
 - Run strict validation after the move.
+
+Unfinished Plan steps do not block closure. When the work is abandoned or
+partly done, archive the Plan as it is and record any work that is still
+wanted as a Backlog item.
+
+Updating PRD, Architecture, README, Runbooks, and Backlog items for what the
+work changed is Drift Reconciliation. It belongs to the change sets that made
+those changes and is not repeated at closure.
+
+When governing a project, look for Specs and Plans left under
+`docs/execution/` whose work the repository shows is already closed. Report
+them and offer to archive them; archive only within the authorized scope.
 
 Never use the archive script on an ADR.
 
@@ -103,22 +116,21 @@ Runbooks use event-driven reconciliation, not calendar renewal:
 
 1. Create or revise the stable active file under `docs/runbooks/` from the
    Runbook template.
-2. Inspect current repository facts, selected contract sources, tests, and
-   protected configuration. Write target-read-only preflight, evidence,
+2. Inspect current repository facts, the sources the procedure depends on,
+   tests, and protected configuration. List those sources under
+   `Authoritative Sources`. Write target-read-only preflight, evidence,
    rollback, and stop rules that do not hard-code temporary live claims.
-3. Run relevant tests, inspect the diff, then use `scripts/runbook.py seal` in
-   dry-run mode. Only after semantic reconciliation use
-   `--confirm-reconciled --apply`, followed by `runbook.py check`.
-4. For every actual operation, rerun the static check, current Git/worktree
-   readback, target-read-only Live-State Preflight, effective-risk decision,
-   and required authorization before bounded execution and verification.
+3. Run relevant tests, inspect the diff, then run `scripts/runbook.py check`.
+4. For every actual operation, rerun the structure check, read the current
+   Git/worktree state and the listed sources, run the target-read-only
+   Live-State Preflight, decide the effective risk, and obtain the required
+   authorization before bounded execution and verification.
 5. Stop on any mismatch, ambiguous target, missing evidence root, failed
    safety prerequisite, or authorization boundary. A Runbook never grants
    authority to continue.
 
-When operational truth changes, reconcile and reseal because of the event.
-Never refresh a date, invent a review window, force a seal, or let a validator
-write the hash.
+When operational truth changes, reconcile the Runbook in the same change set
+because of the event. Never refresh a date or invent a review window.
 
 Use `scripts/archive_doc.py` with exactly one Runbook mode:
 
@@ -129,12 +141,9 @@ Use `scripts/archive_doc.py` with exactly one Runbook mode:
 - `--retire --reason TEXT --archive-date DATE` when it has no successor.
 
 Runbook archive operations validate reciprocal lineage and refuse overwrite.
-Snapshot and successor modes change an active Runbook's frontmatter, so its
-existing seal becomes invalid. Reconcile and explicitly seal that active file;
-the archive tool never does so automatically. Historical archives are never
-executed or fingerprinted again against current sources.
+Historical archives are never executed.
 
-Read `references/runbook-workflow.md` for the complete risk, fingerprint,
+Read `references/runbook-workflow.md` for the complete risk,
 Live-State Preflight, evidence, mutation-boundary, and archive rules.
 
 ## Rollback

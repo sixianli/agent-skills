@@ -89,7 +89,7 @@ class ValidateDocsTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         return result, payload
 
-    def write_sealed_runbook(
+    def write_active_runbook(
         self, relative: str = "docs/runbooks/active-runbook.md"
     ) -> Path:
         (self.root / "runbook-source.txt").write_text(
@@ -98,27 +98,10 @@ class ValidateDocsTests(unittest.TestCase):
         template = (
             SKILL_ROOT / "assets/templates/runbook-template.md"
         ).read_text(encoding="utf-8")
-        content = template.replace("YYYY-MM-DD", "2026-07-19").replace(
-            "<repo-relative-authoritative-path>", "runbook-source.txt"
-        )
+        content = template.replace("YYYY-MM-DD", "2026-07-19")
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
-        sealed = subprocess.run(
-            [
-                sys.executable,
-                str(RUNBOOK),
-                "seal",
-                str(self.root),
-                str(path),
-                "--confirm-reconciled",
-                "--apply",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(sealed.returncode, 0, sealed.stderr)
         return path
 
     def test_strict_mode_promotes_every_soft_rule(self) -> None:
@@ -635,30 +618,46 @@ class ValidateDocsTests(unittest.TestCase):
         self.assertEqual(strict_result.returncode, 1)
         self.assertEqual(strict_payload["warnings"], [])
 
-    def test_malformed_or_mismatched_declared_contract_always_errors(self) -> None:
-        path = self.write_sealed_runbook()
-        sealed_text = path.read_text(encoding="utf-8")
+    def test_invalid_execution_risk_always_errors(self) -> None:
+        path = self.write_active_runbook()
+        valid_text = path.read_text(encoding="utf-8")
         path.write_text(
-            sealed_text.replace("execution_risk: critical", "execution_risk: unsafe")
-            .replace("contract_sha256: \"sha256:", "contract_sha256: \"bad-sha256:"),
+            valid_text.replace("execution_risk: critical", "execution_risk: unsafe"),
             encoding="utf-8",
         )
         result, payload = self.run_validator(strict=False)
-        rendered = "\n".join(payload["errors"])
         self.assertEqual(result.returncode, 1)
-        self.assertIn("invalid execution_risk", rendered)
-        self.assertIn("invalid contract_sha256", rendered)
+        self.assertIn("invalid execution_risk", "\n".join(payload["errors"]))
 
-        path.write_text(sealed_text, encoding="utf-8")
+    def test_active_runbook_is_not_compared_with_its_sources(self) -> None:
+        self.write_active_runbook()
         (self.root / "runbook-source.txt").write_text("drift\n", encoding="utf-8")
-        mismatch_result, mismatch_payload = self.run_validator(strict=False)
-        self.assertEqual(mismatch_result.returncode, 1)
-        self.assertIn(
-            "does not match",
-            "\n".join(mismatch_payload["errors"]),
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
+    def test_legacy_seal_field_and_contract_block_are_ignored(self) -> None:
+        path = self.write_active_runbook()
+        text = path.read_text(encoding="utf-8")
+        path.write_text(
+            text.replace(
+                "execution_risk: critical",
+                'execution_risk: critical\ncontract_sha256: "sha256:' + "0" * 64 + '"',
+            ).replace(
+                "# Runbook Title",
+                "# Runbook Title\n\n<!-- runbook-contract:\n- missing/path.sh\n-->",
+            ),
+            encoding="utf-8",
         )
 
-    def test_archived_runbook_hash_is_not_recomputed_against_current_sources(self) -> None:
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
+    def test_archived_runbook_with_legacy_seal_field_stays_valid(self) -> None:
         archived = self.write_document(
             "docs/archive/runbooks/legacy.md",
             "# Archived Runbook\n\nHistorical content.",
@@ -771,28 +770,11 @@ class ValidateDocsTests(unittest.TestCase):
                 .replace("NNNN-short-title", "0001-decision")
                 .replace("YYYY-MM-DD", "2026-07-19")
                 .replace("<project>", "demo")
-                .replace("<repo-relative-authoritative-path>", "README.md")
             )
             destination = self.root / destination_name
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_text(content, encoding="utf-8")
 
-        (self.root / "README.md").write_text("# Demo\n", encoding="utf-8")
-        sealed = subprocess.run(
-            [
-                sys.executable,
-                str(RUNBOOK),
-                "seal",
-                str(self.root),
-                "docs/runbooks/topic-runbook.md",
-                "--confirm-reconciled",
-                "--apply",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(sealed.returncode, 0, sealed.stderr)
         checked = subprocess.run(
             [
                 sys.executable,

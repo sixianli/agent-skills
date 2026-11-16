@@ -1,30 +1,22 @@
 #!/usr/bin/env python3
-"""Validate and seal executable Runbook static contracts.
+"""Check the structure of an active Runbook.
 
 This module is both the public ``runbook.py`` CLI and the shared source of
-truth used by ``validate_docs.py``.  It deliberately performs no live-system
-commands: a valid static contract is only the first Runbook execution gate.
+truth used by ``validate_docs.py``.  It performs no live-system commands and
+compares nothing against repository sources: a passing structure check is only
+a precondition for the per-execution gates an agent applies itself.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
-import os
 import re
-import stat
-import subprocess
 import sys
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-HASH_DOMAIN = b"document-governance/runbook-contract/v1\0"
-HASH_SENTINEL = "sha256:<runbook-contract>"
-HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
-PROVISIONAL_HASHES = {"", "sha256:<64-hex>"}
 VALID_EXECUTION_RISKS = ("standard", "high", "critical")
 RISK_ORDER = {risk: index for index, risk in enumerate(VALID_EXECUTION_RISKS)}
 REQUIRED_SECTIONS = (
@@ -39,75 +31,21 @@ REQUIRED_SECTIONS = (
     "Stop Conditions",
     "Troubleshooting",
 )
-CONTRACT_START = "<!-- runbook-contract:"
-CONTRACT_PATTERN = re.compile(
-    r"<!-- runbook-contract:\s*\n(?P<body>.*?)\n-->",
-    re.DOTALL,
-)
 FRONTMATTER_FIELD_PATTERN = re.compile(
     r"^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$"
 )
-CONTRACT_HASH_LINE_PATTERN = re.compile(
-    r"^contract_sha256:\s*.*$", re.MULTILINE
+NOTICE = (
+    "A passing structure check does not prove the Runbook matches current "
+    "sources or live state and does not authorize any operation."
 )
-
-# These directory names are never contract inputs.  Selecting one explicitly
-# is an error; when an untracked one appears below a selected source directory
-# it is ignored so local caches and build products cannot make a clean source
-# contract machine-dependent.  Tracked content inside one is rejected.
-EXCLUDED_DIRECTORY_NAMES = {
-    ".git",
-    ".hg",
-    ".svn",
-    ".cache",
-    ".mypy_cache",
-    ".next",
-    ".pytest_cache",
-    ".ruff_cache",
-    "__pycache__",
-    "build",
-    "coverage",
-    "dist",
-    "evidence",
-    "evidence-runs",
-    "htmlcov",
-    "node_modules",
-    "run-evidence",
-    "target",
-}
-EXCLUDED_CACHE_FILE_NAMES = {".coverage", ".ds_store"}
-SECRET_FILE_NAMES = {
-    "credentials.json",
-    "secrets.json",
-}
-SECRET_SUFFIXES = {".jks", ".key", ".p12", ".pem", ".pfx"}
-SECRET_EXACT_NAMES = {"id_dsa", "id_ed25519", "id_ecdsa", "id_rsa"}
-ALLOWED_ENV_SUFFIXES = (".example", ".sample", ".template")
-GIT_LOCATION_VARIABLES = {
-    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-    "GIT_CEILING_DIRECTORIES",
-    "GIT_COMMON_DIR",
-    "GIT_DIR",
-    "GIT_INDEX_FILE",
-    "GIT_OBJECT_DIRECTORY",
-    "GIT_WORK_TREE",
-}
-GIT_ONE_OFF_CONFIG_VARIABLES = {"GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS"}
-GIT_ONE_OFF_CONFIG_PREFIXES = ("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")
-GIT_PATHSPEC_VARIABLES = {
-    "GIT_GLOB_PATHSPECS",
-    "GIT_ICASE_PATHSPECS",
-    "GIT_LITERAL_PATHSPECS",
-    "GIT_NOGLOB_PATHSPECS",
-}
 
 FindingKind = Literal["migration", "error"]
 Risk = Literal["standard", "high", "critical"]
 ExecutionPhase = Literal["preflight", "mutation"]
 
 
-class RunbookContractError(ValueError):
-    """Raised when a Runbook contract cannot be safely fingerprinted."""
+class RunbookError(ValueError):
+    """Raised when a Runbook cannot be located or read safely."""
 
 
 @dataclass(frozen=True)
@@ -120,47 +58,12 @@ class Finding:
 
 
 @dataclass(frozen=True)
-class ContractRecord:
-    """One normalized object included in the versioned fingerprint."""
-
-    path: str
-    object_type: str
-    executable: bool
-    payload: bytes
-
-    def summary(self) -> dict[str, object]:
-        """Return a non-secret, JSON-safe description of the record."""
-
-        result: dict[str, object] = {
-            "path": self.path,
-            "type": self.object_type,
-            "executable": self.executable,
-        }
-        if self.object_type == "symlink":
-            result["target"] = self.payload.decode("utf-8", errors="replace")
-        elif self.object_type == "file":
-            result["bytes"] = len(self.payload)
-        return result
-
-
-@dataclass(frozen=True)
-class ContractResult:
-    """Fingerprint plus the normalized inputs used to calculate it."""
-
-    fingerprint: str
-    runbook_path: str
-    contract_paths: tuple[str, ...]
-    records: tuple[ContractRecord, ...]
-
-
-@dataclass(frozen=True)
 class RunbookAudit:
-    """Reusable result for validator, check, and seal callers."""
+    """Reusable result for validator and check callers."""
 
     fields: dict[str, str]
     body: str
     findings: tuple[Finding, ...]
-    contract: ContractResult | None
 
 
 @dataclass(frozen=True)
@@ -180,33 +83,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse the public Runbook CLI."""
 
     parser = argparse.ArgumentParser(
-        description="Check or seal a governed Runbook static contract."
+        description="Check the structure of a governed active Runbook."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
-
-    for command in ("check", "seal"):
-        subparser = subparsers.add_parser(command)
-        subparser.add_argument("root", help="Target project root.")
-        subparser.add_argument(
-            "runbook", help="Active Runbook path, repository-relative or absolute."
-        )
-        subparser.add_argument(
-            "--format",
-            choices=("text", "json"),
-            default="text",
-            help="Output format.",
-        )
-
-    seal_parser = subparsers.choices["seal"]
-    seal_parser.add_argument(
-        "--confirm-reconciled",
-        action="store_true",
-        help="Confirm semantic reconciliation and relevant tests are complete.",
+    subparser = subparsers.add_parser("check")
+    subparser.add_argument("root", help="Target project root.")
+    subparser.add_argument(
+        "runbook", help="Active Runbook path, repository-relative or absolute."
     )
-    seal_parser.add_argument(
-        "--apply",
-        action="store_true",
-        help="Write only the calculated contract_sha256 value.",
+    subparser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format.",
     )
     return parser.parse_args(argv)
 
@@ -286,531 +175,12 @@ def resolve_runbook(root: Path, runbook: str | Path) -> Path:
         candidate = root / candidate
     candidate = candidate.resolve()
     if not _is_within(candidate, root):
-        raise RunbookContractError(
+        raise RunbookError(
             f"Runbook is outside project root: {candidate}"
         )
     if not candidate.is_file():
-        raise RunbookContractError(f"Runbook not found: {candidate}")
+        raise RunbookError(f"Runbook not found: {candidate}")
     return candidate
-
-
-def _normalized_repo_path(root: Path, path: Path) -> str:
-    """Return a stable POSIX path within root."""
-
-    return path.relative_to(root).as_posix()
-
-
-def _is_secret_path(relative: Path) -> bool:
-    """Conservatively identify actual credential material."""
-
-    name = relative.name.lower()
-    if name == ".env":
-        return True
-    if name.startswith(".env.") and not name.endswith(ALLOWED_ENV_SUFFIXES):
-        return True
-    if name in SECRET_FILE_NAMES or name in SECRET_EXACT_NAMES:
-        return True
-    return relative.suffix.lower() in SECRET_SUFFIXES
-
-
-def _explicit_path_problem(relative: Path) -> str | None:
-    """Return why a selected contract path is unsafe, if applicable."""
-
-    if relative.as_posix() in {"", "."}:
-        return "repository root is too broad for a safe Runbook contract"
-    lowered_parts = {part.lower() for part in relative.parts}
-    excluded = lowered_parts & EXCLUDED_DIRECTORY_NAMES
-    if excluded:
-        return f"path selects excluded cache, build, VCS, or evidence scope: {min(excluded)}"
-    if _is_secret_path(relative):
-        return "path selects real secret or credential material"
-    return None
-
-
-def parse_contract_paths(body: str) -> tuple[tuple[str, ...], list[Finding]]:
-    """Parse exactly one runbook-contract block."""
-
-    structural_body = _without_fenced_code(body)
-    matches = list(CONTRACT_PATTERN.finditer(structural_body))
-    starts = structural_body.count(CONTRACT_START)
-    if starts == 0:
-        return (), [
-            Finding(
-                "missing-contract-block",
-                "missing runbook-contract block",
-                "migration",
-            )
-        ]
-    if starts != 1 or len(matches) != 1:
-        return (), [
-            Finding(
-                "invalid-contract-block-count",
-                "Runbook must contain exactly one well-formed runbook-contract block",
-                "error",
-            )
-        ]
-
-    paths: list[str] = []
-    findings: list[Finding] = []
-    for line_number, raw_line in enumerate(
-        matches[0].group("body").splitlines(), start=1
-    ):
-        stripped = raw_line.strip()
-        if not stripped:
-            continue
-        match = re.fullmatch(r"-\s+(.+?)\s*", stripped)
-        if not match:
-            findings.append(
-                Finding(
-                    "malformed-contract-entry",
-                    f"malformed runbook-contract entry at block line {line_number}",
-                    "error",
-                )
-            )
-            continue
-        value = match.group(1)
-        if "\x00" in value:
-            findings.append(
-                Finding(
-                    "invalid-contract-entry",
-                    "runbook-contract path contains a NUL byte",
-                    "error",
-                )
-            )
-            continue
-        paths.append(value)
-
-    if not paths:
-        findings.append(
-            Finding(
-                "empty-contract-block",
-                "runbook-contract block must list at least one repository path",
-                "error",
-            )
-        )
-    duplicates = sorted({value for value in paths if paths.count(value) > 1})
-    if duplicates:
-        findings.append(
-            Finding(
-                "duplicate-contract-entry",
-                f"duplicate runbook-contract path: {duplicates[0]}",
-                "error",
-            )
-        )
-    return tuple(paths), findings
-
-
-def _validate_selector(root: Path, value: str) -> tuple[Path, Path]:
-    """Validate one repository-relative contract selector."""
-
-    if "\\" in value or re.match(r"^[A-Za-z]:", value):
-        raise RunbookContractError(
-            f"contract path must use repository-relative POSIX syntax: {value}"
-        )
-    raw = Path(value)
-    if raw.is_absolute():
-        raise RunbookContractError(
-            f"contract path must be repository-relative: {value}"
-        )
-    if ".." in raw.parts:
-        raise RunbookContractError(
-            f"contract path must not traverse '..': {value}"
-        )
-    normalized = Path(os.path.normpath(value))
-    problem = _explicit_path_problem(normalized)
-    if problem:
-        raise RunbookContractError(f"unsafe contract path {value!r}: {problem}")
-
-    lexical = root / normalized
-    try:
-        lexical.lstat()
-    except FileNotFoundError as exc:
-        raise RunbookContractError(
-            f"contract path does not exist: {value}"
-        ) from exc
-    try:
-        resolved = lexical.resolve(strict=True)
-    except (FileNotFoundError, RuntimeError) as exc:
-        raise RunbookContractError(f"contract symlink is broken: {value}") from exc
-    if not _is_within(resolved, root):
-        raise RunbookContractError(
-            f"contract path escapes project root through symlink: {value}"
-        )
-    return lexical, normalized
-
-
-def _record_for_path(root: Path, path: Path, logical: Path) -> ContractRecord:
-    """Create a normalized record without following symbolic links."""
-
-    mode = path.lstat().st_mode
-    executable = bool(mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
-    relative = logical.as_posix()
-    if stat.S_ISLNK(mode):
-        target = os.readlink(path)
-        target_path = Path(target)
-        if target_path.is_absolute():
-            raise RunbookContractError(
-                f"contract symlink target must be repository-relative: {relative} -> {target}"
-            )
-        try:
-            resolved = path.resolve(strict=True)
-        except (FileNotFoundError, RuntimeError) as exc:
-            raise RunbookContractError(
-                f"contract symlink is broken: {relative}"
-            ) from exc
-        if not _is_within(resolved, root):
-            raise RunbookContractError(
-                f"contract symlink escapes project root: {relative} -> {target}"
-            )
-        return ContractRecord(relative, "symlink", executable, target.encode("utf-8"))
-    if stat.S_ISREG(mode):
-        if _is_secret_path(logical):
-            raise RunbookContractError(
-                f"contract contains real secret or credential material: {relative}"
-            )
-        return ContractRecord(relative, "file", executable, path.read_bytes())
-    if stat.S_ISDIR(mode):
-        return ContractRecord(relative, "directory", executable, b"")
-    raise RunbookContractError(
-        f"unsupported contract object type (only file, directory, symlink): {relative}"
-    )
-
-
-def _git_environment() -> dict[str, str]:
-    environment = {
-        name: value
-        for name, value in os.environ.items()
-        if name not in GIT_LOCATION_VARIABLES
-        and name not in GIT_ONE_OFF_CONFIG_VARIABLES
-        and name not in GIT_PATHSPEC_VARIABLES
-        and not name.startswith(GIT_ONE_OFF_CONFIG_PREFIXES)
-    }
-    environment["GIT_OPTIONAL_LOCKS"] = "0"
-    return environment
-
-
-def _nearest_git_entry(root: Path) -> Path | None:
-    for directory in (root, *root.parents):
-        if os.path.lexists(directory / ".git"):
-            return directory / ".git"
-    return None
-
-
-def _first_error_line(completed: subprocess.CompletedProcess[bytes]) -> str:
-    lines = completed.stderr.decode("utf-8", "replace").strip().splitlines()
-    return lines[0] if lines else f"exit status {completed.returncode}"
-
-
-def _git_visible_paths(
-    root: Path, selectors: list[str]
-) -> tuple[frozenset[str], frozenset[str], frozenset[str]] | None:
-    environment = _git_environment()
-    git = ["git", "-C", str(root)]
-    git_entry = _nearest_git_entry(root)
-    try:
-        probe = subprocess.run(
-            [*git, "rev-parse", "--is-inside-work-tree", "--show-prefix"],
-            capture_output=True,
-            check=False,
-            env=environment,
-        )
-    except FileNotFoundError as exc:
-        if git_entry is None:
-            return None
-        raise RunbookContractError(
-            f"{git_entry} exists, but Git is not available to list the work tree's files"
-        ) from exc
-    answer = probe.stdout.splitlines()
-    if probe.returncode != 0 or not answer or answer[0] != b"true":
-        if git_entry is None:
-            return None
-        if probe.returncode == 0:
-            raise RunbookContractError(
-                f"{git_entry} exists, but Git reports that the project root is not in a "
-                "work tree, for example because it lies inside a .git directory"
-            )
-        raise RunbookContractError(
-            f"{git_entry} exists, but Git could not inspect the repository: "
-            f"{_first_error_line(probe)}; repair the repository or remove a stray .git entry"
-        )
-    if len(answer) > 1 and answer[1]:
-        ignored = subprocess.run(
-            [*git, "check-ignore", "-q", "."],
-            capture_output=True,
-            check=False,
-            env=environment,
-        )
-        if ignored.returncode == 0:
-            return None
-        if ignored.returncode != 1:
-            raise RunbookContractError(
-                "Git could not tell whether the project root is ignored: "
-                + _first_error_line(ignored)
-            )
-    listing = subprocess.run(
-        [
-            *git,
-            "--literal-pathspecs",
-            "ls-files",
-            "-z",
-            "--cached",
-            "--others",
-            "--exclude-standard",
-            "--",
-            *selectors,
-        ],
-        capture_output=True,
-        check=False,
-        env=environment,
-    )
-    if listing.returncode != 0:
-        raise RunbookContractError(
-            "Git could not list the tracked and non-ignored contract files: "
-            + _first_error_line(listing)
-        )
-    tracked_listing = subprocess.run(
-        [*git, "--literal-pathspecs", "ls-files", "-z", "--cached", "--", *selectors],
-        capture_output=True,
-        check=False,
-        env=environment,
-    )
-    if tracked_listing.returncode != 0:
-        raise RunbookContractError(
-            "Git could not list the tracked contract files: "
-            + _first_error_line(tracked_listing)
-        )
-    tracked = frozenset(
-        os.fsdecode(raw) for raw in tracked_listing.stdout.split(b"\0") if raw
-    )
-    visible: set[str] = set()
-    entries: set[str] = set()
-    for raw in listing.stdout.split(b"\0"):
-        if not raw:
-            continue
-        relative = Path(os.fsdecode(raw))
-        if not os.path.lexists(root / relative):
-            continue
-        if stat.S_ISDIR((root / relative).lstat().st_mode):
-            raise RunbookContractError(
-                f"Git lists {relative.as_posix()} as one entry, but the work tree holds a "
-                "directory there: a submodule, a nested Git repository, or a tracked file "
-                "replaced by a directory; select paths outside it or restore the file"
-            )
-        entries.add(relative.as_posix())
-        visible.add(relative.as_posix())
-        visible.update(parent.as_posix() for parent in relative.parents if parent.parts)
-    return frozenset(visible), frozenset(entries), tracked
-
-
-def _skipped_by_name(relative: str, tracked: frozenset[str]) -> bool:
-    parts = relative.split("/")
-    if parts[-1].lower() in EXCLUDED_CACHE_FILE_NAMES:
-        return True
-    if relative in tracked:
-        return False
-    return any(part.lower() in EXCLUDED_DIRECTORY_NAMES for part in parts[:-1])
-
-
-def _is_real_directory(path: Path) -> bool:
-    return stat.S_ISDIR(path.lstat().st_mode)
-
-
-def _reject_hidden_secrets(path: Path, logical: Path) -> None:
-    mode = path.lstat().st_mode
-    if stat.S_ISREG(mode) and _is_secret_path(logical):
-        raise RunbookContractError(
-            f"contract contains real secret or credential material: {logical.as_posix()}"
-        )
-    if stat.S_ISDIR(mode):
-        for child in path.iterdir():
-            if not (
-                child.name.lower() in EXCLUDED_DIRECTORY_NAMES
-                and _is_real_directory(child)
-            ):
-                _reject_hidden_secrets(child, logical / child.name)
-
-
-def _walk_contract_path(
-    root: Path,
-    path: Path,
-    logical: Path,
-    visible: frozenset[str] | None,
-    tracked: frozenset[str] = frozenset(),
-) -> list[ContractRecord]:
-    """Walk one selector deterministically without following symlink dirs."""
-
-    first = _record_for_path(root, path, logical)
-    records = [first]
-    if first.object_type != "directory":
-        return records
-
-    children = sorted(path.iterdir(), key=lambda item: item.name.encode("utf-8"))
-    for child in children:
-        child_logical = logical / child.name
-        if child.name.lower() in EXCLUDED_DIRECTORY_NAMES and _is_real_directory(child):
-            prefix = child_logical.as_posix() + "/"
-            inside = sorted(
-                (entry for entry in tracked if entry.startswith(prefix)),
-                key=lambda item: item.encode("utf-8"),
-            )
-            if inside:
-                raise RunbookContractError(
-                    f"Git tracks {inside[0]}, but tracked content in an excluded "
-                    f"directory cannot be sealed ({child_logical.as_posix()}); move it "
-                    "out of the cache, build, VCS, or evidence directory or stop tracking it"
-                )
-            continue
-        if child.name.lower() in EXCLUDED_CACHE_FILE_NAMES:
-            continue
-        if visible is not None and child_logical.as_posix() not in visible:
-            _reject_hidden_secrets(child, child_logical)
-            continue
-        records.extend(
-            _walk_contract_path(root, child, child_logical, visible, tracked)
-        )
-    return records
-
-
-def _replace_frontmatter_hash(text: str, value: str) -> str:
-    """Replace the unique hash field only inside the opening frontmatter."""
-
-    lines = text.splitlines(keepends=True)
-    if not lines or lines[0].strip() != "---":
-        raise RunbookContractError("Runbook is missing frontmatter")
-    end_index: int | None = None
-    for index, line in enumerate(lines[1:], start=1):
-        if line.strip() == "---":
-            end_index = index
-            break
-    if end_index is None:
-        raise RunbookContractError("Runbook has unterminated frontmatter")
-    matches = [
-        index
-        for index, line in enumerate(lines[1:end_index], start=1)
-        if CONTRACT_HASH_LINE_PATTERN.fullmatch(line.rstrip("\r\n"))
-    ]
-    if len(matches) != 1:
-        raise RunbookContractError(
-            "frontmatter must contain exactly one contract_sha256 field before sealing"
-        )
-    index = matches[0]
-    newline = "\r\n" if lines[index].endswith("\r\n") else (
-        "\n" if lines[index].endswith("\n") else ""
-    )
-    lines[index] = f'contract_sha256: "{value}"{newline}'
-    return "".join(lines)
-
-
-def normalize_runbook_content(text: str) -> bytes:
-    """Normalize newlines and replace the self-referential hash value."""
-
-    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
-    normalized = _replace_frontmatter_hash(normalized, HASH_SENTINEL)
-    return normalized.encode("utf-8")
-
-
-def _feed_field(hasher: hashlib._Hash, value: bytes) -> None:
-    """Feed a length-framed field to avoid concatenation ambiguity."""
-
-    hasher.update(len(value).to_bytes(8, "big"))
-    hasher.update(value)
-
-
-def _feed_record(hasher: hashlib._Hash, record: ContractRecord) -> None:
-    """Feed one canonical record into the versioned digest."""
-
-    _feed_field(hasher, record.path.encode("utf-8"))
-    _feed_field(hasher, record.object_type.encode("ascii"))
-    _feed_field(hasher, b"1" if record.executable else b"0")
-    _feed_field(hasher, record.payload)
-
-
-def compute_contract_fingerprint(
-    root: Path, runbook_path: Path, text: str | None = None
-) -> ContractResult:
-    """Compute the versioned deterministic Runbook contract fingerprint."""
-
-    root = root.resolve()
-    runbook_path = runbook_path.resolve()
-    if not _is_within(runbook_path, root):
-        raise RunbookContractError("Runbook is outside project root")
-    if text is None:
-        text = runbook_path.read_text(encoding="utf-8")
-    _, body, problems = parse_frontmatter_text(text)
-    if problems:
-        raise RunbookContractError(problems[0])
-    contract_paths, findings = parse_contract_paths(body)
-    errors = [finding.message for finding in findings if finding.kind == "error"]
-    if errors:
-        raise RunbookContractError(errors[0])
-    if not contract_paths:
-        raise RunbookContractError("missing runbook-contract block")
-
-    selectors = [
-        (value, *_validate_selector(root, value))
-        for value in sorted(contract_paths, key=lambda item: item.encode("utf-8"))
-    ]
-    runbook_relative = _normalized_repo_path(root, runbook_path)
-    for value, lexical, logical in selectors:
-        selected = logical.as_posix()
-        resolved = lexical.resolve(strict=True)
-        if (
-            runbook_relative == selected
-            or runbook_relative.startswith(selected + "/")
-            or _is_within(runbook_path, resolved)
-        ):
-            raise RunbookContractError(
-                f"selector '{value}' includes the Runbook itself; "
-                "a Runbook cannot fingerprint itself"
-            )
-    listing = _git_visible_paths(
-        root, [logical.as_posix() for _, _, logical in selectors]
-    )
-    visible = listing[0] if listing is not None else None
-    tracked = listing[2] if listing is not None else frozenset()
-    record_map: dict[tuple[str, str], ContractRecord] = {}
-    for value, lexical, logical in selectors:
-        if visible is not None and logical.as_posix() not in visible:
-            raise RunbookContractError(
-                "contract path is ignored by Git or holds no tracked or non-ignored file "
-                f"in the work tree: {value}"
-            )
-        for record in _walk_contract_path(root, lexical, logical, visible, tracked):
-            record_map[(record.path, record.object_type)] = record
-    if listing is not None:
-        recorded = {path for path, _ in record_map}
-        for entry in sorted(listing[1], key=lambda item: item.encode("utf-8")):
-            if entry not in recorded and not _skipped_by_name(entry, tracked):
-                raise RunbookContractError(
-                    f"Git lists {entry}, but the file system shows it under a different name "
-                    "(letter case or Unicode normalization); rename it on disk to match Git"
-                )
-    records = tuple(
-        record_map[key]
-        for key in sorted(
-            record_map,
-            key=lambda item: (item[0].encode("utf-8"), item[1]),
-        )
-    )
-
-    runbook_mode = runbook_path.stat().st_mode
-    runbook_record = ContractRecord(
-        runbook_relative,
-        "runbook",
-        bool(runbook_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)),
-        normalize_runbook_content(text),
-    )
-    hasher = hashlib.sha256()
-    hasher.update(HASH_DOMAIN)
-    _feed_record(hasher, runbook_record)
-    for record in records:
-        _feed_record(hasher, record)
-    return ContractResult(
-        fingerprint=f"sha256:{hasher.hexdigest()}",
-        runbook_path=runbook_relative,
-        contract_paths=tuple(contract_paths),
-        records=records,
-    )
 
 
 def _without_fenced_code(body: str) -> str:
@@ -849,13 +219,7 @@ def _heading_counts(body: str) -> dict[str, int]:
     return counts
 
 
-def audit_active_runbook(
-    root: Path,
-    runbook_path: Path,
-    *,
-    allow_provisional_hash: bool = False,
-    compare_fingerprint: bool = True,
-) -> RunbookAudit:
+def audit_active_runbook(root: Path, runbook_path: Path) -> RunbookAudit:
     """Audit one active Runbook using shared migration/error semantics."""
 
     root = root.resolve()
@@ -920,26 +284,6 @@ def audit_active_runbook(
                 )
             )
 
-    declared_hash = fields.get("contract_sha256")
-    if declared_hash is None:
-        findings.append(
-            Finding(
-                "missing-contract-sha256",
-                "active Runbook is missing contract_sha256",
-                "migration",
-            )
-        )
-    elif not HASH_PATTERN.fullmatch(declared_hash) and not (
-        allow_provisional_hash and declared_hash in PROVISIONAL_HASHES
-    ):
-        findings.append(
-            Finding(
-                "invalid-contract-sha256",
-                f"invalid contract_sha256 {declared_hash!r}",
-                "error",
-            )
-        )
-
     headings = _heading_counts(body)
     for section in REQUIRED_SECTIONS:
         if section not in headings:
@@ -958,43 +302,7 @@ def audit_active_runbook(
                     "error",
                 )
             )
-    _, contract_findings = parse_contract_paths(body)
-    findings.extend(contract_findings)
-    contract: ContractResult | None = None
-    blocking_codes = {
-        "frontmatter",
-        "invalid-contract-block-count",
-        "malformed-contract-entry",
-        "invalid-contract-entry",
-        "empty-contract-block",
-        "duplicate-contract-entry",
-        "missing-contract-block",
-        "missing-contract-sha256",
-        "inactive-location",
-        "inactive-status",
-    }
-    if not any(finding.code in blocking_codes for finding in findings):
-        try:
-            contract = compute_contract_fingerprint(root, runbook_path, text)
-        except (OSError, UnicodeError, RunbookContractError) as exc:
-            findings.append(
-                Finding("unsafe-contract", str(exc), "error")
-            )
-        else:
-            if (
-                compare_fingerprint
-                and declared_hash is not None
-                and HASH_PATTERN.fullmatch(declared_hash)
-                and declared_hash != contract.fingerprint
-            ):
-                findings.append(
-                    Finding(
-                        "contract-mismatch",
-                        "contract_sha256 does not match the current Runbook and contract sources",
-                        "error",
-                    )
-                )
-    return RunbookAudit(fields, body, tuple(findings), contract)
+    return RunbookAudit(fields, body, tuple(findings))
 
 
 def effective_execution_risk(
@@ -1028,24 +336,15 @@ def execution_gate(
     return ExecutionGate(risk, phase, authorization)
 
 
-def replace_contract_hash(text: str, fingerprint: str) -> str:
-    """Replace only the single contract_sha256 line, preserving newline style."""
-
-    return _replace_frontmatter_hash(text, fingerprint)
-
-
-def _finding_payload(path: Path, audit: RunbookAudit) -> dict[str, object]:
+def _payload(runbook: str, errors: list[str]) -> dict[str, object]:
     """Build common machine-readable output."""
 
     return {
-        "runbook": str(path),
-        "ok": not audit.findings,
-        "errors": [finding.message for finding in audit.findings],
-        "static_contract_only": True,
-        "notice": (
-            "Static contract success does not prove Live-State Preflight and "
-            "does not authorize any operation."
-        ),
+        "runbook": runbook,
+        "ok": not errors,
+        "errors": errors,
+        "structure_only": True,
+        "notice": NOTICE,
     }
 
 
@@ -1055,133 +354,31 @@ def _emit(payload: dict[str, object], output_format: str) -> None:
     if output_format == "json":
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return
-    for error in payload.get("errors", []):
+    errors = payload["errors"]
+    assert isinstance(errors, list)
+    for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
-    rendered_runbook = payload.get("runbook", "<unresolved>")
-    if payload.get("ok"):
-        print(f"Runbook static contract passed: {rendered_runbook}")
+    if payload["ok"]:
+        print(f"Runbook structure check passed: {payload['runbook']}")
     else:
         print(
-            f"Runbook static contract failed: {rendered_runbook}",
+            f"Runbook structure check failed: {payload['runbook']}",
             file=sys.stderr,
         )
-    if payload.get("fingerprint"):
-        print(f"fingerprint: {payload['fingerprint']}")
-    if payload.get("mode"):
-        print(f"mode: {payload['mode']}")
     print(str(payload["notice"]))
 
 
-def _root_and_runbook(args: argparse.Namespace) -> tuple[Path, Path]:
-    """Resolve common CLI inputs."""
+def run_check(args: argparse.Namespace) -> int:
+    """Run fail-closed structure validation for one active Runbook."""
 
     root = Path(args.root).resolve()
     if not root.is_dir():
-        raise RunbookContractError(f"project root is not a directory: {root}")
-    return root, resolve_runbook(root, args.runbook)
-
-
-def run_check(args: argparse.Namespace) -> int:
-    """Run fail-closed execution-level static validation."""
-
-    root, path = _root_and_runbook(args)
+        raise RunbookError(f"project root is not a directory: {root}")
+    path = resolve_runbook(root, args.runbook)
     audit = audit_active_runbook(root, path)
-    payload = _finding_payload(path, audit)
-    if audit.contract is not None:
-        payload["fingerprint"] = audit.contract.fingerprint
+    payload = _payload(str(path), [finding.message for finding in audit.findings])
     _emit(payload, args.format)
     return 0 if payload["ok"] else 1
-
-
-def run_seal(args: argparse.Namespace) -> int:
-    """Calculate a fingerprint and optionally write only its frontmatter field."""
-
-    if args.apply != args.confirm_reconciled:
-        raise RunbookContractError(
-            "writing a seal requires both --confirm-reconciled and --apply"
-        )
-    root, path = _root_and_runbook(args)
-    audit = audit_active_runbook(
-        root,
-        path,
-        allow_provisional_hash=True,
-        compare_fingerprint=False,
-    )
-    if audit.findings:
-        payload = _finding_payload(path, audit)
-        payload["mode"] = "apply" if args.apply else "dry-run"
-        _emit(payload, args.format)
-        return 1
-    assert audit.contract is not None
-
-    payload = _finding_payload(path, audit)
-    payload.update(
-        {
-            "ok": True,
-            "mode": "apply" if args.apply else "dry-run",
-            "fingerprint": audit.contract.fingerprint,
-            "runbook_path": audit.contract.runbook_path,
-            "contract_paths": list(audit.contract.contract_paths),
-            "records": [record.summary() for record in audit.contract.records],
-        }
-    )
-    if args.apply:
-        before = path.read_text(encoding="utf-8")
-        fresh = audit_active_runbook(
-            root,
-            path,
-            allow_provisional_hash=True,
-            compare_fingerprint=False,
-        )
-        if fresh.findings or fresh.contract is None:
-            payload["ok"] = False
-            payload["errors"] = [
-                "Runbook changed or became invalid before seal write",
-                *[finding.message for finding in fresh.findings],
-            ]
-            _emit(payload, args.format)
-            return 1
-        if path.read_text(encoding="utf-8") != before:
-            payload["ok"] = False
-            payload["errors"] = [
-                "Runbook changed while preparing the seal; no write applied"
-            ]
-            _emit(payload, args.format)
-            return 1
-        payload["fingerprint"] = fresh.contract.fingerprint
-        original_bytes = path.read_bytes()
-        after = replace_contract_hash(before, fresh.contract.fingerprint)
-        _atomic_write_bytes(path, after.encode("utf-8"))
-        verified = audit_active_runbook(root, path)
-        if verified.findings:
-            _atomic_write_bytes(path, original_bytes)
-            payload["ok"] = False
-            payload["errors"] = [
-                "post-write verification failed; original Runbook restored",
-                *[finding.message for finding in verified.findings],
-            ]
-        else:
-            payload["applied"] = True
-    _emit(payload, args.format)
-    return 0 if payload["ok"] else 1
-
-
-def _atomic_write_bytes(path: Path, data: bytes) -> None:
-    """Replace path with exact bytes through a same-directory temporary file."""
-
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
-    )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(data)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.chmod(temporary, stat.S_IMODE(path.stat().st_mode))
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1189,20 +386,9 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parse_args(argv)
     try:
-        if args.command == "check":
-            return run_check(args)
-        return run_seal(args)
-    except (OSError, UnicodeError, RunbookContractError) as exc:
-        payload = {
-            "ok": False,
-            "errors": [str(exc)],
-            "static_contract_only": True,
-            "notice": (
-                "Static contract success does not prove Live-State Preflight and "
-                "does not authorize any operation."
-            ),
-        }
-        _emit(payload, args.format)
+        return run_check(args)
+    except (OSError, UnicodeError, RunbookError) as exc:
+        _emit(_payload("<unresolved>", [str(exc)]), args.format)
         return 1
 
 

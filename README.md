@@ -8,7 +8,7 @@ Every skill here must also work under any agent harness (Claude Code, Codex, Dee
 
 | Skill | Documentation | Installable folder | Purpose | Implicit invocation |
 |---|---|---|---|---|
-| `document-governance` | [document-governance/SKILL.md](document-governance/SKILL.md) | `document-governance/` | Govern project documentation, durable Idea/Backlog lifecycles, and fail-closed Runbook execution contracts. | Yes |
+| `document-governance` | [document-governance/SKILL.md](document-governance/SKILL.md) | `document-governance/` | Govern project documentation, durable Idea/Backlog lifecycles, and fail-closed Runbook execution gates. | Yes |
 | `grill-me` | [grill-skill/README.md](grill-skill/README.md) | `grill-me/` | Run the latest imported upstream interview without live document capture. | Yes |
 | `grill-with-docs` | [grill-skill/README.md](grill-skill/README.md) | `grill-with-docs/` | Interview and capture terms and decisions through Document Governance. | Yes |
 | `verification-discipline` | [verification-discipline/SKILL.md](verification-discipline/SKILL.md) | `verification-discipline/` | Test-value gate, test-first and end-to-end-first verification with speed and isolation budgets, required tests for storage, recovery and model-facing changes, retained evidence, and three-state reporting. | Yes |

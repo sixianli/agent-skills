@@ -13,7 +13,7 @@ recurring failure pattern. Do not record project status, general knowledge,
 one-off incidents, or future work here.
 
 Give every lesson exactly one `##` heading that states the mistake itself, for example
-"Sealed a Runbook from a working tree that contained ignored local files". Agents
+"Archived a Spec while its work was still open in another branch". Agents
 choose which lessons to read from the headings alone, so a vague heading such as
 "A pitfall" hides the lesson. Before adding a lesson, check whether an existing one
 covers the same mistake and extend it instead.
