@@ -72,39 +72,19 @@ class ArchiveDocTests(unittest.TestCase):
         name: str,
         *,
         supersedes: str = "",
-        seal: bool = True,
     ) -> Path:
-        """Fill the bundled active Runbook template and optionally seal it."""
+        """Fill the bundled active Runbook template."""
 
-        source = self.root / "runbook-source.txt"
-        source.write_text("authoritative\n", encoding="utf-8")
         template = (
             SKILL_ROOT / "assets/templates/runbook-template.md"
         ).read_text(encoding="utf-8")
         content = (
             template.replace("YYYY-MM-DD", "2026-08-23")
-            .replace("<repo-relative-authoritative-path>", "runbook-source.txt")
             .replace('supersedes: ""', f'supersedes: "{supersedes}"')
         )
         path = self.root / f"docs/runbooks/{name}"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
-        if seal:
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(RUNBOOK),
-                    "seal",
-                    str(self.root),
-                    str(path),
-                    "--confirm-reconciled",
-                    "--apply",
-                ],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(result.returncode, 0, result.stderr)
         return path
 
     def test_archives_closed_spec_and_rewrites_frontmatter(self) -> None:
@@ -144,6 +124,19 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertFalse(
             (self.root / "docs/archive/adr/0001-decision.md").exists()
         )
+
+    def test_archives_legacy_plan_into_a_missing_archive_directory(self) -> None:
+        """Archive a Plan written before Plans stopped being created."""
+
+        source = self.write_document("docs/execution/plans/legacy-plan.md", "plan")
+        self.assertFalse((self.root / "docs/archive/plans").exists())
+
+        result = self.run_archiver("docs/execution/plans/legacy-plan.md")
+
+        destination = self.root / "docs/archive/plans/legacy-plan.md"
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(source.exists())
+        self.assertIn("archived", destination.read_text(encoding="utf-8"))
 
     def test_dry_run_does_not_modify_plan(self) -> None:
         """Dry-run must leave the source and destination untouched."""
@@ -193,8 +186,8 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertNotIn("Traceback", result.stderr)
         self.assertTrue(outside.is_file())
 
-    def test_runbook_snapshot_preserves_stable_path_and_invalidates_seal(self) -> None:
-        """Create reciprocal history without silently trusting the changed active file."""
+    def test_runbook_snapshot_preserves_stable_path_and_keeps_it_checkable(self) -> None:
+        """Create reciprocal history and leave the stable entry structurally valid."""
 
         source = self.write_active_runbook("deploy-runbook.md")
         before = source.read_text(encoding="utf-8")
@@ -228,33 +221,18 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertIn(
             'superseded_by: "docs/runbooks/deploy-runbook.md"', archived
         )
-        self.assertIn("seal is now invalid", applied.stdout)
+        self.assertNotIn("seal", applied.stdout)
 
-        failed_check = subprocess.run(
+        checked = subprocess.run(
             [sys.executable, str(RUNBOOK), "check", str(self.root), str(source)],
             check=False,
             capture_output=True,
             text=True,
         )
-        self.assertNotEqual(failed_check.returncode, 0)
-        resealed = subprocess.run(
-            [
-                sys.executable,
-                str(RUNBOOK),
-                "seal",
-                str(self.root),
-                str(source),
-                "--confirm-reconciled",
-                "--apply",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(resealed.returncode, 0, resealed.stderr)
+        self.assertEqual(checked.returncode, 0, checked.stderr)
 
     def test_runbook_successor_moves_old_and_updates_both_directions(self) -> None:
-        """Archive a replaced stable entry and invalidate the successor seal."""
+        """Archive a replaced stable entry and link both directions."""
 
         old = self.write_active_runbook("old-runbook.md")
         successor = self.write_active_runbook("new-runbook.md")
@@ -290,7 +268,7 @@ class ArchiveDocTests(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        self.assertNotEqual(check.returncode, 0)
+        self.assertEqual(check.returncode, 0, check.stderr)
 
     def test_runbook_retire_requires_reason_and_has_no_successor(self) -> None:
         """Retire without inventing a successor or leaving an active stub."""

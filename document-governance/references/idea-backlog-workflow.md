@@ -27,8 +27,8 @@ than two quotes.
 
 A Backlog item states the desired outcome, source or rationale, priority,
 review timing when deferred, and eventual result or rejection reason. Keep
-file boundaries, ordered implementation tasks, and verification commands in a
-Plan, not in Backlog.
+file boundaries, ordered implementation tasks, and verification commands out
+of Backlog; they belong to the coding agent's own execution planning.
 
 ## Frontmatter and States
 

@@ -30,13 +30,7 @@ These conditions fail in every mode:
 - A governed Markdown file is not valid UTF-8 or cannot be read (a UTF-8 BOM
   is accepted), or is a symbolic link that does not resolve (broken or
   looping).
-- An active Runbook declares an invalid `execution_risk` or malformed
-  `contract_sha256`.
-- A declared active Runbook fingerprint does not match its current Runbook and
-  selected repository sources.
-- A Runbook contract has multiple or malformed blocks; an absolute, traversing,
-  missing, secret-bearing, cache/build/VCS/evidence, unsupported, broken, or
-  repository-escaping selector; or another unsafe object.
+- An active Runbook declares an invalid `execution_risk`.
 - An active Runbook uses `last_reviewed` or `review_after` as calendar trust.
 
 ## Migration Warnings / Strict Errors
@@ -79,13 +73,13 @@ These conditions fail in every mode:
   inconsistent `status`, `decision_status`, and supersession links, including a
   `superseded_by` chain that loops or ends at an ADR that is not active and
   accepted.
-- A Plan has neither a heading matching `#+ Source Spec` nor a SOURCE
+- A legacy Plan has neither a heading matching `#+ Source Spec` nor a SOURCE
   reference into `docs/execution/specs/` or `docs/archive/specs/`.
 - A SOURCE target does not exist under `docs/`; when the missing target
   contains a template placeholder (`YYYY`, `NNNN`, `X.Y`, `<...>`, `{{...}}`)
   it is reported as `unfilled template placeholder in SOURCE target`.
-- An old active Runbook lacks `document_type: runbook`, `execution_risk`,
-  `contract_sha256`, its unique contract block, or a required Runbook section.
+- An old active Runbook lacks `document_type: runbook`, `execution_risk`, or
+  a required Runbook section.
 - `docs/runbooks/` contains a superseded or archived Runbook rather than only
   active entries.
 - An archived Runbook lacks `document_type: runbook`, has a broken reciprocal
@@ -132,9 +126,12 @@ validation. Offer to migrate their items into Backlog records.
 - The validator can enforce the location and frontmatter shape of
   `docs/lessons.md`, but it cannot prove that an entry represents a repeated
   coding-agent mistake. Review that semantic boundary manually.
-- Fully validate active Runbooks using the shared `runbook.py` contract logic.
-  For archived Runbooks, validate historical location, status, type, and
-  relationships but do not recompute old hashes against current sources.
+- Validate the structure of active Runbooks using the shared `runbook.py`
+  logic: location, lifecycle fields, `execution_risk`, and required sections.
+  The validator does not compare a Runbook with the sources it depends on;
+  the executing agent does that before each use. A legacy `contract_sha256`
+  field or `runbook-contract` block is ignored. For archived Runbooks,
+  validate historical location, status, type, and relationships.
 - There is no date-based Runbook expiration. Backlog `review_after` remains a
   work-state field and is not a Runbook trust signal.
 

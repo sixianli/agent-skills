@@ -13,9 +13,7 @@ RUNBOOK = SKILL_ROOT / "scripts" / "runbook.py"
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
-    "docs/execution/plans",
     "docs/archive/specs",
-    "docs/archive/plans",
     "docs/archive/runbooks",
     "docs/runbooks",
 ]
@@ -89,7 +87,7 @@ class ValidateDocsTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         return result, payload
 
-    def write_sealed_runbook(
+    def write_active_runbook(
         self, relative: str = "docs/runbooks/active-runbook.md"
     ) -> Path:
         (self.root / "runbook-source.txt").write_text(
@@ -98,27 +96,10 @@ class ValidateDocsTests(unittest.TestCase):
         template = (
             SKILL_ROOT / "assets/templates/runbook-template.md"
         ).read_text(encoding="utf-8")
-        content = template.replace("YYYY-MM-DD", "2026-07-19").replace(
-            "<repo-relative-authoritative-path>", "runbook-source.txt"
-        )
+        content = template.replace("YYYY-MM-DD", "2026-07-19")
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
-        sealed = subprocess.run(
-            [
-                sys.executable,
-                str(RUNBOOK),
-                "seal",
-                str(self.root),
-                str(path),
-                "--confirm-reconciled",
-                "--apply",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(sealed.returncode, 0, sealed.stderr)
         return path
 
     def test_strict_mode_promotes_every_soft_rule(self) -> None:
@@ -635,30 +616,46 @@ class ValidateDocsTests(unittest.TestCase):
         self.assertEqual(strict_result.returncode, 1)
         self.assertEqual(strict_payload["warnings"], [])
 
-    def test_malformed_or_mismatched_declared_contract_always_errors(self) -> None:
-        path = self.write_sealed_runbook()
-        sealed_text = path.read_text(encoding="utf-8")
+    def test_invalid_execution_risk_always_errors(self) -> None:
+        path = self.write_active_runbook()
+        valid_text = path.read_text(encoding="utf-8")
         path.write_text(
-            sealed_text.replace("execution_risk: critical", "execution_risk: unsafe")
-            .replace("contract_sha256: \"sha256:", "contract_sha256: \"bad-sha256:"),
+            valid_text.replace("execution_risk: critical", "execution_risk: unsafe"),
             encoding="utf-8",
         )
         result, payload = self.run_validator(strict=False)
-        rendered = "\n".join(payload["errors"])
         self.assertEqual(result.returncode, 1)
-        self.assertIn("invalid execution_risk", rendered)
-        self.assertIn("invalid contract_sha256", rendered)
+        self.assertIn("invalid execution_risk", "\n".join(payload["errors"]))
 
-        path.write_text(sealed_text, encoding="utf-8")
+    def test_active_runbook_is_not_compared_with_its_sources(self) -> None:
+        self.write_active_runbook()
         (self.root / "runbook-source.txt").write_text("drift\n", encoding="utf-8")
-        mismatch_result, mismatch_payload = self.run_validator(strict=False)
-        self.assertEqual(mismatch_result.returncode, 1)
-        self.assertIn(
-            "does not match",
-            "\n".join(mismatch_payload["errors"]),
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
+    def test_legacy_seal_field_and_contract_block_are_ignored(self) -> None:
+        path = self.write_active_runbook()
+        text = path.read_text(encoding="utf-8")
+        path.write_text(
+            text.replace(
+                "execution_risk: critical",
+                'execution_risk: critical\ncontract_sha256: "sha256:' + "0" * 64 + '"',
+            ).replace(
+                "# Runbook Title",
+                "# Runbook Title\n\n<!-- runbook-contract:\n- missing/path.sh\n-->",
+            ),
+            encoding="utf-8",
         )
 
-    def test_archived_runbook_hash_is_not_recomputed_against_current_sources(self) -> None:
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
+    def test_archived_runbook_with_legacy_seal_field_stays_valid(self) -> None:
         archived = self.write_document(
             "docs/archive/runbooks/legacy.md",
             "# Archived Runbook\n\nHistorical content.",
@@ -754,7 +751,6 @@ class ValidateDocsTests(unittest.TestCase):
             "architecture-template.md": "docs/architecture-v0.1.md",
             "adr-template.md": "docs/adr/0001-decision.md",
             "spec-template.md": "docs/execution/specs/2026-07-19-topic-design.md",
-            "plan-template.md": "docs/execution/plans/2026-07-19-topic-plan.md",
             "runbook-template.md": "docs/runbooks/topic-runbook.md",
             "idea-note-template.md": "docs/ideas/IDEA-20260719-a2b3c4-idea.md",
             "backlog-item-template.md": "docs/backlog/BL-20260719-a2b3c4-item.md",
@@ -771,28 +767,11 @@ class ValidateDocsTests(unittest.TestCase):
                 .replace("NNNN-short-title", "0001-decision")
                 .replace("YYYY-MM-DD", "2026-07-19")
                 .replace("<project>", "demo")
-                .replace("<repo-relative-authoritative-path>", "README.md")
             )
             destination = self.root / destination_name
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_text(content, encoding="utf-8")
 
-        (self.root / "README.md").write_text("# Demo\n", encoding="utf-8")
-        sealed = subprocess.run(
-            [
-                sys.executable,
-                str(RUNBOOK),
-                "seal",
-                str(self.root),
-                "docs/runbooks/topic-runbook.md",
-                "--confirm-reconciled",
-                "--apply",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(sealed.returncode, 0, sealed.stderr)
         checked = subprocess.run(
             [
                 sys.executable,
@@ -979,6 +958,35 @@ class ValidateDocsTests(unittest.TestCase):
             rendered,
         )
 
+    def test_project_without_plan_directories_is_valid(self) -> None:
+        self.write_document("docs/prd-v0.1.md", "# Product", document_type="prd")
+        self.assertFalse((self.root / "docs/execution/plans").exists())
+        self.assertFalse((self.root / "docs/archive/plans").exists())
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
+    def test_legacy_plans_stay_valid_active_and_archived(self) -> None:
+        self.write_document("docs/execution/specs/s.md", "# Spec", document_type="spec")
+        self.write_document(
+            "docs/execution/plans/open.md",
+            "# Plan\n\n- [SOURCE: docs/execution/specs/s.md]",
+            document_type="plan",
+        )
+        self.write_document(
+            "docs/archive/plans/closed.md",
+            "# Plan\n\n- [SOURCE: docs/execution/specs/s.md]",
+            status="archived",
+            document_type="plan",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
     def test_plan_source_spec_requires_heading_or_spec_source(self) -> None:
         self.write_document("docs/execution/specs/s.md", "# Spec", document_type="spec")
         self.write_document("docs/prd-v0.1.md", "# Product", document_type="prd")
@@ -1126,7 +1134,7 @@ class ValidateDocsTests(unittest.TestCase):
         for name, dest in (
             ("idea-note-template.md", "docs/ideas/IDEA-20260719-a2b3c4-idea.md"),
             ("backlog-item-template.md", "docs/backlog/BL-20260719-a2b3c4-item.md"),
-            ("plan-template.md", "docs/execution/plans/p.md"),
+            ("spec-template.md", "docs/execution/specs/s.md"),
         ):
             self.write_raw(dest, (templates / name).read_text(encoding="utf-8"))
 

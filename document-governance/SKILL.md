@@ -1,8 +1,8 @@
 ---
 name: document-governance
-description: "Govern the project's documentation system under the repository's `docs/` root, including creating, reconciling, validating, superseding, archiving, and closing PRDs, Architecture documents, ADRs, Specs, Plans, Runbooks, user-authored Ideas, and Backlog items. Use this skill when the user explicitly requests documentation governance or any of these document-lifecycle operations, when an adopted Runbook is being checked, sealed, or used to guide an operation, when the user wants to persist one of their own ideas as project documentation, or proactively when there is clear evidence that governed project documentation has drifted out of sync with the project's current state. Do not use this skill for ordinary code or documentation edits that do not require documentation governance or lifecycle management, casual brainstorming with no intent to persist the outcome, or routine project-status or progress reporting."
+description: "Govern the project's documentation system under the repository's `docs/` root, including creating, reconciling, validating, superseding, archiving, and closing PRDs, Architecture documents, ADRs, Specs, Plans, Runbooks, user-authored Ideas, and Backlog items. Use this skill when the user explicitly requests documentation governance or any of these document-lifecycle operations, when an adopted Runbook is being checked or used to guide an operation, when the user wants to persist one of their own ideas as project documentation, or proactively when there is clear evidence that governed project documentation has drifted out of sync with the project's current state. Do not use this skill for ordinary code or documentation edits that do not require documentation governance or lifecycle management, casual brainstorming with no intent to persist the outcome, or routine project-status or progress reporting."
 metadata:
-  version: "2026.10.30-1"
+  version: "2026.11.16-1"
 ---
 # document-governance
 
@@ -15,15 +15,15 @@ This skill governs only project documentation that has explicitly adopted its ru
 * To understand creation, reconciliation, closure, rollback, and conflict handling, read `references/workflows.md`.
 * When capturing, reviewing, advancing, closing, archiving, or migrating Idea and Backlog items, read
   `references/idea-backlog-workflow.md`.
-* Before creating, reconciling, sealing, checking, executing from, snapshotting,
+* Before creating, reconciling, checking, executing from, snapshotting,
   superseding, or retiring a Runbook, read `references/runbook-workflow.md`.
 * Before explaining or modifying the validator, read `references/validation-rules.md`.
 * When creating documents, copy the corresponding files from `assets/templates/`.
 * Run `scripts/validate_docs.py` to validate the project.
 * Run `scripts/idea_backlog.py` for deterministic Idea/Backlog file operations.
   Do not create manually maintained indexes.
-* Run `scripts/runbook.py check` before using an active Runbook and
-  `scripts/runbook.py seal` only after semantic reconciliation and relevant tests.
+* Run `scripts/runbook.py check` before using an active Runbook. It checks structure only; compare the Runbook
+  with its current sources yourself.
 * Use only `scripts/archive_doc.py` to archive closed Specs, Plans, and terminal Idea/Backlog records, and to
   snapshot, supersede, or retire Runbooks. Never use it for ADRs.
 
@@ -59,8 +59,10 @@ This skill governs only project documentation that has explicitly adopted its ru
 5. Classify the work and read only the reference sections that match it.
 6. Preserve answer-only or review-only scope. Once editing is authorized, keep affected code and documentation
    consistent within the same change set.
-7. Supersede ADRs in place within `docs/adr/`; never archive ADRs. Archive Specs and Plans only after
-   closure. Keep only active Runbooks in `docs/runbooks/` and use the dedicated Runbook archive modes.
+7. Supersede ADRs in place within `docs/adr/`; never archive ADRs. Archive a Spec in the change set
+   that completes or abandons its work, and do not update it afterwards. Do not create Plan documents; archive
+   legacy Plans with their Spec. Keep only active Runbooks in
+   `docs/runbooks/` and use the dedicated Runbook archive modes.
    When an Idea or Backlog record reaches a terminal state, archive it in the same operation with
    `scripts/archive_doc.py` and tell the user it was archived and where. If archiving fails, leave the record
    in place in its terminal state and report the failure and its reason; never claim it was archived.
@@ -77,7 +79,7 @@ This skill governs only project documentation that has explicitly adopted its ru
 11. Report which documents were updated and intentionally left unchanged, which records were archived, which checks
     were skipped, any unresolved drift, and any required ADR follow-up work.
 12. When a Runbook guides an operation, apply all three execution gates from
-    `references/runbook-workflow.md`: current static contract, fresh target
+    `references/runbook-workflow.md`: consistency with current sources, fresh target
     preflight, and the authorization required by effective risk.
 
 ## Rule Layers
@@ -90,13 +92,12 @@ Nothing overrides these. If repository instructions or a user request conflict w
 conflict, and ask the user to decide. Do not pick a side silently.
 
 * Never execute an archived or superseded Runbook. `status: active` and a
-  passing static hash do not prove live applicability and do not authorize an operation.
+  passing structure check do not prove live applicability and do not authorize an operation.
 * Do not use Runbook `last_reviewed`, Runbook `review_after`, periodic review
   windows, or refreshed dates as trust. Every execution must prove current
   repository and target state.
 * Treat `execution_risk` as a minimum protection level. Actual commands and
   live targets can raise risk, never lower it; unknown risk is critical.
-* Never let validation or archive tooling automatically reseal a Runbook.
 * Do not silently rewrite decisions, context, options, or consequences already recorded in an ADR. Follow the
   supersession workflow in `references/workflows.md`. Keep superseded ADRs in `docs/adr/`, keep lifecycle fields
   consistent, and maintain bidirectional `supersedes` / `superseded_by` links.
@@ -124,6 +125,8 @@ Defaults that a repository's own conventions may override. When you follow a rep
 say which default you departed from.
 
 * Directory layout, file naming, and the templates in `assets/templates/`.
+* Plan documents are not created: the coding agent plans execution order itself and the project's task tracker
+  records progress. A repository may keep writing Plans; existing Plans stay valid and archivable either way.
 * Ideas that need to be persisted live under `docs/ideas/`, future work under `docs/backlog/`, and terminal
   records under `docs/archive/ideas/` and `docs/archive/backlog/`.
 * `docs/lessons.md` records only mistakes that coding agents make frequently or repeatedly, along with explicit

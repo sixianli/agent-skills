@@ -11,7 +11,6 @@ from pathlib import Path
 
 from idea_backlog import BACKLOG_HEADER_FIELDS, VALID_BACKLOG_PRIORITIES
 from runbook import (
-    HASH_PATTERN,
     VALID_EXECUTION_RISKS,
     audit_active_runbook,
 )
@@ -19,9 +18,7 @@ from runbook import (
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
-    "docs/execution/plans",
     "docs/archive/specs",
-    "docs/archive/plans",
     "docs/archive/runbooks",
     "docs/runbooks",
 ]
@@ -789,9 +786,6 @@ def validate_archived_runbook(
     risk = fields.get("execution_risk")
     if risk is not None and risk not in VALID_EXECUTION_RISKS:
         errors.append(f"{relative}: invalid execution_risk {risk!r}")
-    contract_hash = fields.get("contract_sha256")
-    if contract_hash is not None and not HASH_PATTERN.fullmatch(contract_hash):
-        errors.append(f"{relative}: invalid contract_sha256 {contract_hash!r}")
 
 
 def normalize_local_target(root: Path, target: str) -> tuple[Path | None, str | None]:
