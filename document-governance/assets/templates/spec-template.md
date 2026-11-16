@@ -35,7 +35,13 @@ Describe data flow, state transitions, and service boundaries.
 
 Describe expected failures and system responses.
 
+## Delivery Order
+
+Fill this section only when parts of the change must land in a fixed order
+that outlives one working session, and state the reason for each constraint.
+Delete the section otherwise. Do not track progress here.
+
 ## Verification Strategy
 
-List checks the future Plan must include.
+List the checks that prove the acceptance criteria.
 

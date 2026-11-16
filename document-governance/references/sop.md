@@ -33,7 +33,7 @@ ADR supersession, and SOURCE-path rules.
 | Architecture    | `docs/architecture-v*.md`                         | Current system shape                       | Task checklists, rejected alternatives    |
 | ADR             | `docs/adr/NNNN-title.md`                          | Why a durable decision was made            | Current implementation inventory          |
 | Spec            | `docs/execution/specs/YYYY-MM-DD-topic-design.md` | Design for one change                      | File-level implementation steps           |
-| Plan            | `docs/execution/plans/YYYY-MM-DD-topic-plan.md`   | Implementation order and verification      | New requirements or design decisions      |
+| Plan (legacy)   | `docs/execution/plans/YYYY-MM-DD-topic-plan.md`   | Implementation order of earlier work; no longer created | New requirements or design decisions |
 | Runbook         | `docs/runbooks/topic-runbook.md`                  | Operate, deploy, debug, recover            | Product requirements or feature rationale |
 | Idea            | `docs/ideas/IDEA-*.md`                            | A durable insight and its thinking context | A commitment to implement                 |
 | Backlog Item    | `docs/backlog/BL-*.md`                            | Future work, priority, state, and outcome  | File-level execution steps                |
@@ -50,6 +50,11 @@ lessons from the headings alone.
 
 Recognize existing `docs/archive/adr/` documents for backward compatibility,
 but do not move new or superseded ADRs there.
+
+Do not create Plan documents. A coding agent plans execution order itself,
+and the project's task tracker and change history record progress; a Plan
+file repeats both and goes stale. Keep validating and archiving Plans that
+already exist. A repository may override this default and keep writing Plans.
 
 ## Frontmatter and Lifecycle
 
@@ -172,7 +177,7 @@ Resolve conflicts in this order:
 2. Architecture for current technical behavior.
 3. ADR for decision rationale and trade-offs.
 4. Spec for confirmed design of one change.
-5. Plan for execution sequence and verification.
+5. Legacy Plan for the execution sequence of earlier work.
 6. Runbook for operation and troubleshooting.
 
 Current repository evidence still matters: when code and current-truth
@@ -188,7 +193,7 @@ authoritative document rather than blindly trusting stale prose.
 | Architecture    | `architecture-v{major.minor}.md`                                 |
 | ADR             | `NNNN-short-title.md`                                            |
 | Spec            | `YYYY-MM-DD-topic-design.md`                                     |
-| Plan            | `YYYY-MM-DD-topic-plan.md`                                       |
+| Plan (legacy)   | `YYYY-MM-DD-topic-plan.md`                                       |
 | Runbook         | `topic-runbook.md`, `topic-setup.md`, `topic-troubleshooting.md` |
 | Archived Runbook | `YYYY-MM-DD-{stable-runbook-name}.md`; legacy undated names remain readable |
 | Idea            | `IDEA-YYYYMMDD-xxxxxx-short-title.md` under `docs/ideas/`        |
@@ -215,11 +220,12 @@ docs/
     └── backlog/
 ```
 
-Keep only pending or executing work in `docs/execution/specs/` and
-`docs/execution/plans/`. Archive a Spec or Plan in the same change set that
+Keep only pending or executing work in `docs/execution/specs/`. Archive a
+Spec, and any legacy Plan that belongs to it, in the same change set that
 completes or abandons its work; see Spec and Plan Closure in
-`references/workflows.md`. A Spec or Plan is a point-in-time record: once its
-work is closed, do not keep updating it to match later code.
+`references/workflows.md`. A Spec is a point-in-time record: once its work is
+closed, do not keep updating it to match later code. `docs/execution/plans/`
+and `docs/archive/plans/` exist only in projects that hold legacy Plans.
 
 Keep a current Runbook at a stable path under `docs/runbooks/`. Use
 `scripts/archive_doc.py` with one of its explicit Runbook modes for snapshots,

@@ -73,7 +73,7 @@ These conditions fail in every mode:
   inconsistent `status`, `decision_status`, and supersession links, including a
   `superseded_by` chain that loops or ends at an ADR that is not active and
   accepted.
-- A Plan has neither a heading matching `#+ Source Spec` nor a SOURCE
+- A legacy Plan has neither a heading matching `#+ Source Spec` nor a SOURCE
   reference into `docs/execution/specs/` or `docs/archive/specs/`.
 - A SOURCE target does not exist under `docs/`; when the missing target
   contains a template placeholder (`YYYY`, `NNNN`, `X.Y`, `<...>`, `{{...}}`)

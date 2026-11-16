@@ -24,13 +24,14 @@ rollback, and conflict handling.
 4. Write an Execution Spec under `docs/execution/specs/` when the design is
    not obvious from the request. Skip the Spec for a change whose design fits
    in the change description.
-5. Write an Implementation Plan under `docs/execution/plans/` only when the
-   work spans several change sets or sessions and its order must survive
-   between them. Confirm the Spec first. Do not write a Plan that only repeats
-   progress the project's task tracker or change history already records.
+5. Do not write an Implementation Plan document. Plan the execution order
+   with the coding agent's own planning ability, and track progress in the
+   project's task tracker and change history. When an ordering constraint must
+   outlive a session, for example one part must ship before another, record
+   it in the Spec's `Delivery Order` section.
 6. Implement and verify the change.
 7. Reconcile affected long-lived and operational documents.
-8. Archive the Spec and Plan in the change set that completes the work.
+8. Archive the Spec in the change set that completes the work.
 
 ## Drift Reconciliation
 
@@ -91,13 +92,16 @@ A three-ADR chain records one link per pair:
 
 Closure is part of finishing the work, not a separate later task. The change
 set that completes, rejects, supersedes, or abandons the work also archives
-its Spec and Plan:
+its Spec:
 
-- Run `scripts/archive_doc.py` for the Spec or Plan.
+- Run `scripts/archive_doc.py` for the Spec.
 - Run strict validation after the move.
 
-Unfinished Plan steps do not block closure. When the work is abandoned or
-partly done, archive the Plan as it is and record any work that is still
+Plans are a legacy document type. This skill no longer creates them, but a
+project may still hold Plans written earlier. Do not update a legacy Plan to
+track progress. Archive it with `scripts/archive_doc.py` together with its
+Spec, or at once when its work is already closed. Unfinished Plan steps do not
+block closure: archive the Plan as it is and record any work that is still
 wanted as a Backlog item.
 
 Updating PRD, Architecture, README, Runbooks, and Backlog items for what the

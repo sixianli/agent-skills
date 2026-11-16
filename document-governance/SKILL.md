@@ -59,8 +59,9 @@ This skill governs only project documentation that has explicitly adopted its ru
 5. Classify the work and read only the reference sections that match it.
 6. Preserve answer-only or review-only scope. Once editing is authorized, keep affected code and documentation
    consistent within the same change set.
-7. Supersede ADRs in place within `docs/adr/`; never archive ADRs. Archive a Spec or Plan in the change set
-   that completes or abandons its work, and do not update it afterwards. Keep only active Runbooks in
+7. Supersede ADRs in place within `docs/adr/`; never archive ADRs. Archive a Spec in the change set
+   that completes or abandons its work, and do not update it afterwards. Do not create Plan documents; archive
+   legacy Plans with their Spec. Keep only active Runbooks in
    `docs/runbooks/` and use the dedicated Runbook archive modes.
    When an Idea or Backlog record reaches a terminal state, archive it in the same operation with
    `scripts/archive_doc.py` and tell the user it was archived and where. If archiving fails, leave the record
@@ -124,6 +125,8 @@ Defaults that a repository's own conventions may override. When you follow a rep
 say which default you departed from.
 
 * Directory layout, file naming, and the templates in `assets/templates/`.
+* Plan documents are not created: the coding agent plans execution order itself and the project's task tracker
+  records progress. A repository may keep writing Plans; existing Plans stay valid and archivable either way.
 * Ideas that need to be persisted live under `docs/ideas/`, future work under `docs/backlog/`, and terminal
   records under `docs/archive/ideas/` and `docs/archive/backlog/`.
 * `docs/lessons.md` records only mistakes that coding agents make frequently or repeatedly, along with explicit

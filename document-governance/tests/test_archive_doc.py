@@ -125,6 +125,19 @@ class ArchiveDocTests(unittest.TestCase):
             (self.root / "docs/archive/adr/0001-decision.md").exists()
         )
 
+    def test_archives_legacy_plan_into_a_missing_archive_directory(self) -> None:
+        """Archive a Plan written before Plans stopped being created."""
+
+        source = self.write_document("docs/execution/plans/legacy-plan.md", "plan")
+        self.assertFalse((self.root / "docs/archive/plans").exists())
+
+        result = self.run_archiver("docs/execution/plans/legacy-plan.md")
+
+        destination = self.root / "docs/archive/plans/legacy-plan.md"
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(source.exists())
+        self.assertIn("archived", destination.read_text(encoding="utf-8"))
+
     def test_dry_run_does_not_modify_plan(self) -> None:
         """Dry-run must leave the source and destination untouched."""
 

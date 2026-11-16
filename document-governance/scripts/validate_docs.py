@@ -18,9 +18,7 @@ from runbook import (
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
-    "docs/execution/plans",
     "docs/archive/specs",
-    "docs/archive/plans",
     "docs/archive/runbooks",
     "docs/runbooks",
 ]

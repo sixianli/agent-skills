@@ -13,9 +13,7 @@ RUNBOOK = SKILL_ROOT / "scripts" / "runbook.py"
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
-    "docs/execution/plans",
     "docs/archive/specs",
-    "docs/archive/plans",
     "docs/archive/runbooks",
     "docs/runbooks",
 ]
@@ -753,7 +751,6 @@ class ValidateDocsTests(unittest.TestCase):
             "architecture-template.md": "docs/architecture-v0.1.md",
             "adr-template.md": "docs/adr/0001-decision.md",
             "spec-template.md": "docs/execution/specs/2026-07-19-topic-design.md",
-            "plan-template.md": "docs/execution/plans/2026-07-19-topic-plan.md",
             "runbook-template.md": "docs/runbooks/topic-runbook.md",
             "idea-note-template.md": "docs/ideas/IDEA-20260719-a2b3c4-idea.md",
             "backlog-item-template.md": "docs/backlog/BL-20260719-a2b3c4-item.md",
@@ -961,6 +958,35 @@ class ValidateDocsTests(unittest.TestCase):
             rendered,
         )
 
+    def test_project_without_plan_directories_is_valid(self) -> None:
+        self.write_document("docs/prd-v0.1.md", "# Product", document_type="prd")
+        self.assertFalse((self.root / "docs/execution/plans").exists())
+        self.assertFalse((self.root / "docs/archive/plans").exists())
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
+    def test_legacy_plans_stay_valid_active_and_archived(self) -> None:
+        self.write_document("docs/execution/specs/s.md", "# Spec", document_type="spec")
+        self.write_document(
+            "docs/execution/plans/open.md",
+            "# Plan\n\n- [SOURCE: docs/execution/specs/s.md]",
+            document_type="plan",
+        )
+        self.write_document(
+            "docs/archive/plans/closed.md",
+            "# Plan\n\n- [SOURCE: docs/execution/specs/s.md]",
+            status="archived",
+            document_type="plan",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertTrue(payload["ok"])
+
     def test_plan_source_spec_requires_heading_or_spec_source(self) -> None:
         self.write_document("docs/execution/specs/s.md", "# Spec", document_type="spec")
         self.write_document("docs/prd-v0.1.md", "# Product", document_type="prd")
@@ -1108,7 +1134,7 @@ class ValidateDocsTests(unittest.TestCase):
         for name, dest in (
             ("idea-note-template.md", "docs/ideas/IDEA-20260719-a2b3c4-idea.md"),
             ("backlog-item-template.md", "docs/backlog/BL-20260719-a2b3c4-item.md"),
-            ("plan-template.md", "docs/execution/plans/p.md"),
+            ("spec-template.md", "docs/execution/specs/s.md"),
         ):
             self.write_raw(dest, (templates / name).read_text(encoding="utf-8"))
 
