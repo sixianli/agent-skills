@@ -120,6 +120,18 @@ validation. Offer to migrate their items into Backlog records.
 
 - Scan all `*.md` files under the target project's `docs/` tree.
 - Skip `docs/templates/**` because it may contain unfilled placeholders.
+- Skip every path listed in `docs/.governance-exclude`, a project file with one
+  repo-relative path per line, for example `docs/ocr-eval`. Blank lines and
+  lines starting with `#` are ignored. Use it for Markdown that is not
+  project documentation, such as generated reports or store copy.
+  - A path must be relative, start with `docs/`, and contain no `..`;
+    otherwise it is an error.
+  - `docs` itself, `docs/adr`, `docs/execution`, `docs/runbooks`,
+    `docs/ideas`, `docs/backlog`, `docs/archive` and anything under them, and
+    `docs/lessons.md`, `docs/prd-v*.md`, `docs/architecture-v*.md` cannot be
+    excluded; listing one is an error.
+  - A listed path that does not exist is a migration warning and a strict
+    error, so a stale entry is noticed.
 - Do not scan the skill's own `assets/templates/**` when validating a project.
 - Open records and overdue `review_after` dates are work state, not validation
   failures. Use `scripts/idea_backlog.py review` to surface them.
