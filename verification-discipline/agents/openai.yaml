@@ -1,6 +1,6 @@
 interface:
   display_name: "Verification Discipline"
-  short_description: "Test-first, E2E-first verification rules"
-  default_prompt: "Use $verification-discipline before implementing or fixing anything: plan the tests, reproduce the bug, run the narrow tests, then the full suite, and keep the evidence."
+  short_description: "测试先行、关注行为的测试与验证规则"
+  default_prompt: "在实现或修复任何东西之前使用 $verification-discipline：先通过公开接口写测试，复现 bug，跑小范围测试，再跑完整套件，并保留证据。"
 policy:
   allow_implicit_invocation: true

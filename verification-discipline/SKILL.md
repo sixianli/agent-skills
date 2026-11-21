@@ -1,250 +1,100 @@
 ---
 name: verification-discipline
-description: Testing and verification discipline for authorized implementation work - a test-value gate before any new test, test-first for isolated tests, end-to-end tests through real entry points as the main source of new coverage, reproduce bugs before fixing, speed budgets and machine isolation for tests, required tests for storage, recovery and model-facing changes, narrow runs during development and the full project suite before completion, retained verification artifacts, and honest reporting that separates not run, failed and passed. Use before and during any feature, bug fix, or refactor that changes executable behavior; project instructions take precedence where they differ.
+description: 面向已授权实现工作的测试与验证纪律，包括：红-绿-重构的测试先行循环；通过公开接口断言可观察行为的测试（"两次假想修改"检验、字面量期望值、边界用例，以及"真实实现优先于 fake、fake 优先于 stub、stub 优先于 mock"的测试替身顺序）；用能展示该行为的最小测试层级，并为关键用户流程写 E2E；修 bug 前先复现，并在同一界面上验证；重构前先钉住行为；测试的速度预算与机器隔离；存储、恢复和面向模型的改动所必需的测试；开发中只跑小范围测试，完成前跑项目完整套件；保留验证产物；以及区分"未运行、失败、通过"的如实报告。在任何会改变可执行行为的功能开发、bug 修复或重构之前和过程中使用；若与项目自身的说明不一致，以项目说明为准。
 ---
 
-# Verification Discipline
+# 验证纪律
 
-Apply these requirements to authorized implementation work. Preserve
-read-only, design-only, and other explicit task boundaries. When the
-project's own instructions (for example `AGENTS.md`, CI configuration, or a
-Runbook) say where and when tests run, follow them; this skill supplies the
-discipline, not the project's commands or hosts.
+把这些要求应用于已授权的实现工作。保持只读、仅设计以及其他明确的任务边界。当项目自身的说明（例如 `AGENTS.md`、CI 配置或 Runbook）规定了测试在哪里、什么时候运行时，遵循它们；本 skill 提供的是纪律，而不是项目的命令或主机。
 
+1. 在实现之前，明确预期行为、受影响的契约以及验证路径。查看项目的说明、已有测试、脚本、CI 配置和相关的验证类 skill。复用已有的命令和测试框架；不要凭空编造验证命令，也不要在没有必要时引入一套平行的测试体系。
 
-1. Before implementation, identify the expected behavior, affected
-   contracts, and verification path. Inspect the project's instructions,
-   existing tests, scripts, CI configuration, and relevant verification
-   skills. Reuse established commands and harnesses; do not invent a
-   verification command or introduce a parallel test system unnecessarily.
+2. 对每个功能或 bug 修复，确保有可重复的自动化测试覆盖目标行为。当已有测试能被证明覆盖了该行为时，复用它们。期望结果要从需求和可观察的契约推导出来，绝不能仅仅取自实现的输出。
 
-2. For every feature or bug fix, ensure repeatable automated tests cover
-   the target behavior. Reuse existing tests when they demonstrably cover
-   it. Derive expected results from requirements and observable contracts,
-   never merely from the implementation's output.
+   所有新测试，无论处于哪一层，都按小步的红-绿-重构循环来写：
 
-   When unit tests or other isolated tests are necessary, FIRST enumerate
-   the relevant failure modes, boundary cases, and invariants within the
-   task's scope. THEN write the tests, and only then write or change the
-   corresponding production code. Never implement a behavior first and
-   then write unit tests to justify that implementation.
+   a. **首先**写一份测试清单：列出任务范围内相关的失败模式、边界情况和不变量。清单只写场景名称；此时还不要决定实现的内部细节。
+   b. 从清单中只取一项，把它变成一个具体的、可运行的测试。不要一开始就把整份清单都转成测试。
+   c. 运行它，确认它因为预期的原因而失败。如果它已经通过了，说明它并没有触及新行为；先查清原因再继续。
+   d. 编写或修改最少的生产代码，让这个测试以及之前的所有测试都通过。这一步不做重构，也绝不为了变绿而削弱或删除断言。
+   e. 可选地进行重构，期间所有测试保持绿色，重构范围仅限本次改动涉及的代码。
+   f. 把在 b–e 过程中发现的新失败模式加入清单，然后从 b 开始重复，直到清单清空。
 
-   For existing untested code, add characterization or regression tests
-   before changing the behavior under test. Characterization tests must
-   preserve intended behavior, not enshrine a known defect.
+   绝不先实现一个行为，然后再写测试来为这个实现背书。
 
-   Before adding a test, answer the six test-value questions in
-   [references/test-value-and-hygiene.md](references/test-value-and-hygiene.md#test-value):
-   the public entry point and the observable result, the bug or rule it
-   protects, the gap in the existing tests, the smallest failing input, the
-   tier it belongs to, and its measured run time. A test that cannot answer
-   one of them is not added. Keep one case per entry point and outcome,
-   express further inputs as a table, and stop adding cases when a new one
-   shows no new outcome, error, permission, persisted data, protocol, or
-   timing difference. Never copy a production constant, table, or function
-   into a test and compare the copy with the original, never assert only
-   that a source file contains some text, and delete a case that only
-   asserts an internal function was called. Coverage numbers are not a
-   goal: a project's coverage gate is a floor, not a reason to add tests
-   that have no value.
+   对于已有但没有测试的代码，在改变被测行为之前，先补上特征测试（characterization test）或回归测试。特征测试必须保留的是预期行为，而不是把已知缺陷固化下来。
 
-3. Strongly prefer end-to-end (E2E) tests through real user or public system
-   entry points. Prefer E2E as the sole source of new behavioral test
-   coverage when it can reliably exercise the relevant behavior and failure
-   modes. Do not add redundant unit or integration tests merely to populate
-   multiple test layers. Preserve existing tests and required project checks.
+   每个新测试都要能追溯到一条需求、一条规则或一个已报告的 bug，测试名要写明它保护的行为；对新功能来说，需求本身就是足够的理由。添加之前，先确认相邻的测试没有覆盖这个行为，并过一遍[测试价值](references/test-value-and-hygiene.md#test-value)检查清单。宁可不加新测试，也不要加坏测试：如果唯一能写出的测试主要在测 mock、把实现细节写死、依赖时间或无关的全局状态、为一个小改动需要昂贵的基础设施，或者在证明修复之后就会被删掉，那就改用最接近的可执行检查（一个针对性的脚本、一条复现命令、一次浏览器运行、一个日志断言），并在交付说明中写明原因。覆盖率数字不是目标：项目的覆盖率门槛是底线，而不是添加无价值测试的理由。
 
-   Add isolated unit, integration, or contract tests only when a relevant
-   failure mode cannot be reliably triggered, observed, or diagnosed through
-   E2E tests. Explain the specific coverage gap and follow the test-first
-   requirement above. Do not mock away the behavior being verified.
+3. 通过公开接口测试行为，并选用能展示该行为的最小层级。一个测试是对"代码的使用者能通过其接口观察到什么"的断言：返回值、错误、他们可以读回的状态，以及对外部系统产生的影响。私有辅助函数、内部调用顺序和中间数据都属于实现。
 
-   For complex features, verify a representative medium-to-hard scenario
-   involving relevant interactions, state transitions, persistence, or
-   failure recovery. A trivial happy-path or smoke test alone is insufficient.
-   Choose complexity that can expose defects in the current change; do not
-   add unrelated steps merely to make a scenario harder.
+   **选择层级。** 把大部分新覆盖放在快速测试里：单元测试，或者通过公开接口同时驱动多个真实单元的组件测试与集成测试。对于本次改动涉及的每条关键用户流程，通过真实的用户入口或公开的系统入口新增或扩展一个端到端（E2E）测试；凡是某个行为只存在于跨进程、跨网络、跨存储或跨 UI 的边界上、更小的测试够不到时，也使用 E2E。不要仅仅为了让各层都有测试而在多个层级添加重复的测试。保留已有测试和项目要求的检查。每一层都遵循第 2 条中的测试先行循环。
 
-4. For bugs, whenever practical, run a reproducing test before changing
-   production code. Confirm that it fails because of the reported defect,
-   then run the same test after the fix. If it already passes, investigate
-   whether it reaches the failing path. If failing-before evidence is
-   impractical, explain why and retain the strongest available reproduction
-   evidence; never invent a failed run. Record the red run (the exact
-   command and the failure count before the fix) and the green run (the
-   same command after it) in the delivery notes.
+   **用两次假想修改来评判每个测试：**
 
-5. During development, run only the narrowest relevant E2E tests needed
-   for the current change, plus any necessary focused tests for identified
-   coverage gaps. Do not run the full E2E suite during the implementation
-   loop. If final verification exposes a defect, return to focused tests
-   while fixing it before repeating final verification.
+   - **把行为改坏**（返回错误的值、跳过或重复执行某个副作用、漏掉一个错误）。测试必须失败。如果它仍然通过，它就什么也没证明；常见原因是断言过于宽松、期望值由被测代码自己算出，以及断言的是测试自己构造的数据。
+   - **只改内部实现**，并保持所有可观察的结果不变。测试必须通过。如果它失败了，说明它被绑死在实现上。
 
-6. For changes that affect executable behavior, run the full
-   project-defined E2E suite during final verification, after focused tests
-   pass. If the required suite cannot run, report the concrete blocker and
-   unverified scope; do not treat focused test success as full verification.
+   保留能抓住第一种修改、又能挺过第二种修改的测试；其余的重写或删除。在代价不大时，真的做一次第一种修改，亲眼看到测试失败。如果项目有变异测试（mutation testing），优先参考它的报告，而不是覆盖率数字。
 
-   Before declaring completion, run the project's required verification
-   commands and task-required regression and acceptance checks, including
-   applicable lint, type, build, integration, and UI checks. Follow relevant
-   verification skills within the agreed scope. Targeted test success does
-   not replace required real-user-path or cleanup verification.
-   Reuse passing results when relevant inputs and conditions are unchanged;
-   rerun checks that subsequent changes or observed failures may invalidate.
+   **把每个测试写成读者能对照需求检查的样子：**
 
-7. Keep tests repeatable and isolated. Control fixtures, time, randomness,
-   external dependencies, and test data where appropriate; avoid accidental
-   execution-order dependencies. Wait for observable readiness or completion
-   instead of arbitrary sleeps. Investigate intermittent failures rather
-   than hiding them with retries or unjustified timeout increases.
+   - 一个测试只验证一个行为，并以这个行为命名；准备（arrange）、执行（act）、断言（assert）要作为可见的步骤分开。
+   - 用具体的输入驱动代码，并把期望值写成从需求推导出来的字面量。绝不导入、复制或重新计算生产代码中的常量、表或函数来得出期望值；测试体内不写循环和分支。为了让每个测试易读而容忍少量重复，好过使用隐藏了检查内容的共享辅助函数。
+   - 除了典型情况，还要覆盖每个输入域的边界（空、一个、上限、超出上限一个，以及非法输入）。每种不同的结果保留一个用例，更多的输入用表格或参数化用例表达；当新用例不再体现新的结果、错误、权限、持久化数据、协议或时序差异时，就停止添加。
+   - 每个"这件事不会发生"的断言，都要配一个它确实会发生的用例，以确认这个检查真的能触发。
+   - 断言调用方据以分支的错误类型或错误码，而不是错误消息的措辞。
+   - 对于在大量输入上都应成立的规则（往返转换、排序、幂等性），基于属性的测试（property-based test）通常比举例更有力；在项目有相应工具时使用。
+   - 绝不只断言某个源文件包含某段文本。
 
-   Give every test file a speed budget and keep tests off the machine's
-   real state: the budget (a unit test file runs alone in 5 seconds; over
-   10 seconds needs a written reason), load the module under test once
-   instead of resetting modules per case, no real wait of 100 ms or more
-   (fake timers or await the promise under test), merge new cases into the
-   existing file, no fixed ports and no external network or developer
-   accounts by default, unique temporary directories, obviously fake
-   credentials, no fallback to the working directory or repository root,
-   safe to run in several worktrees at once, unmerged migrations only on an
-   isolated database. The checklists are in the reference's
-   [speed](references/test-value-and-hygiene.md#speed) and
-   [isolation](references/test-value-and-hygiene.md#isolation) sections.
-   Move a test that needs a real subprocess, network, database, or Git into
-   the project's dedicated tier instead of the default unit tier. Never
-   speed tests up by sharing process state or disabling isolation, and
-   measure before and after on the same machine before changing
-   concurrency.
+   **测试替身按以下优先顺序使用：** 真实实现（例如临时数据库或临时目录）、真正能工作的 fake（例如内存存储）、返回固定值的 stub，最后才是检查自己如何被调用的 mock。能运行的东西就不要 mock，也绝不 mock 掉正在被验证的行为。外部服务接收到的内容（发出的邮件、一次支付请求、一条发布的消息）属于行为，可以在那个边界上通过 fake 或 mock 来断言；对内部辅助函数的调用则不属于行为，所以如果一个用例唯一的断言是"某个内部函数被调用了"，就删掉它。
 
-8. Some changes fix the test they need. A change to a storage format or a
-   persisted data structure needs an upgrade test: a fixture in the old
-   layout, and an assertion that the user can continue without doing
-   anything; a fresh-install test does not count, and a clean rejection of
-   old data is a failure. A change to retry, timeout, or reconnection logic
-   needs a test with two or more clients sharing the same resource where
-   one fails, asserting the others are unaffected; single-connection tests
-   cannot show a recovery whose blast radius exceeds the fault. A change to
-   prompts, tool definitions, model mapping, or usage metering proves only
-   configuration pass-through with a fake model; measure the real effect
-   with an evaluation script against the real model, run manually and
-   outside CI, and report which metrics were measured and the conclusion.
-   "Looks fine" and "should not matter" are not measurements.
+   对于复杂功能，验证一个具有代表性的中等到较难的场景，涉及相关的交互、状态转换、持久化或故障恢复。只有一个简单的正常路径测试或冒烟测试是不够的。所选的复杂度要能暴露本次改动中的缺陷；不要为了让场景更难而添加无关的步骤。
 
-9. Build path expectations with the platform's path functions; never
-   hard-code `/` or `\`, and never normalize separators in the output
-   before comparing, which hides a wrong path format. Simulating another
-   platform injects the platform into the function under test or uses that
-   platform's own path functions; changing a platform flag alone is not a
-   simulation. A skip needs a concrete reason, not "POSIX only", and the
-   logic still runs on a CI platform that supports the capability. Report a
-   platform that was not exercised as unverified.
+4. 对于 bug，只要可行，就在修改生产代码之前运行一个复现测试。确认它因为所报告的缺陷而失败，然后在修复后运行同一个测试。如果它已经通过了，调查它是否真正走到了出错的路径。如果无法取得"修复前失败"的证据，说明原因，并保留能拿到的最强复现证据；绝不捏造一次失败的运行。测试必须因为 bug 所描述的原因而失败；由于准备步骤、拼写错误或缺少测试数据而导致的失败不算复现，所以要先修好测试，再碰生产代码。在交付说明中记录红色运行（修复前的确切命令和失败数量）和绿色运行（修复后的同一条命令）。
 
-10. For browser UI behavior, prefer persistent Playwright tests while
-    respecting an adequate established project framework. Explore unfamiliar
-    flows with available browser tools when useful, then encode the relevant
-    behavior in repeatable tests. Use semantic roles and labels, or stable
-    test IDs where needed. For native UI, use platform-appropriate tools.
-    Authorized feature and bug-fix work includes creating necessary test
-    files, including @playwright/test specs; a separate request for test
-    files is not needed. Browser exploration alone is not a regression test.
-    For known UI flows, run or extend existing automated tests instead of
-    repeating exploratory browser interactions. Use interactive browser tools
-    when they resolve a specific unknown or an evidence gap.
+   在复现 bug 的同一个界面上确认修复：如果问题是在 UI、CLI 或某个 API 响应中看到的，就回到那里再检查一次。单元测试通过只说明某个分支的行为如何，不能说明所报告的 bug 已经消失；结论不明确的检查或在其他界面上的检查都不算通过。在项目的提交历史惯例允许的情况下，让失败的测试先于修复提交，或与修复一起提交，使历史记录呈现先红后绿。
 
-    After a UI change, render it and look at the screenshots; a passing
-    automated check is not a visual check. Cover every state the change
-    touches in both the light and the dark theme, and when only one theme
-    was looked at, say which. "Reused existing theme styles" is not "both
-    themes verified". A changed UI file that no check loaded is reported as
-    unverified. Never approve your own visual change on the strength of
-    screenshots you generated; intended visual changes are confirmed by the
-    project's owner. Keep screenshots out of the repository; attach them to
-    the delivery or store them in a directory Git ignores.
+5. 开发过程中，只运行最小范围的相关测试：新增和修改过的测试、与它们相邻的测试，以及本次改动涉及的用户流程的 E2E 测试。实现循环中不要运行完整套件。如果最终验证暴露了缺陷，修复期间回到小范围测试，然后再重复最终验证。
 
-11. Use mocks at appropriate boundaries without bypassing the behavior under
-   test. Distinguish isolated test results from real integration evidence.
-   When persistence or other side effects matter, verify the resulting
-   state through an independent readback rather than only a success message.
-   Report real-service checks separately when they are required.
+6. 对于影响可执行行为的改动，在小范围测试通过之后，于最终验证阶段运行项目定义的完整测试套件，包括其中的 E2E 测试。如果项目的 CI 会为每次改动运行完整套件，那么最终版本上一次通过的 CI 运行即满足这一要求；在 CI 对该版本给出结果之前，完整套件视为未运行。如果要求的套件无法运行，报告具体的阻碍和未经验证的范围；不要把小范围测试的成功当作完整验证。
 
-12. Diagnose failures before changing implementation or tests. Do not delete,
-    skip, weaken assertions, change expected values, suppress errors, or
-    disable checks merely to obtain a pass. If a test is demonstrably wrong
-    or the authorized contract has changed, explain the evidence and update
-    the test to enforce the intended behavior.
-    Inspect existing failure output and artifacts first. Add targeted
-    instrumentation or interactive checks only when needed to distinguish
-    causes, then rerun the same reproducing test.
+   在宣布完成之前，运行项目要求的验证命令，以及任务要求的回归检查和验收检查，包括适用的 lint、类型检查、构建、集成和 UI 检查。在约定的范围内遵循相关的验证类 skill。针对性测试的成功不能替代要求的真实用户路径验证或清理验证。相关输入和条件未变时，复用已通过的结果；后续改动或观察到的失败可能使其失效的检查，要重新运行。
 
-    Never edit a gate's baseline, allowlist, or exception list to let your
-    own change through. A new automated check proves itself by failing on a
-    deliberately wrong example and passing on correct code, runs in
-    report-only mode against history before it blocks, and an abnormal exit
-    of the check is not "no findings". "The machine did not block it" is not
-    "compliant". Deleting a test needs a listed reason, a check that the
-    remaining tests still cover the same risk through the public entry
-    point, and a review by someone other than the author.
+7. 保持测试可重复且相互隔离。在适当的地方控制测试数据（fixture）、时间、随机性、外部依赖和测试数据；避免意外的执行顺序依赖。等待可观察的就绪或完成信号，而不是任意的 sleep。调查间歇性失败，而不是用重试或没有理由地延长超时来掩盖它们。
 
-13. Every E2E run must produce a retained verification artifact, whether
-    it passes or fails. Use the existing test runner's report and attach
-    supporting evidence as appropriate. Record the exact rerun command,
-    code revision and relevant local changes, required environment and
-    fixture setup, scenarios executed, assertion results, and artifact paths.
+   给每个测试文件设定速度预算，并让测试远离机器的真实状态：预算（一个单元测试文件单独运行在 5 秒内；超过 10 秒需要写明理由）；被测模块只加载一次，而不是每个用例重置模块；不出现 100 毫秒及以上的真实等待（使用假计时器，或 await 被测的 promise）；新用例合并到已有文件中；默认不使用固定端口、不访问外部网络、不使用开发者账号；使用唯一的临时目录；使用一眼就能看出是假的凭据；不回退到工作目录或仓库根目录；可以在多个 worktree 中同时安全运行；未合并的数据库迁移只在隔离的数据库上运行。检查清单见参考文件中的[速度](references/test-value-and-hygiene.md#speed)和[隔离](references/test-value-and-hygiene.md#isolation)两节。需要真实子进程、网络、数据库或 Git 的测试，移到项目专门的层级，而不是留在默认的单元测试层级。绝不通过共享进程状态或关闭隔离来加速测试；在修改并发度之前，先在同一台机器上测量改动前后的数据。
 
-    Include evidence of the observable outcome, such as an output file,
-    independent state readback, or a trace with assertions. A screenshot
-    or success message alone is insufficient when it does not establish
-    the expected result.
+8. 有些改动决定了它们需要什么样的测试。对存储格式或持久化数据结构的改动，需要一个升级测试：一份旧布局的测试数据，以及一个断言——用户无需任何操作就能继续使用；全新安装的测试不算数，干净地拒绝旧数据也算失败。对重试、超时或重连逻辑的改动，需要一个测试：两个或更多客户端共享同一资源，其中一个失败，断言其他客户端不受影响；单连接测试无法暴露那种影响范围超出故障本身的恢复逻辑。对 prompt、工具定义、模型映射或用量计量的改动，用假模型只能证明配置被正确传递；真实效果要用一个针对真实模型的评估脚本来测量，手动运行、放在 CI 之外，并报告测量了哪些指标以及结论。"看起来没问题"和"应该没影响"都不是测量。
 
-    Preserve useful failure logs, screenshots, network errors, and traces.
-    Keep artifacts outside disposable cleanup directories, verify that
-    cleanup retains them, and report their locations. Exclude credentials
-    and sensitive data. Another developer must be able to inspect the
-    evidence and rerun the scenario from the recorded instructions.
+   性能结论（提速、性能回退、调优结果）需要：在同一台机器和同一工作负载上测得的基线，两边交替各运行多次，并给出中位数及其范围；小于运行间波动的差距不算可测量的差异。检查清单见参考文件中的[性能](references/test-value-and-hygiene.md#performance)一节。
 
-    Capture failure evidence deliberately: save reports, logs, state
-    readbacks, and traces as separate files; never pack dependency
-    directories, `.git`, or source identical to a commit (record the
-    commit, lockfile digest, and a path/size/SHA-256 manifest instead);
-    store an input shared by several runs once and reference it by path
-    and SHA-256 elsewhere; justify any single evidence file over 50 MB.
+9. 用平台自带的路径函数来构造路径期望值；绝不硬编码 `/` 或 `\`，也绝不在比较之前统一输出中的分隔符，那样会掩盖错误的路径格式。模拟另一个平台，要么把平台注入被测函数，要么使用那个平台自己的路径函数；只改一个平台标志不算模拟。跳过测试需要具体的理由，"仅限 POSIX"不算；而且这段逻辑仍要在某个支持该能力的 CI 平台上运行。没有覆盖到的平台要报告为未验证。
 
-14. Report checks actually run, their results, and unverified scope.
-    Distinguish product defects, test defects, and environment blockers
-    using evidence. If required coverage or execution is blocked, report
-    the concrete gap; do not claim verification is complete. When the
-    blocker requires user authorization not already granted, follow the
-    pause-and-wait rule in Autonomy and Completion; do not continue other
-    implementation work while awaiting explicit authorization. For other
-    blockers, complete independent authorized work unless the user has
-    instructed otherwise. Passing tests support only the behavior and
-    environments they actually cover.
+10. 对于浏览器 UI 行为，优先使用持久化的 Playwright 测试，同时尊重项目中已建立且够用的测试框架。在有用时，用可用的浏览器工具探索不熟悉的流程，然后把相关行为写成可重复的测试。使用语义化的角色和标签，必要时使用稳定的测试 ID。对于原生 UI，使用适合该平台的工具。已授权的功能和 bug 修复工作本身就包括创建必要的测试文件，包括 @playwright/test 的测试规格；不需要另外请求才能创建测试文件。仅仅用浏览器探索不算回归测试。对于已知的 UI 流程，运行或扩展已有的自动化测试，而不是重复探索式的浏览器操作。只有在交互式浏览器工具能解决某个具体的未知点或证据缺口时，才使用它们。
 
-    Every check has one of three states: not run, failed, passed. Success
-    needs an explicit signal (a pass count with zero failures, or the
-    project's agreed ready marker); a hung, timed-out, or silent command is
-    not a pass. Do not put a pipe after a test or launch command, because
-    the pipe hides the command's exit status; write the output to a file and
-    record the exit status separately. Run long tests in the background,
-    and treat a result you could not wait for as not run, never as failed or
-    passed; do not restart or kill a test that is still running normally.
-    In the report, mark conclusions reached only by reading code, say what
-    each piece of evidence proves and does not prove ("passes in the
-    development environment" is not "fixed in production"), give the commit
-    the evidence belongs to and whether the worktree was dirty, treat
-    results from before a later edit as void, and when a CI failure is
-    unrelated to the change, name the failing test, its cause, and the
-    evidence. The report template is in the reference's
-    [report](references/test-value-and-hygiene.md#report) section.
+    UI 改动之后，把它渲染出来并查看截图；自动化检查通过不等于视觉检查。覆盖本次改动涉及的每一种状态，浅色和深色主题都要看；如果只看了一种主题，要说明是哪一种。"复用了已有的主题样式"不等于"两种主题都验证过"。没有被任何检查加载过的已改动 UI 文件，要报告为未验证。绝不凭自己生成的截图批准自己的视觉改动；有意的视觉改动由项目负责人确认。验证用的截图不要放进仓库；把它们附在交付物中，或放在 Git 忽略的目录里。由项目的视觉回归框架管理的基准图片是例外：只在有意的视觉改动时更新它们，并在交付中展示前后对比。
 
-15. A reviewer reads the result and reruns the checks instead of trusting
-    the author's report, whether the author is a person or an agent. Where a
-    review is mandatory, a program enforces it; an instruction alone lets
-    "I checked it myself" stand in for an independent review. Accept a
-    review feature only after it finds defects planted in real samples.
-    "The code path is connected" is not "the delivered result is right".
+11. 在合适的边界使用 mock，但不要绕过被测行为。区分隔离测试的结果和真实集成的证据。当持久化或其他副作用很重要时，通过独立的读回来验证最终状态，而不是只看一条成功消息。在需要真实服务检查时，单独报告它们。
 
-For behavior-preserving refactors, run relevant existing tests and add
-coverage where needed. Documentation-only or formatting-only changes that
-do not affect behavior may use direct inspection or existing checks.
+12. 在修改实现或测试之前，先诊断失败。不要仅仅为了通过而删除、跳过测试，削弱断言，修改期望值，压制错误或禁用检查。如果某个测试被证明是错的，或者已授权的契约发生了变化，说明证据，并更新测试使其强制执行预期的行为。先查看已有的失败输出和产物。只在需要区分不同原因时，才添加针对性的埋点或交互式检查，然后重新运行同一个复现测试。
+
+    绝不为了让自己的改动通过而修改某个门禁的基线、白名单或例外列表。一个新的自动化检查要这样证明自己：在一个故意写错的例子上失败，在正确的代码上通过；在开始拦截之前，先以只报告模式对历史代码运行；检查本身的异常退出不等于"没有发现问题"。"机器没有拦下来"不等于"合规"。删除一个测试需要：列出的理由，一项确认剩余测试仍通过公开入口覆盖同一风险的检查，以及一位作者以外的人的审核；当没有其他人审核这次改动时，在交付说明中把每个被删除的测试及其理由列给负责人。
+
+    当同一类错误发生两次时，要让它不可能再发生，而不是再加一条提醒：首先通过结构（每一份状态只有一个所有者，每项任务只有一种受支持的做法），其次通过类型，再次通过一个错误信息会指明修复方法的 lint 或 CI 检查，然后是测试。书面规则放在最后，因为跳过它时什么都不会失败。
+
+13. 每次 E2E 运行，无论通过还是失败，都必须留下一份保留的验证记录。使用已有测试运行器的报告。通过的运行有下面这份记录就够了；失败的运行还要保留其后描述的失败证据。记录确切的重跑命令、代码版本及相关的本地改动、所需的环境和测试数据准备、执行过的场景、断言结果以及产物路径。
+
+    包含可观察结果的证据，例如一个输出文件、独立的状态读回，或一条带断言的执行追踪（trace）。如果截图或成功消息本身不能确立预期结果，仅有它们是不够的。
+
+    保留有用的失败日志、截图、网络错误和执行追踪。把产物放在会被清理的临时目录之外，确认清理之后它们仍然保留，并报告它们的位置。排除凭据和敏感数据。另一位开发者必须能够检查这些证据，并按照记录的说明重跑该场景。
+
+    有意识地收集失败证据：把报告、日志、状态读回和执行追踪分别保存为单独的文件；绝不打包依赖目录、`.git` 或与某次提交完全相同的源代码（改为记录提交、lockfile 摘要，以及一份包含路径/大小/SHA-256 的清单）；被多次运行共享的输入只存一份，在其他地方通过路径和 SHA-256 引用；任何超过 50 MB 的单个证据文件都要说明理由。
+
+14. 报告实际运行过的检查、它们的结果以及未经验证的范围。用证据区分产品缺陷、测试缺陷和环境阻碍。如果要求的覆盖或运行受阻，报告具体的缺口；不要声称验证已经完成。当阻碍需要用户尚未给出的授权时，遵循"自主与完成"中的暂停等待规则；在等待明确授权期间，不要继续其他实现工作。对于其他阻碍，除非用户另有指示，完成可以独立进行的已授权工作。通过的测试只能支持它们实际覆盖的行为和环境。
+
+    每项检查只有三种状态之一：未运行、失败、通过。成功需要明确的信号（失败数为零的通过计数，或项目约定的就绪标记）；挂起、超时或没有输出的命令都不算通过。不要在测试命令或启动命令后面加管道，因为管道会掩盖命令的退出状态；把输出写入文件，并单独记录退出状态。长时间的测试放到后台运行；没能等到结果的，视为未运行，绝不当作失败或通过；不要重启或杀掉一个仍在正常运行的测试。对于本次改动安全性所依赖的每一个事实，说明证据走到了哪一步：仅仅是声称、指出了具体代码行、推演过失败路径、针对真实代码跑过脚本或测试，还是在运行中的应用里复现过。在报告中，标出仅通过阅读代码得出的结论；说明每份证据证明了什么、没有证明什么（"在开发环境通过"不等于"在生产环境修好了"）；给出证据所属的提交，以及工作区当时是否有未提交的改动；把后续修改之前得到的结果视为作废；当某个 CI 失败与本次改动无关时，指出失败的测试、其原因和证据。报告模板见参考文件中的[报告](references/test-value-and-hygiene.md#report)一节。
+
+15. 审查者阅读结果并重跑检查，而不是相信作者的报告，无论作者是人还是 agent。在审查是强制要求的地方，由程序来强制执行；仅靠一条指令，会让"我自己检查过了"顶替独立审查。只有当一个审查功能在真实样本中找出了事先植入的缺陷之后，才接受它。"代码路径已经接通"不等于"交付的结果是对的"。
+
+对于保持行为不变的重构，在移动任何结构之前先钉住行为：确认已有测试覆盖了要移动的代码；没有覆盖的，先添加特征测试、快照或等价比对框架。类型检查和 lint 运行都不算钉住。以小步移动，每一步都保持钉住的测试为绿色；对于较大的重塑，运行一个等价检查，在相同输入上比较新旧输出。仅涉及文档或格式、且不影响行为的改动，可以通过直接检查或已有检查来验证。
