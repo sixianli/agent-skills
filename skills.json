@@ -867,7 +867,7 @@
       "package_dir": "verification-discipline",
       "readme": "verification-discipline/SKILL.md",
       "skill_dir": "verification-discipline",
-      "description": "Test-value gate, test-first and end-to-end-first verification with speed and isolation budgets, required tests for storage, recovery and model-facing changes, retained evidence, and three-state reporting.",
+      "description": "Red-green-refactor test-first cycles, behavior-focused tests through public interfaces at the smallest layer (E2E for key journeys), reproduce-then-fix bugs, pin behavior before refactors, speed and isolation budgets, required tests for storage, recovery and model-facing changes, retained evidence, and three-state reporting (written in Chinese).",
       "implicit_invocation": true,
       "has_tests": false,
       "checks": []

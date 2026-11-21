@@ -1,112 +1,99 @@
-# Test value, speed, isolation, and reporting
+# 测试价值、速度、隔离与报告
 
-Checklists and templates behind the rules in [SKILL.md](../SKILL.md). Copy a
-template into the delivery notes or the task brief as it stands; the project's
-own instructions decide the tiers, hosts, and commands the answers name.
+这是 [SKILL.md](../SKILL.md) 中各条规则背后的检查清单和模板。把模板原样复制到交付说明或任务简报中；答案里涉及的层级、主机和命令由项目自身的说明决定。
 
 <a id="test-value"></a>
 
-## Test value: six questions before a new test
+## 测试价值检查清单
 
-Answer all six in the delivery notes or next to the test. One unanswered
-question means the test is not added.
+在添加一个测试之前过一遍；凡是从测试本身看不出来的答案，都写进交付说明。
 
 ```text
-Test value
-- Entry point and observable result: which public entry point is called, and what the user or caller sees
-- Bug or rule: the issue, regression commit, or rule section it protects; none means no test
-- Gap: why the neighbouring tests do not cover this branch
-- Smallest failing input: the smallest input, state, or timing that triggers the old defect
-- Tier: which tier it belongs to, and why
-- Measured time: how long the file takes to run alone
+测试价值
+- 行为：驱动的是哪个公开入口，用户或调用方观察到的是什么
+- 理由：它保护的需求、规则或 bug（新功能的需求也算）
+- 缺口：为什么相邻的测试还没有覆盖这个行为
+- 两次修改：把行为改坏会让它失败；只改内部实现它仍保持绿色
+- 输入：典型情况加上边界（空、一个、上限、超出上限一个、非法）
+- 层级：能展示该行为的最小层级，以及原因
+- 运行时间：在下面的速度预算之内；文件是新的或较慢时要实测
 ```
 
-Stop adding cases when a new one shows no new outcome, error, permission,
-persisted data, protocol, or timing difference. One minimal case per entry
-point and outcome; further inputs as a table over the same assertions.
+当新用例不再体现新的结果、错误、权限、持久化数据、协议或时序差异时，停止添加用例。每种结果一个最小用例；更多的输入用表格或参数化用例，复用同一组断言。
 
-Tests that have no value and are deleted on review:
+坏测试——在审查时会被重写或删除，一开始就不值得添加：
 
-- a copy of a production constant, table, function, or UI fragment compared
-  with the original;
-- an assertion that a source file contains some text;
-- an assertion that an internal function was called, with no check of the
-  visible result;
-- a case added to raise a coverage number.
+- 把生产代码中的常量、表、函数或 UI 片段复制一份，再和原件比较；或者期望值由被测代码自己算出；
+- 断言的是测试自己构造的数据；
+- 断言某个源文件包含某段文本；
+- 断言某个内部函数被调用了，却不检查可见的结果，也不检查外部系统收到了什么；
+- 主要在测 mock、把实现细节写死，或依赖时间或无关全局状态的测试；
+- 为了提高覆盖率数字而添加的用例。
 
 <a id="speed"></a>
 
-## Speed budget
+## 速度预算
 
-| Rule | Measure |
+| 规则 | 衡量方式 |
 | --- | --- |
-| A new or rewritten unit test file runs alone within 5 seconds; over 10 seconds needs a written reason in the delivery notes | the file's own run time on the project's test host |
-| The module under test is loaded once per file; no per-case module reset (`vi.resetModules()` or the equivalent); clean state comes from the production code's own reset function or from injected dependencies | one file went from 105 s to 7 s for the same 285 cases after dropping the per-case reset |
-| No real wait of 100 ms or more; use fake timers or await the promise under test | search the file for sleeps and timers |
-| Only a file that renders UI declares a browser environment | the file's environment setting |
-| New cases join the existing file for the module; a new file pays its own setup cost | file count per module |
-| A file that needs a real subprocess, network, database, or Git moves to the project's dedicated tier | the tier the project assigns |
-| Changing worker counts or test grouping needs before-and-after measurements on the same machine and the same scope, not the fastest single run | two measured runs |
+| 新写或重写的单元测试文件单独运行在 5 秒内；超过 10 秒需要在交付说明中写明理由 | 该文件在项目测试主机上的单独运行时间 |
+| 每个文件只加载一次被测模块；不在每个用例里重置模块（`vi.resetModules()` 或等价操作）；干净的状态来自生产代码自身的重置函数或注入的依赖 | 有一个文件在去掉每用例重置之后，同样 285 个用例从 105 秒降到了 7 秒 |
+| 不出现 100 毫秒及以上的真实等待；使用假计时器，或 await 被测的 promise | 在文件中搜索 sleep 和计时器 |
+| 只有渲染 UI 的文件才声明浏览器环境 | 该文件的环境设置 |
+| 新用例加入该模块已有的文件；新建文件要承担自己的初始化开销 | 每个模块的文件数 |
+| 需要真实子进程、网络、数据库或 Git 的文件，移到项目专门的层级 | 项目分配的层级 |
+| 修改 worker 数量或测试分组，需要在同一台机器、同一范围上测量改动前后的数据，而不是取最快的单次运行 | 两次实测运行 |
 
 <a id="isolation"></a>
 
-## Isolation checklist
+## 隔离检查清单
 
-- No external network, cloud service, or developer account in default unit
-  tests.
-- A test that needs a real socket binds the loopback address with a
-  system-assigned port (`listen(0)`) and closes it at the end; no fixed port.
-- Temporary files go in a unique directory created for the test under the
-  system temporary directory and are removed at the end.
-- No change to machine-level settings: global Git configuration, system
-  proxy, environment the shell inherits.
-- Only obviously invalid fake credentials; never read or copy the
-  developer's home directory, configuration directories, or system
-  credentials.
-- A path default never falls back to the working directory or the
-  repository root, so a test cannot write into the repository.
-- Default unit tests run in several worktrees at the same time without
-  interfering.
-- An unmerged database migration runs only against an isolated database;
-  historical state comes from a minimal fixture, never from rewriting or
-  downgrading a developer's database.
-- Never speed tests up by sharing process state or switching isolation off:
-  one attempt gained 23 % and broke 150 files, and a mock that stopped
-  working ran a real checkout that discarded uncommitted changes.
+- 默认的单元测试中不使用外部网络、云服务或开发者账号。
+- 需要真实 socket 的测试，绑定回环地址并使用系统分配的端口（`listen(0)`），结束时关闭；不使用固定端口。
+- 临时文件放在系统临时目录下为该测试专门创建的唯一目录中，结束时删除。
+- 不修改机器级别的设置：全局 Git 配置、系统代理、shell 继承的环境变量。
+- 只使用明显无效的假凭据；绝不读取或复制开发者的主目录、配置目录或系统凭据。
+- 路径默认值绝不回退到工作目录或仓库根目录，这样测试就无法写入仓库。
+- 默认的单元测试可以在多个 worktree 中同时运行而互不干扰。
+- 未合并的数据库迁移只在隔离的数据库上运行；历史状态来自最小化的测试数据，绝不通过改写或降级开发者的数据库获得。
+- 绝不通过共享进程状态或关闭隔离来加速测试：曾有一次尝试提速了 23%，却弄坏了 150 个文件；还有一个失效的 mock 执行了一次真实的 checkout，丢掉了未提交的改动。
 
 <a id="platform"></a>
 
-## Platform differences
+## 平台差异
 
-- Build path expectations with the platform's path functions; never
-  hard-code `/` or `\`, and never replace separators in the output before
-  comparing.
-- To simulate another platform, inject the platform into the function under
-  test or call that platform's own path functions; changing a platform flag
-  alone keeps the host's functions in use.
-- A skip names the missing capability (for example symbolic links on this
-  host); the logic still runs on a CI platform that has it. "POSIX only" is
-  not a reason.
-- A platform not exercised is reported as unverified.
+- 用平台自带的路径函数构造路径期望值；绝不硬编码 `/` 或 `\`，也绝不在比较之前替换输出中的分隔符。
+- 要模拟另一个平台，把平台注入被测函数，或调用那个平台自己的路径函数；只改一个平台标志，实际用的仍然是宿主机的函数。
+- 跳过测试要写明缺少的能力（例如"这台主机不支持符号链接"）；这段逻辑仍要在具备该能力的 CI 平台上运行。"仅限 POSIX"不是理由。
+- 没有覆盖到的平台要报告为未验证。
+
+<a id="performance"></a>
+
+## 性能结论
+
+- 在测量之前，先写下你预期要得出的结论（例如"在 6 万行的数据集上，导出的 p50 快了 30%"）；测量是用来检验这句话的。
+- 先测基线，使用与改动相同的机器、工作负载和构建设置。
+- 每一边至少运行五次，交替进行（A、B、A、B），让预热、缓存和漂移不偏向任何一方。报告中位数和范围。
+- 小于运行间波动的差距不算可测量的差异。
+- 确认被测量的运行确实完成了工作：输出相同、行数相同、没有提前报错。
 
 <a id="report"></a>
 
-## Verification report
+## 验证报告
 
-Each check is in one of three states: not run, failed, passed. Report:
+每项检查只有三种状态之一：未运行、失败、通过。报告：
 
 ```text
-Verification
-- Commands run: each exact command, where it ran, the revision, and the result ("12 passed, 0 failed, 3.2 s")
-- Bug fixes: the red run (command, failure count) before the fix and the green run after it
-- Not run: each check that did not run, and why
-- From reading only: conclusions reached without running anything
-- What the evidence proves and does not prove: for example "passes in the development environment, not evidence the production defect is fixed"
-- Revision: the commit the evidence belongs to, and whether the worktree held uncommitted changes
-- Platforms and themes not exercised: listed as unverified
-- Unrelated CI failure: the failing test, its cause, and why it is unrelated
+验证
+- 运行过的命令：每条确切的命令、在哪里运行、代码版本以及结果（"12 个通过，0 个失败，3.2 秒"）
+- bug 修复：修复前的红色运行（命令、失败数量）、修复后的绿色运行，以及确认修复所在的界面
+- 未运行：每项没有运行的检查，以及原因
+- 仅凭阅读：没有运行任何东西就得出的结论
+- 证据等级：对于改动安全性所依赖的每个事实，证据走到了哪一步（仅声称、引用了代码行、推演了失败路径、针对真实代码运行过、在运行中的应用里复现过）
+- 证据证明了什么、没有证明什么：例如"在开发环境中通过，但不能证明生产环境的缺陷已修复"
+- 版本：证据所属的提交，以及工作区当时是否有未提交的改动
+- 未覆盖的平台和主题：列为未验证
+- 无关的 CI 失败：失败的测试、其原因，以及为什么与本次改动无关
 ```
 
-A result from before a later edit is void; rerun. A first failure stays in
-the record. A test or launch command gets no pipe after it; write the output
-to a file and record the exit status on its own.
+后续修改之前得到的结果作废，需要重跑。第一次失败要保留在记录中。测试命令或启动命令后面不加管道；把输出写入文件，并单独记录退出状态。
