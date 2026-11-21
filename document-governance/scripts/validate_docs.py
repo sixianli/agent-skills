@@ -7,7 +7,7 @@ import json
 import re
 import sys
 from datetime import date
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from idea_backlog import BACKLOG_HEADER_FIELDS, VALID_BACKLOG_PRIORITIES
 from runbook import (
@@ -20,6 +20,18 @@ REQUIRED_DIRS = [
     "docs/execution/specs",
     "docs/runbooks",
 ]
+EXCLUSION_FILE = "docs/.governance-exclude"
+GOVERNED_TOP_LEVEL_DIRS = {
+    "adr",
+    "execution",
+    "runbooks",
+    "ideas",
+    "backlog",
+    "archive",
+}
+GOVERNED_ROOT_FILE_PATTERN = re.compile(
+    r"^(lessons\.md|prd-v[^/]*\.md|architecture-v[^/]*\.md)$"
+)
 REQUIRED_FRONTMATTER = {"status", "supersedes", "superseded_by", "date"}
 VALID_STATUSES = {"active", "superseded", "archived"}
 UNMAINTAINED_FILE_NAMES = {"TODO.MD", "INDEX.MD"}
@@ -125,13 +137,66 @@ def has_template_placeholder(value: str) -> bool:
     return bool(TEMPLATE_PLACEHOLDER_PATTERN.search(value))
 
 
-def iter_markdown_files(root: Path, errors: list[str]) -> list[Path]:
+def is_governed_location(parts: tuple[str, ...]) -> bool:
+    if len(parts) == 1:
+        return True
+    if parts[1] in GOVERNED_TOP_LEVEL_DIRS:
+        return True
+    return len(parts) == 2 and bool(GOVERNED_ROOT_FILE_PATTERN.match(parts[1]))
+
+
+def load_exclusions(
+    root: Path, strict: bool, warnings: list[str], errors: list[str]
+) -> list[str]:
+    exclusion_file = root / EXCLUSION_FILE
+    if not exclusion_file.is_file():
+        return []
+    excluded: list[str] = []
+    for raw_line in exclusion_file.read_text(encoding="utf-8-sig").splitlines():
+        entry = raw_line.strip()
+        if not entry or entry.startswith("#"):
+            continue
+        parts = PurePosixPath(entry).parts
+        if (
+            entry.startswith("/")
+            or ".." in parts
+            or not parts
+            or parts[0] != "docs"
+        ):
+            errors.append(
+                f"{EXCLUSION_FILE}: excluded path must be a relative path "
+                f"under docs/: '{entry}'"
+            )
+            continue
+        if is_governed_location(parts):
+            errors.append(
+                f"{EXCLUSION_FILE}: cannot exclude governed location '{entry}'"
+            )
+            continue
+        relative = "/".join(parts)
+        if not (root / relative).exists():
+            report_compat(
+                f"{EXCLUSION_FILE}: excluded path does not exist: '{entry}'",
+                strict,
+                warnings,
+                errors,
+            )
+            continue
+        excluded.append(relative)
+    return excluded
+
+
+def iter_markdown_files(
+    root: Path, excluded: list[str], errors: list[str]
+) -> list[Path]:
     docs = root / "docs"
     if not docs.exists():
         return []
     files: list[Path] = []
     for path in docs.rglob("*.md"):
         if is_under(path, root, "docs/templates"):
+            continue
+        if any(is_under(path, root, relative) for relative in excluded):
             continue
         if path.is_symlink():
             try:
@@ -1320,10 +1385,11 @@ def main() -> int:
         errors.append(f"project root is not a directory: {root}")
     else:
         validate_required_dirs(root, args.strict, warnings, errors)
+        excluded = load_exclusions(root, args.strict, warnings, errors)
         documents: dict[Path, dict[str, str]] = {}
         seen_record_ids: dict[str, Path] = {}
         docs_root = (root / "docs").resolve()
-        for path in iter_markdown_files(root, errors):
+        for path in iter_markdown_files(root, excluded, errors):
             resolved_path = path.resolve()
             if not is_within(resolved_path, docs_root):
                 errors.append(

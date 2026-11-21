@@ -10,6 +10,7 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = SKILL_ROOT / "scripts" / "validate_docs.py"
 RUNBOOK = SKILL_ROOT / "scripts" / "runbook.py"
+EXCLUSION_FILE = "docs/.governance-exclude"
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
@@ -1144,6 +1145,102 @@ class ValidateDocsTests(unittest.TestCase):
         self.assertIn("unfilled template placeholder in record_id", rendered)
         self.assertIn("unfilled template placeholder in SOURCE target", rendered)
 
+
+    def write_exclusions(self, *lines: str) -> None:
+        self.write_raw(EXCLUSION_FILE, "\n".join(lines) + "\n")
+
+    def test_excluded_directory_is_not_validated(self) -> None:
+        self.write_raw("docs/ocr-eval/report.md", "# Report without frontmatter\n")
+        self.write_raw("docs/ocr-eval/runs/run.md", "# Run without frontmatter\n")
+        self.write_exclusions("docs/ocr-eval")
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertEqual(payload["errors"], [])
+
+    def test_exclusion_file_ignores_blank_and_hash_lines(self) -> None:
+        self.write_raw("docs/ocr-eval/report.md", "# Report\n")
+        self.write_exclusions("# evaluation output", "", "docs/ocr-eval/")
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+
+    def test_documents_outside_excluded_directory_are_still_validated(self) -> None:
+        self.write_raw("docs/ocr-eval/report.md", "# Report\n")
+        self.write_raw("docs/ocr-evaluation.md", "# Similar name, not excluded\n")
+        self.write_raw("docs/appstore/metadata.md", "# Store copy\n")
+        self.write_exclusions("docs/ocr-eval")
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        rendered = "\n".join(payload["errors"])
+        self.assertIn("docs/ocr-evaluation.md: missing frontmatter", rendered)
+        self.assertIn("docs/appstore/metadata.md: missing frontmatter", rendered)
+        self.assertNotIn("docs/ocr-eval/report.md", rendered)
+
+    def test_governed_locations_cannot_be_excluded(self) -> None:
+        for excluded in (
+            "docs",
+            "docs/adr",
+            "docs/execution",
+            "docs/execution/specs",
+            "docs/runbooks",
+            "docs/ideas",
+            "docs/backlog",
+            "docs/archive",
+            "docs/archive/specs",
+            "docs/lessons.md",
+            "docs/prd-v1.0.md",
+            "docs/architecture-v1.0.md",
+        ):
+            with self.subTest(excluded=excluded):
+                self.write_exclusions(excluded)
+
+                result, payload = self.run_validator(strict=False)
+
+                self.assertEqual(result.returncode, 1)
+                self.assertIn(
+                    f"{EXCLUSION_FILE}: cannot exclude governed location '{excluded}'",
+                    "\n".join(payload["errors"]),
+                )
+
+    def test_exclusion_must_stay_inside_docs(self) -> None:
+        for excluded in ("README.md", "/tmp/elsewhere", "docs/../src", "docs/a/../../src"):
+            with self.subTest(excluded=excluded):
+                self.write_exclusions(excluded)
+
+                result, payload = self.run_validator(strict=False)
+
+                self.assertEqual(result.returncode, 1)
+                self.assertIn(
+                    f"{EXCLUSION_FILE}: excluded path must be a relative path under docs/: '{excluded}'",
+                    "\n".join(payload["errors"]),
+                )
+
+    def test_missing_excluded_path_is_reported(self) -> None:
+        self.write_exclusions("docs/gone")
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(
+            f"{EXCLUSION_FILE}: excluded path does not exist: 'docs/gone'",
+            "\n".join(payload["errors"]),
+        )
+
+    def test_missing_excluded_path_is_a_warning_in_migration_mode(self) -> None:
+        self.write_exclusions("docs/gone")
+
+        result, payload = self.run_validator(strict=False)
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn(
+            f"{EXCLUSION_FILE}: excluded path does not exist: 'docs/gone'",
+            "\n".join(payload["warnings"]),
+        )
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,7 +19,9 @@ This skill governs only project documentation that has explicitly adopted its ru
   superseding, or retiring a Runbook, read `references/runbook-workflow.md`.
 * Before explaining or modifying the validator, read `references/validation-rules.md`.
 * When creating documents, copy the corresponding files from `assets/templates/`.
-* Run `scripts/validate_docs.py` to validate the project.
+* Run `scripts/validate_docs.py` to validate the project. To keep Markdown that is not project documentation
+  (for example generated evaluation reports) out of validation, list its paths in `docs/.governance-exclude`;
+  `references/validation-rules.md` gives the rules.
 * Run `scripts/idea_backlog.py` for deterministic Idea/Backlog file operations.
   Do not create manually maintained indexes.
 * Run `scripts/runbook.py check` before using an active Runbook. It checks structure only; compare the Runbook
