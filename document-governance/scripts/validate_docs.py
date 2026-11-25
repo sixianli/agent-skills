@@ -9,7 +9,14 @@ import sys
 from datetime import date
 from pathlib import Path, PurePosixPath
 
+from doc_references import ReferenceChecker, load_reference_ignores
 from idea_backlog import BACKLOG_HEADER_FIELDS, VALID_BACKLOG_PRIORITIES
+from repo_index import (
+    COMMIT_PATTERN,
+    RepoIndex,
+    covers_entry_problem,
+    split_list,
+)
 from runbook import (
     VALID_EXECUTION_RISKS,
     audit_active_runbook,
@@ -46,7 +53,9 @@ VALID_DOCUMENT_TYPES = {
     "backlog",
     "lessons",
 }
-VALID_DECISION_STATUSES = {"proposed", "accepted", "superseded"}
+VALID_DECISION_STATUSES = {"proposed", "accepted"}
+VALID_IMPLEMENTATION_VALUES = {"in_progress"}
+CODE_REFERENCE_EXEMPT_TYPES = {"spec", "plan", "idea", "backlog"}
 IDEA_DIR = "docs/ideas"
 BACKLOG_DIR = "docs/backlog"
 RECORD_ID_SUFFIX = r"([0-9]{3}|[23456789abcdefghijkmnpqrstuvwxyz]{6})"
@@ -71,7 +80,6 @@ TEMPLATE_PLACEHOLDER_PATTERN = re.compile(r"YYYY|NNNN|X\.Y|<[^<>]*>|\{\{.*?\}\}"
 ARCHIVE_COMPATIBILITY = {
     "execution/specs/": "archive/specs/",
     "execution/plans/": "archive/plans/",
-    "adr/": "archive/adr/",
     "ideas/": "archive/ideas/",
     "backlog/": "archive/backlog/",
 }
@@ -348,9 +356,15 @@ def validate_frontmatter(
         if not fields:
             return fields, body
 
+    required = REQUIRED_FRONTMATTER - (
+        {"superseded_by"}
+        if inferred_document_type(path, root) == "adr"
+        or fields.get("document_type") == "adr"
+        else set()
+    )
     missing = sorted(
         key
-        for key in REQUIRED_FRONTMATTER
+        for key in required
         if key not in fields or (key in {"status", "date"} and not fields[key])
     )
     if missing:
@@ -438,6 +452,23 @@ def validate_frontmatter(
 
     if inferred_type == "adr" or declared_type == "adr":
         decision_status = fields.get("decision_status", "")
+        if is_under(path, root, "docs/archive/adr"):
+            report_compat(
+                f"{relative}: ADRs are not archived; delete it (version control "
+                "keeps it) and link it from its replacement by a pinned permalink",
+                strict,
+                warnings,
+                errors,
+            )
+        elif status == "superseded" or decision_status == "superseded":
+            report_compat(
+                f"{relative}: superseded ADR must be deleted in the change set "
+                "that adds its replacement; the replacement links it by a pinned "
+                "permalink",
+                strict,
+                warnings,
+                errors,
+            )
         if not decision_status:
             report_compat(
                 f"{relative}: ADR should include decision_status",
@@ -445,37 +476,105 @@ def validate_frontmatter(
                 warnings,
                 errors,
             )
-        elif decision_status not in VALID_DECISION_STATUSES:
+        elif decision_status not in VALID_DECISION_STATUSES | {"superseded"}:
             report_compat(
                 f"{relative}: invalid decision_status {decision_status!r}",
                 strict,
                 warnings,
                 errors,
             )
-        if decision_status == "superseded":
-            if status != "superseded":
-                report_compat(
-                    f"{relative}: superseded ADR must set status: superseded",
-                    strict,
-                    warnings,
-                    errors,
-                )
-            if not fields.get("superseded_by"):
-                report_compat(
-                    f"{relative}: superseded ADR must set superseded_by",
-                    strict,
-                    warnings,
-                    errors,
-                )
-        elif status == "superseded":
+        if fields.get("superseded_by"):
             report_compat(
-                f"{relative}: ADR with status: superseded must set decision_status: superseded",
+                f"{relative}: ADR must not set superseded_by; a replaced ADR is "
+                "deleted, not kept",
                 strict,
                 warnings,
                 errors,
             )
 
+    validate_tracking_fields(root, path, fields, strict, warnings, errors)
+
     return fields, body
+
+
+def validate_tracking_fields(
+    root: Path,
+    path: Path,
+    fields: dict[str, str],
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    relative = rel_path(path, root)
+    implementation = fields.get("implementation", "")
+    if implementation and implementation not in VALID_IMPLEMENTATION_VALUES:
+        report_compat(
+            f"{relative}: invalid implementation {implementation!r}; use "
+            "in_progress while the code is being written, then remove the field",
+            strict,
+            warnings,
+            errors,
+        )
+    for entry in split_list(fields.get("covers", "")):
+        problem = covers_entry_problem(entry)
+        if problem:
+            errors.append(f"{relative}: covers entry {entry!r} {problem}")
+    verified_at = fields.get("verified_at", "")
+    if verified_at and not COMMIT_PATTERN.match(verified_at):
+        report_compat(
+            f"{relative}: verified_at must be a commit hash (7-40 lowercase hex), "
+            f"found {verified_at!r}",
+            strict,
+            warnings,
+            errors,
+        )
+    if split_list(fields.get("covers", "")) and not verified_at:
+        report_compat(
+            f"{relative}: covers requires verified_at, the commit the document "
+            "was last checked against",
+            strict,
+            warnings,
+            errors,
+        )
+
+
+def validate_code_references(
+    root: Path,
+    path: Path,
+    fields: dict[str, str],
+    body: str,
+    index: RepoIndex,
+    checker: ReferenceChecker,
+    strict: bool,
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    if is_under(path, root, "docs/archive") or fields.get("status") != "active":
+        return
+    document_type = inferred_document_type(path, root) or fields.get(
+        "document_type", ""
+    )
+    if document_type in CODE_REFERENCE_EXEMPT_TYPES:
+        return
+    relative = rel_path(path, root)
+    in_progress = fields.get("implementation") == "in_progress"
+
+    def report(message: str) -> None:
+        if in_progress:
+            warnings.append(f"{message} (allowed while implementation: in_progress)")
+        else:
+            report_compat(message, strict, warnings, errors)
+
+    for entry in split_list(fields.get("covers", "")):
+        if covers_entry_problem(entry) is None and not index.pattern_matches_anything(
+            entry
+        ):
+            report(f"{relative}: covers entry {entry!r} matches no file in the current tree")
+    for missing in checker.missing_references(body):
+        report(
+            f"{relative}: references {missing.kind} `{missing.snippet}` that does "
+            "not exist in the current tree; fix or delete the stale text"
+        )
 
 
 def is_iso_date(value: str) -> bool:
@@ -992,95 +1091,17 @@ def resolved_relationships(
     return resolved
 
 
-def superseded_by_chain_problems(
-    root: Path,
-    owner: Path,
-    target: Path,
-    documents: dict[Path, dict[str, str]],
-    strict: bool,
-    warnings: list[str],
-    errors: list[str],
-) -> None:
-    owner_relative = rel_path(owner, root)
-    target_relative = rel_path(target, root)
-    target_fields = documents.get(target)
-    if target_fields is None:
-        return
-    if inferred_document_type(target, root) != "adr" and target_fields.get(
+def is_pinned_permalink(value: str) -> bool:
+    if not value.startswith(("http://", "https://")):
+        return False
+    segments = value.split("://", 1)[1].split("#", 1)[0].split("/")
+    return any(COMMIT_PATTERN.match(segment) for segment in segments[1:-1])
+
+
+def is_adr(root: Path, path: Path, fields: dict[str, str]) -> bool:
+    return inferred_document_type(path, root) == "adr" or fields.get(
         "document_type"
-    ) != "adr":
-        return
-
-    def successors(fields: dict[str, str]) -> list[Path]:
-        resolved: list[Path] = []
-        for value in split_relationships(fields.get("superseded_by", "")):
-            candidate, problem = normalize_local_target(root, value)
-            if problem or candidate is None or not candidate.is_file():
-                continue
-            resolved.append(candidate)
-        return resolved
-
-    def is_active_accepted(fields: dict[str, str]) -> bool:
-        return (
-            fields.get("status") == "active"
-            and fields.get("decision_status") == "accepted"
-        )
-
-    def is_superseded(fields: dict[str, str]) -> bool:
-        return (
-            fields.get("status") == "superseded"
-            and fields.get("decision_status") == "superseded"
-        )
-
-    def report(message: str) -> None:
-        report_compat(message, strict, warnings, errors)
-
-    if is_active_accepted(target_fields):
-        return
-    if not is_superseded(target_fields):
-        report(
-            f"{owner_relative}: superseding ADR {target_relative} must be "
-            "active and accepted"
-        )
-        return
-    if not split_relationships(target_fields.get("superseded_by", "")):
-        report(
-            f"{owner_relative}: superseded_by chain through {target_relative} "
-            f"ends at {target_relative}, which must be active and accepted"
-        )
-        return
-
-    ancestors = {owner, target}
-    stack = [(node, ancestors) for node in successors(target_fields)]
-    while stack:
-        current, ancestors = stack.pop()
-        current_fields = documents.get(current)
-        if current_fields is None:
-            continue
-        if inferred_document_type(current, root) != "adr" and current_fields.get(
-            "document_type"
-        ) != "adr":
-            continue
-        current_relative = rel_path(current, root)
-        if current in ancestors:
-            report(
-                f"{owner_relative}: superseded_by chain through "
-                f"{target_relative} loops back to {current_relative}"
-            )
-            continue
-        path = ancestors | {current}
-        if is_active_accepted(current_fields):
-            continue
-        if not is_superseded(current_fields) or not split_relationships(
-            current_fields.get("superseded_by", "")
-        ):
-            report(
-                f"{owner_relative}: superseded_by chain through "
-                f"{target_relative} ends at {current_relative}, which must be "
-                "active and accepted"
-            )
-            continue
-        stack.extend((node, path) for node in successors(current_fields))
+    ) == "adr"
 
 
 def validate_adr_relationships(
@@ -1091,119 +1112,41 @@ def validate_adr_relationships(
     errors: list[str],
 ) -> None:
     for path, fields in documents.items():
-        if inferred_document_type(path, root) != "adr" and fields.get(
-            "document_type"
-        ) != "adr":
+        if not is_adr(root, path, fields):
             continue
-
         owner_relative = rel_path(path, root)
-
-        old_targets = resolved_relationships(
-            root,
-            path,
-            "supersedes",
-            fields.get("supersedes", ""),
-            strict,
-            warnings,
-            errors,
-        )
-        new_targets = resolved_relationships(
-            root,
-            path,
-            "superseded_by",
-            fields.get("superseded_by", ""),
-            strict,
-            warnings,
-            errors,
-        )
-
-        for old_path in old_targets:
-            old_fields = documents.get(old_path)
-            if old_fields is None:
+        accepted = fields.get("decision_status") == "accepted"
+        for target in split_relationships(fields.get("supersedes", "")):
+            prefix = f"{owner_relative}: supersedes target {target}"
+            if target.startswith(("http://", "https://")):
+                if not is_pinned_permalink(target):
+                    report_compat(
+                        f"{prefix} must be a permalink pinned to a commit "
+                        "(a URL with the commit hash in its path), not a branch link",
+                        strict,
+                        warnings,
+                        errors,
+                    )
                 continue
-            if inferred_document_type(old_path, root) != "adr" and old_fields.get(
-                "document_type"
-            ) != "adr":
-                old_relative = rel_path(old_path, root)
-                report_compat(
-                    f"{owner_relative}: supersedes target {old_relative} "
-                    "is not an ADR",
-                    strict,
-                    warnings,
-                    errors,
-                )
+            candidate, problem = normalize_local_target(root, target)
+            if problem:
+                errors.append(f"{prefix} is invalid: {problem}")
                 continue
-            if fields.get("decision_status") == "proposed":
+            assert candidate is not None
+            if candidate.is_file():
+                if accepted:
+                    report_compat(
+                        f"{prefix} still exists: delete the replaced ADR in the "
+                        "same change set and link it by a permalink pinned to the "
+                        "last commit that had it",
+                        strict,
+                        warnings,
+                        errors,
+                    )
                 continue
-            reverse = resolved_relationships(
-                root,
-                old_path,
-                "superseded_by",
-                old_fields.get("superseded_by", ""),
-                strict,
-                warnings,
-                errors,
-            )
-            if path not in reverse:
-                old_relative = rel_path(old_path, root)
-                report_compat(
-                    f"{owner_relative}: supersedes link is not reciprocated "
-                    f"by {old_relative}",
-                    strict,
-                    warnings,
-                    errors,
-                )
-            if old_fields.get("status") != "superseded" or old_fields.get(
-                "decision_status"
-            ) != "superseded":
-                old_relative = rel_path(old_path, root)
-                report_compat(
-                    f"{owner_relative}: accepted replacement requires "
-                    f"{old_relative} to be superseded",
-                    strict,
-                    warnings,
-                    errors,
-                )
-
-        for new_path in new_targets:
-            new_fields = documents.get(new_path)
-            if new_fields is None:
-                continue
-            if inferred_document_type(new_path, root) != "adr" and new_fields.get(
-                "document_type"
-            ) != "adr":
-                new_relative = rel_path(new_path, root)
-                report_compat(
-                    f"{owner_relative}: superseded_by target {new_relative} "
-                    "is not an ADR",
-                    strict,
-                    warnings,
-                    errors,
-                )
-                continue
-            reverse = resolved_relationships(
-                root,
-                new_path,
-                "supersedes",
-                new_fields.get("supersedes", ""),
-                strict,
-                warnings,
-                errors,
-            )
-            if path not in reverse:
-                new_relative = rel_path(new_path, root)
-                report_compat(
-                    f"{owner_relative}: superseded_by link is not reciprocated "
-                    f"by {new_relative}",
-                    strict,
-                    warnings,
-                    errors,
-                )
-            superseded_by_chain_problems(
-                root,
-                path,
-                new_path,
-                documents,
+            report_compat(
+                f"{prefix} is a local path to a file that no longer exists; link "
+                "the deleted ADR by a permalink pinned to the last commit that had it",
                 strict,
                 warnings,
                 errors,
@@ -1388,6 +1331,8 @@ def main() -> int:
         excluded = load_exclusions(root, args.strict, warnings, errors)
         documents: dict[Path, dict[str, str]] = {}
         seen_record_ids: dict[str, Path] = {}
+        index = RepoIndex(root)
+        checker = ReferenceChecker(index, load_reference_ignores(root))
         docs_root = (root / "docs").resolve()
         for path in iter_markdown_files(root, excluded, errors):
             resolved_path = path.resolve()
@@ -1432,6 +1377,17 @@ def main() -> int:
                 root,
                 path,
                 body,
+                args.strict,
+                warnings,
+                errors,
+            )
+            validate_code_references(
+                root,
+                path,
+                fields,
+                body,
+                index,
+                checker,
                 args.strict,
                 warnings,
                 errors,

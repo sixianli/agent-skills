@@ -4,6 +4,8 @@ document_type: architecture
 version: "X.Y"   # set on creation, e.g. "0.1"
 supersedes: ""
 superseded_by: ""
+covers: ""
+verified_at: ""
 date: "YYYY-MM-DD"
 ---
 

@@ -1,5 +1,3 @@
-"""Black-box tests for scripts/archive_doc.py."""
-
 from __future__ import annotations
 
 import subprocess
@@ -18,8 +16,6 @@ import archive_doc
 
 
 class ArchiveDocTests(unittest.TestCase):
-    """Exercise successful, dry-run, boundary, and ADR-refusal behavior."""
-
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary_directory.cleanup)
@@ -28,8 +24,6 @@ class ArchiveDocTests(unittest.TestCase):
         self.root.mkdir()
 
     def write_document(self, relative: str, document_type: str) -> Path:
-        """Write one active document fixture."""
-
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
@@ -52,8 +46,6 @@ class ArchiveDocTests(unittest.TestCase):
         return path
 
     def run_archiver(self, doc: str, *extra: str) -> subprocess.CompletedProcess[str]:
-        """Run the archive CLI."""
-
         return subprocess.run(
             [
                 sys.executable,
@@ -73,8 +65,6 @@ class ArchiveDocTests(unittest.TestCase):
         *,
         supersedes: str = "",
     ) -> Path:
-        """Fill the bundled active Runbook template."""
-
         template = (
             SKILL_ROOT / "assets/templates/runbook-template.md"
         ).read_text(encoding="utf-8")
@@ -88,8 +78,6 @@ class ArchiveDocTests(unittest.TestCase):
         return path
 
     def test_archives_closed_spec_and_rewrites_frontmatter(self) -> None:
-        """Move a Spec and preserve its optional supersession link."""
-
         source = self.write_document(
             "docs/execution/specs/closed.md", "spec"
         )
@@ -112,22 +100,18 @@ class ArchiveDocTests(unittest.TestCase):
         )
 
     def test_refuses_to_archive_adr(self) -> None:
-        """ADRs must remain in docs/adr and be superseded in place."""
-
         source = self.write_document("docs/adr/0001-decision.md", "adr")
 
         result = self.run_archiver("docs/adr/0001-decision.md")
 
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("supersede it in place", result.stderr)
+        self.assertIn("delete a replaced or stale ADR instead", result.stderr)
         self.assertTrue(source.is_file())
         self.assertFalse(
             (self.root / "docs/archive/adr/0001-decision.md").exists()
         )
 
     def test_archives_legacy_plan_into_a_missing_archive_directory(self) -> None:
-        """Archive a Plan written before Plans stopped being created."""
-
         source = self.write_document("docs/execution/plans/legacy-plan.md", "plan")
         self.assertFalse((self.root / "docs/archive/plans").exists())
 
@@ -139,8 +123,6 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertIn("archived", destination.read_text(encoding="utf-8"))
 
     def test_dry_run_does_not_modify_plan(self) -> None:
-        """Dry-run must leave the source and destination untouched."""
-
         source = self.write_document(
             "docs/execution/plans/closed.md", "plan"
         )
@@ -157,8 +139,6 @@ class ArchiveDocTests(unittest.TestCase):
         )
 
     def test_superseded_by_target_must_exist(self) -> None:
-        """Reject a dangling supersession relationship before moving a Spec."""
-
         source = self.write_document(
             "docs/execution/specs/closed.md", "spec"
         )
@@ -174,8 +154,6 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertTrue(source.is_file())
 
     def test_refuses_document_outside_project_root_without_traceback(self) -> None:
-        """Reject an absolute external target cleanly and without mutation."""
-
         outside = self.sandbox / "outside.md"
         outside.write_text("outside", encoding="utf-8")
 
@@ -187,8 +165,6 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertTrue(outside.is_file())
 
     def test_runbook_snapshot_preserves_stable_path_and_keeps_it_checkable(self) -> None:
-        """Create reciprocal history and leave the stable entry structurally valid."""
-
         source = self.write_active_runbook("deploy-runbook.md")
         before = source.read_text(encoding="utf-8")
         dry_run = self.run_archiver(
@@ -232,8 +208,6 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertEqual(checked.returncode, 0, checked.stderr)
 
     def test_runbook_successor_moves_old_and_updates_both_directions(self) -> None:
-        """Archive a replaced stable entry and link both directions."""
-
         old = self.write_active_runbook("old-runbook.md")
         successor = self.write_active_runbook("new-runbook.md")
 
@@ -271,8 +245,6 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertEqual(check.returncode, 0, check.stderr)
 
     def test_runbook_retire_requires_reason_and_has_no_successor(self) -> None:
-        """Retire without inventing a successor or leaving an active stub."""
-
         source = self.write_active_runbook("retired-runbook.md")
         missing_reason = self.run_archiver(
             "docs/runbooks/retired-runbook.md",
@@ -299,8 +271,6 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertIn('superseded_by: ""', archived)
 
     def test_snapshot_retargets_existing_predecessor_chain(self) -> None:
-        """Keep every direct Runbook lineage edge reciprocal after path movement."""
-
         predecessor_relative = "docs/archive/runbooks/previous.md"
         active_relative = "docs/runbooks/deploy-runbook.md"
         predecessor = self.write_document(predecessor_relative, "runbook")
@@ -336,8 +306,6 @@ class ArchiveDocTests(unittest.TestCase):
         )
 
     def test_runbook_archive_refuses_invalid_date_and_target_conflict(self) -> None:
-        """Reject malformed dates and overwrite before mutating the source."""
-
         source = self.write_active_runbook("deploy-runbook.md")
         invalid_date = self.run_archiver(
             "docs/runbooks/deploy-runbook.md",
@@ -362,8 +330,6 @@ class ArchiveDocTests(unittest.TestCase):
         self.assertTrue(source.exists())
 
     def test_compensating_transaction_restores_all_files_on_write_failure(self) -> None:
-        """Do not leave half-updated relationships after an ordinary failure."""
-
         first = self.root / "first.md"
         second = self.root / "second.md"
         first.write_text("first-before\n", encoding="utf-8")

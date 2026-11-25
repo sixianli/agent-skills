@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""Archive governed Spec, Plan, Runbook, Idea, or Backlog documents.
-
-ADRs are never archived. Runbooks use explicit snapshot, successor, or retire
-modes and update reciprocal lineage.
-"""
 
 from __future__ import annotations
 
@@ -36,7 +31,6 @@ TERMINAL_RECORD_STATES = {
 
 @dataclass(frozen=True)
 class PlannedWrite:
-    """One fully rendered file update in a compensating transaction."""
 
     path: Path
     text: str
@@ -44,7 +38,6 @@ class PlannedWrite:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse archive modes while retaining the existing Spec/Plan interface."""
 
     parser = argparse.ArgumentParser(
         description=(
@@ -92,7 +85,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _is_within(path: Path, directory: Path) -> bool:
-    """Return whether a resolved path remains within a directory."""
 
     try:
         path.relative_to(directory)
@@ -102,7 +94,6 @@ def _is_within(path: Path, directory: Path) -> bool:
 
 
 def resolve_doc(root: Path, doc: str) -> Path:
-    """Resolve a source document and reject project-root escape."""
 
     candidate = Path(doc)
     if not candidate.is_absolute():
@@ -116,19 +107,16 @@ def resolve_doc(root: Path, doc: str) -> Path:
 
 
 def _relative(root: Path, path: Path) -> str:
-    """Return a repository-relative POSIX path."""
 
     return path.relative_to(root).as_posix()
 
 
 def _is_under(root: Path, path: Path, relative_dir: str) -> bool:
-    """Return whether a path is within a repository-relative directory."""
 
     return _is_within(path, (root / relative_dir).resolve())
 
 
 def _safe_scalar(value: str, option: str) -> str:
-    """Reject values that cannot be safely rendered as one quoted field."""
 
     if not value.strip() or any(character in value for character in ('\n', '\r', '"')):
         raise SystemExit(f"invalid {option}: expected a non-empty safe single line")
@@ -136,7 +124,6 @@ def _safe_scalar(value: str, option: str) -> str:
 
 
 def _validate_archive_date(value: str | None) -> str:
-    """Require an exact, real ISO date for a Runbook archive name."""
 
     if value is None or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
         raise SystemExit("Runbook modes require --archive-date YYYY-MM-DD")
@@ -150,7 +137,6 @@ def _validate_archive_date(value: str | None) -> str:
 
 
 def _normalize_docs_target(root: Path, value: str) -> tuple[Path, str]:
-    """Resolve one safe docs-relative relationship target."""
 
     _safe_scalar(value, "--superseded-by")
     raw = Path(value)
@@ -175,7 +161,6 @@ def _normalize_docs_target(root: Path, value: str) -> tuple[Path, str]:
 
 
 def _frontmatter(text: str, owner: str) -> dict[str, str]:
-    """Parse safe governance frontmatter or fail before any write."""
 
     fields, _, problems = parse_frontmatter_text(text)
     if problems:
@@ -184,7 +169,6 @@ def _frontmatter(text: str, owner: str) -> dict[str, str]:
 
 
 def _set_field(frontmatter: list[str], key: str, value: str) -> list[str]:
-    """Set one single-line quoted frontmatter field."""
 
     pattern = re.compile(rf"^{re.escape(key)}\s*:\s*.*$")
     rendered = f'{key}: "{value}"'
@@ -197,7 +181,6 @@ def _set_field(frontmatter: list[str], key: str, value: str) -> list[str]:
 
 
 def _remove_field(frontmatter: list[str], key: str) -> list[str]:
-    """Remove a single-line frontmatter field when changing lifecycle mode."""
 
     pattern = re.compile(rf"^{re.escape(key)}\s*:")
     return [line for line in frontmatter if not pattern.match(line)]
@@ -209,7 +192,6 @@ def rewrite_frontmatter(
     *,
     remove: tuple[str, ...] = (),
 ) -> str:
-    """Render fully validated frontmatter updates in memory."""
 
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
@@ -234,19 +216,16 @@ def rewrite_frontmatter(
 
 
 def _split_relationships(value: str) -> list[str]:
-    """Split comma-separated repository-relative relationship paths."""
 
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
 def _render_relationships(values: list[str]) -> str:
-    """Render unique relationship paths while preserving meaningful order."""
 
     return ", ".join(dict.fromkeys(values))
 
 
 def _replace_relationship(value: str, old: str, new: str) -> str:
-    """Replace one exact relationship target and require it to exist."""
 
     values = _split_relationships(value)
     if old not in values:
@@ -259,7 +238,6 @@ def _replace_relationship(value: str, old: str, new: str) -> str:
 
 
 def _append_or_replace_relationship(value: str, old: str, new: str) -> str:
-    """Replace a predeclared old path or append the newly archived path."""
 
     values = _split_relationships(value)
     if old in values:
@@ -272,7 +250,6 @@ def _append_or_replace_relationship(value: str, old: str, new: str) -> str:
 def _load_runbook(
     root: Path, path: Path, *, active: bool
 ) -> tuple[str, dict[str, str]]:
-    """Load and validate a Runbook at an expected lifecycle location."""
 
     expected_dir = RUNBOOK_ACTIVE_DIR if active else RUNBOOK_ARCHIVE_DIR
     if not _is_under(root, path, expected_dir):
@@ -294,7 +271,6 @@ def _load_runbook(
 
 
 def _archive_target(root: Path, source: Path, archive_date: str) -> Path:
-    """Build a dated, non-overwriting Runbook archive target."""
 
     target = root / RUNBOOK_ARCHIVE_DIR / f"{archive_date}-{source.name}"
     if target.exists():
@@ -310,7 +286,6 @@ def _predecessor_writes(
     archive_relative: str,
     source_fields: dict[str, str],
 ) -> list[PlannedWrite]:
-    """Retarget direct predecessors when the active path moves into archive."""
 
     writes: list[PlannedWrite] = []
     for predecessor_value in _split_relationships(
@@ -339,7 +314,6 @@ def _predecessor_writes(
 
 
 def _write_atomic(path: Path, content: bytes, mode: int) -> None:
-    """Replace one file from a same-directory fsynced temporary file."""
 
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
@@ -358,7 +332,6 @@ def _write_atomic(path: Path, content: bytes, mode: int) -> None:
 
 
 def apply_transaction(writes: list[PlannedWrite], removals: list[Path]) -> None:
-    """Apply validated writes and compensate ordinary process-level failures."""
 
     paths = {write.path for write in writes} | set(removals)
     originals: dict[Path, tuple[bytes, int] | None] = {}
@@ -403,7 +376,6 @@ def _print_plan(
     move_source: bool,
     dry_run: bool,
 ) -> None:
-    """Print every affected path."""
 
     action = "move" if move_source else "snapshot"
     print(f"will {action}: {_relative(root, source)}")
@@ -426,7 +398,6 @@ def _print_plan(
 def archive_spec_or_plan(
     root: Path, source: Path, args: argparse.Namespace
 ) -> int:
-    """Preserve the existing Spec/Plan archive behavior safely."""
 
     if (
         args.snapshot
@@ -440,7 +411,7 @@ def archive_spec_or_plan(
     relative = _relative(root, source)
     if relative.startswith("docs/adr/"):
         raise SystemExit(
-            "refusing to archive ADR: supersede it in place under docs/adr/"
+            "refusing to archive ADR: delete a replaced or stale ADR instead; the replacing ADR links it by a pinned commit permalink"
         )
     destination: Path | None = None
     for active_prefix, archive_prefix in ACTIVE_TO_ARCHIVE.items():
@@ -487,7 +458,6 @@ def archive_spec_or_plan(
 def archive_record(
     root: Path, source: Path, args: argparse.Namespace, prefix: str
 ) -> int:
-    """Archive one terminal Idea or Backlog record with minimal byte changes."""
 
     if (
         args.snapshot
@@ -544,7 +514,6 @@ def archive_record(
 
 
 def _set_status_bytes(data: bytes, value: str) -> bytes:
-    """Replace or add the status field inside frontmatter, keeping line endings."""
 
     lines = data.splitlines(keepends=True)
     newline = b"\r\n" if lines and lines[0].endswith(b"\r\n") else b"\n"
@@ -564,7 +533,6 @@ def _set_status_bytes(data: bytes, value: str) -> bytes:
 def archive_runbook(
     root: Path, source: Path, args: argparse.Namespace
 ) -> int:
-    """Plan and apply one explicit Runbook lifecycle transition."""
 
     selected_modes = (
         int(args.snapshot)
@@ -687,7 +655,6 @@ def archive_runbook(
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Archive one governed document without leaking tracebacks."""
 
     args = parse_args(argv)
     root = Path(args.root).resolve()

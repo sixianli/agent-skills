@@ -11,6 +11,10 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = SKILL_ROOT / "scripts" / "validate_docs.py"
 RUNBOOK = SKILL_ROOT / "scripts" / "runbook.py"
 EXCLUSION_FILE = "docs/.governance-exclude"
+PINNED_PERMALINK = (
+    "https://example.com/team/project/blob/"
+    "0123456789abcdef0123456789abcdef01234567/docs/adr/0001-old.md"
+)
 REQUIRED_DIRS = [
     "docs/adr",
     "docs/execution/specs",
@@ -172,29 +176,6 @@ class ValidateDocsTests(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertEqual(payload["errors"], [])
 
-    def test_superseded_adrs_remain_in_place_with_bidirectional_links(self) -> None:
-        self.write_document(
-            "docs/adr/0001-old.md",
-            "# Old ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            superseded_by="docs/adr/0002-new.md",
-        )
-        self.write_document(
-            "docs/adr/0002-new.md",
-            "# New ADR",
-            document_type="adr",
-            decision_status="accepted",
-            supersedes="docs/adr/0001-old.md",
-        )
-
-        result, payload = self.run_validator(strict=True)
-
-        self.assertEqual(result.returncode, 0)
-        self.assertTrue(payload["ok"])
-        self.assertEqual(payload["errors"], [])
-
     def test_proposed_replacement_does_not_supersede_old_adr_early(self) -> None:
         self.write_document(
             "docs/adr/0001-existing.md",
@@ -215,231 +196,300 @@ class ValidateDocsTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertTrue(payload["ok"])
 
-    def test_accepted_replacement_requires_old_adr_to_be_superseded(self) -> None:
+    def test_replacement_links_deleted_adr_by_pinned_permalink(self) -> None:
         self.write_document(
-            "docs/adr/0001-existing.md",
-            "# Current ADR",
+            "docs/adr/0002-new.md",
+            "# New decision",
             document_type="adr",
             decision_status="accepted",
-            superseded_by="docs/adr/0002-new.md",
+            supersedes=PINNED_PERMALINK,
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertEqual(payload["errors"], [])
+        self.assertEqual(payload["warnings"], [])
+
+    def test_adr_does_not_need_superseded_by_field(self) -> None:
+        path = self.root / "docs/adr/0001-only.md"
+        path.write_text(
+            '---\nstatus: active\ndocument_type: adr\ndecision_status: accepted\nsupersedes: ""\ndate: "2026-07-19"\n---\n\n# Only decision\n',
+            encoding="utf-8",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+
+    def test_accepted_replacement_requires_old_adr_to_be_deleted(self) -> None:
+        self.write_document(
+            "docs/adr/0001-old.md",
+            "# Old decision",
+            document_type="adr",
+            decision_status="accepted",
         )
         self.write_document(
             "docs/adr/0002-new.md",
-            "# New ADR",
+            "# New decision",
             document_type="adr",
             decision_status="accepted",
-            supersedes="docs/adr/0001-existing.md",
-        )
-
-        result, payload = self.run_validator(strict=True)
-
-        self.assertEqual(result.returncode, 1)
-        rendered = "\n".join(payload["errors"])
-        self.assertIn("accepted replacement requires", rendered)
-
-    def test_superseded_by_chain_reaches_active_accepted_decision(self) -> None:
-        self.write_document(
-            "docs/adr/0001-old.md",
-            "# Old ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            superseded_by="docs/adr/0002-middle.md",
-        )
-        self.write_document(
-            "docs/adr/0002-middle.md",
-            "# Middle ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
             supersedes="docs/adr/0001-old.md",
-            superseded_by="docs/adr/0003-new.md",
-        )
-        self.write_document(
-            "docs/adr/0003-new.md",
-            "# New ADR",
-            document_type="adr",
-            decision_status="accepted",
-            supersedes="docs/adr/0002-middle.md",
-        )
-
-        result, payload = self.run_validator(strict=True)
-
-        self.assertEqual(result.returncode, 0, payload)
-        self.assertTrue(payload["ok"])
-        self.assertEqual(payload["errors"], [])
-
-    def test_superseded_by_chain_accepts_four_adr_history(self) -> None:
-        self.write_document(
-            "docs/adr/0001-oldest.md",
-            "# Oldest ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            superseded_by="docs/adr/0002-older.md",
-        )
-        self.write_document(
-            "docs/adr/0002-older.md",
-            "# Older ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            supersedes="docs/adr/0001-oldest.md",
-            superseded_by="docs/adr/0003-middle.md",
-        )
-        self.write_document(
-            "docs/adr/0003-middle.md",
-            "# Middle ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            supersedes="docs/adr/0002-older.md",
-            superseded_by="docs/adr/0004-new.md",
-        )
-        self.write_document(
-            "docs/adr/0004-new.md",
-            "# New ADR",
-            document_type="adr",
-            decision_status="accepted",
-            supersedes="docs/adr/0003-middle.md",
-        )
-
-        result, payload = self.run_validator(strict=True)
-
-        self.assertEqual(result.returncode, 0, payload)
-        self.assertEqual(payload["errors"], [])
-
-    def test_superseded_by_chain_terminal_must_be_accepted(self) -> None:
-        self.write_document(
-            "docs/adr/0001-old.md",
-            "# Old ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            superseded_by="docs/adr/0002-middle.md",
-        )
-        self.write_document(
-            "docs/adr/0002-middle.md",
-            "# Middle ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            supersedes="docs/adr/0001-old.md",
-            superseded_by="docs/adr/0003-new.md",
-        )
-        self.write_document(
-            "docs/adr/0003-new.md",
-            "# New ADR",
-            document_type="adr",
-            decision_status="proposed",
-            supersedes="docs/adr/0002-middle.md",
         )
 
         result, payload = self.run_validator(strict=True)
 
         self.assertEqual(result.returncode, 1)
-        rendered = "\n".join(payload["errors"])
-        self.assertIn("superseded_by chain through docs/adr/0002", rendered)
-        self.assertIn("ends at docs/adr/0003", rendered)
-
-    def test_superseded_by_chain_cycle_is_reported_without_hanging(self) -> None:
-        self.write_document(
-            "docs/adr/0001-first.md",
-            "# First ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            supersedes="docs/adr/0002-second.md",
-            superseded_by="docs/adr/0002-second.md",
-        )
-        self.write_document(
-            "docs/adr/0002-second.md",
-            "# Second ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            supersedes="docs/adr/0001-first.md",
-            superseded_by="docs/adr/0001-first.md",
+        self.assertIn(
+            "supersedes target docs/adr/0001-old.md still exists",
+            "\n".join(payload["errors"]),
         )
 
-        result, payload = self.run_validator(strict=True)
-
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("loops back to", "\n".join(payload["errors"]))
-
-    def test_direct_superseded_by_target_still_requires_active_accepted(self) -> None:
-        self.write_document(
-            "docs/adr/0001-old.md",
-            "# Old ADR",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            superseded_by="docs/adr/0002-new.md",
-        )
+    def test_supersedes_local_path_to_deleted_adr_needs_permalink(self) -> None:
         self.write_document(
             "docs/adr/0002-new.md",
-            "# New ADR",
+            "# New decision",
             document_type="adr",
-            decision_status="proposed",
-            supersedes="docs/adr/0001-old.md",
+            decision_status="accepted",
+            supersedes="docs/adr/0001-gone.md",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(
+            "local path to a file that no longer exists",
+            "\n".join(payload["errors"]),
+        )
+
+    def test_supersedes_branch_link_is_not_pinned(self) -> None:
+        self.write_document(
+            "docs/adr/0002-new.md",
+            "# New decision",
+            document_type="adr",
+            decision_status="accepted",
+            supersedes="https://example.com/team/project/blob/main/docs/adr/0001-old.md",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("pinned to a commit", "\n".join(payload["errors"]))
+
+    def test_superseded_adr_kept_in_place_must_be_deleted(self) -> None:
+        self.write_document(
+            "docs/adr/0001-old.md",
+            "# Old decision",
+            status="superseded",
+            document_type="adr",
+            decision_status="superseded",
+        )
+
+        strict_result, strict_payload = self.run_validator(strict=True)
+        migration_result, migration_payload = self.run_validator(strict=False)
+
+        self.assertEqual(strict_result.returncode, 1)
+        self.assertIn(
+            "superseded ADR must be deleted", "\n".join(strict_payload["errors"])
+        )
+        self.assertEqual(migration_result.returncode, 0)
+        self.assertIn(
+            "superseded ADR must be deleted",
+            "\n".join(migration_payload["warnings"]),
+        )
+
+    def test_adr_must_not_set_superseded_by(self) -> None:
+        self.write_document(
+            "docs/adr/0001-old.md",
+            "# Old decision",
+            document_type="adr",
+            decision_status="accepted",
+            superseded_by=PINNED_PERMALINK,
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(
+            "ADR must not set superseded_by", "\n".join(payload["errors"])
+        )
+
+    def test_archived_adr_must_be_deleted(self) -> None:
+        self.write_document(
+            "docs/archive/adr/0001-old.md",
+            "# Old decision",
+            status="archived",
+            document_type="adr",
+            decision_status="accepted",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("ADRs are not archived", "\n".join(payload["errors"]))
+
+    def test_covers_and_verified_at_are_accepted_when_well_formed(self) -> None:
+        (self.root / "src/app").mkdir(parents=True)
+        (self.root / "src/app/main.py").write_text("x = 1\n", encoding="utf-8")
+        self.write_document(
+            "docs/architecture-v0.1.md",
+            "# Current shape",
+            document_type="architecture",
+            extra_fields={
+                "covers": "src/app/**/*.py, src/app",
+                "verified_at": "0123abc",
+            },
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertEqual(payload["warnings"], [])
+
+    def test_malformed_tracking_fields_are_reported(self) -> None:
+        (self.root / "src").mkdir()
+        (self.root / "src/main.py").write_text("x = 1\n", encoding="utf-8")
+        self.write_document(
+            "docs/architecture-v0.1.md",
+            "# Current shape",
+            document_type="architecture",
+            extra_fields={
+                "covers": "../outside, https://example.com/x, src/missing/**",
+                "verified_at": "main",
+                "implementation": "done",
+            },
+        )
+        self.write_document(
+            "docs/runbooks/no-commit.md",
+            "# Runbook",
+            extra_fields={"covers": "src/main.py"},
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        rendered = "\n".join(payload["errors"])
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("covers entry '../outside' must not contain '..'", rendered)
+        self.assertIn("covers entry 'https://example.com/x' must be a repository path", rendered)
+        self.assertIn("covers entry 'src/missing/**' matches no file", rendered)
+        self.assertIn("verified_at must be a commit hash", rendered)
+        self.assertIn("invalid implementation 'done'", rendered)
+        self.assertIn("no-commit.md: covers requires verified_at", rendered)
+
+    def test_reference_to_missing_path_blocks_strict_validation(self) -> None:
+        (self.root / "scripts").mkdir()
+        (self.root / "scripts/build.sh").write_text("echo\n", encoding="utf-8")
+        self.write_document(
+            "docs/architecture-v0.1.md",
+            "# Shape\n\nBuild with `scripts/build.sh` and deploy with `scripts/deploy.sh`.",
+            document_type="architecture",
         )
 
         result, payload = self.run_validator(strict=True)
 
         self.assertEqual(result.returncode, 1)
         rendered = "\n".join(payload["errors"])
-        self.assertIn("superseding ADR docs/adr/0002", rendered)
-        self.assertIn("must be active and accepted", rendered)
-        self.assertNotIn("chain through", rendered)
+        self.assertIn("references path `scripts/deploy.sh`", rendered)
+        self.assertNotIn("scripts/build.sh", rendered)
 
-    def test_superseded_by_chains_may_converge_without_a_loop(self) -> None:
-        self.write_document(
-            "docs/adr/0001-a.md",
-            "# A",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            superseded_by="docs/adr/0002-b.md",
+    def test_references_that_exist_or_are_not_repository_paths_pass(self) -> None:
+        (self.root / "packages/web/src").mkdir(parents=True)
+        (self.root / "packages/web/src/app.ts").write_text(
+            "export function renderPage() { return runPolicy.inbox && API_TOKEN_NAME }\n",
+            encoding="utf-8",
+        )
+        (self.root / "package.json").write_text(
+            json.dumps({"scripts": {"check:docs": "true"}}), encoding="utf-8"
         )
         self.write_document(
-            "docs/adr/0002-b.md",
-            "# B",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            supersedes="docs/adr/0001-a.md",
-            superseded_by="docs/adr/0003-c.md, docs/adr/0004-d.md",
-        )
-        self.write_document(
-            "docs/adr/0003-c.md",
-            "# C",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            supersedes="docs/adr/0002-b.md",
-            superseded_by="docs/adr/0005-e.md",
-        )
-        self.write_document(
-            "docs/adr/0004-d.md",
-            "# D",
-            status="superseded",
-            document_type="adr",
-            decision_status="superseded",
-            supersedes="docs/adr/0002-b.md",
-            superseded_by="docs/adr/0005-e.md",
-        )
-        self.write_document(
-            "docs/adr/0005-e.md",
-            "# E",
-            document_type="adr",
-            decision_status="accepted",
-            supersedes="docs/adr/0003-c.md, docs/adr/0004-d.md",
+            "docs/architecture-v0.1.md",
+            "# Shape\n\n- `packages/web/src/app.ts:12` and `src/app.ts` (relative to the package)\n- `renderPage()`, `runPolicy.inbox`, `API_TOKEN_NAME`\n- `npm run check:docs`\n- `application/json`, `owner/repo`, `~/.config/tool`, `/etc/hosts`\n- `https://example.com/a/b.ts`, `docs/<topic>.md`, `e.g.`, `Node.js`\n\n```bash\nnpm run check:docs\n```",
+            document_type="architecture",
         )
 
         result, payload = self.run_validator(strict=True)
 
         self.assertEqual(result.returncode, 0, payload)
-        self.assertEqual(payload["errors"], [])
+        self.assertEqual(payload["warnings"], [])
+
+    def test_stale_symbols_commands_and_config_keys_are_reported(self) -> None:
+        (self.root / "src").mkdir()
+        (self.root / "src/app.ts").write_text(
+            "export function renderPage() { return runPolicy.inbox }\n",
+            encoding="utf-8",
+        )
+        (self.root / "package.json").write_text(
+            json.dumps({"scripts": {"check": "true"}}), encoding="utf-8"
+        )
+        self.write_document(
+            "docs/runbooks/operate.md",
+            "# Operate\n\n- `renderLegacyPage()` and `runPolicy.thinkInbox`\n- `OLD_SECRET_NAME`\n- `npm run check:removed`\n\n```bash\nnode src/removed.mjs --dry-run\n```",
+            document_type="runbook",
+        )
+
+        _result, payload = self.run_validator(strict=True)
+
+        rendered = "\n".join(payload["errors"])
+        self.assertIn("references symbol `renderLegacyPage`", rendered)
+        self.assertIn("references config key `runPolicy.thinkInbox`", rendered)
+        self.assertIn("references config key `OLD_SECRET_NAME`", rendered)
+        self.assertIn("references package script `check:removed`", rendered)
+        self.assertIn("references path `src/removed.mjs`", rendered)
+
+    def test_in_progress_design_reports_missing_references_as_warnings(self) -> None:
+        (self.root / "src").mkdir()
+        (self.root / "src/app.ts").write_text("export {}\n", encoding="utf-8")
+        self.write_document(
+            "docs/adr/0003-new-inbox.md",
+            "# New inbox\n\nThe inbox lives in `src/inbox.ts`.",
+            document_type="adr",
+            decision_status="accepted",
+            extra_fields={"implementation": "in_progress"},
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+        self.assertIn("references path `src/inbox.ts`", "\n".join(payload["warnings"]))
+
+    def test_specs_ideas_backlog_and_archives_are_not_reference_checked(self) -> None:
+        (self.root / "src").mkdir()
+        (self.root / "src/app.ts").write_text("export {}\n", encoding="utf-8")
+        body = "# Future\n\nWill add `src/future.ts`."
+        self.write_document(
+            "docs/execution/specs/2026-07-19-future-design.md",
+            body,
+            document_type="spec",
+        )
+        self.write_document(
+            "docs/archive/specs/2026-07-01-old-design.md",
+            body,
+            status="archived",
+            document_type="spec",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
+
+    def test_references_ignore_file_and_git_ignored_paths_are_skipped(self) -> None:
+        (self.root / "src").mkdir()
+        (self.root / "src/app.ts").write_text("export {}\n", encoding="utf-8")
+        (self.root / "src/util.js").write_text("export {}\n", encoding="utf-8")
+        (self.root / ".gitignore").write_text("dist/\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q", str(self.root)], check=True)
+        (self.root / "docs/.governance-references-ignore").write_text(
+            "src/vendor/*\n", encoding="utf-8"
+        )
+        self.write_document(
+            "docs/architecture-v0.1.md",
+            "# Shape\n\nBuild output `dist/app.js`; upstream copy `src/vendor/lib.ts`.",
+            document_type="architecture",
+        )
+
+        result, payload = self.run_validator(strict=True)
+
+        self.assertEqual(result.returncode, 0, payload)
 
     def test_structured_idea_and_backlog_are_strictly_valid(self) -> None:
         idea_path = "docs/ideas/IDEA-20260719-001-useful-thought.md"

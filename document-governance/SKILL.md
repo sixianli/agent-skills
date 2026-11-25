@@ -2,7 +2,7 @@
 name: document-governance
 description: "Govern the project's documentation system under the repository's `docs/` root, including creating, reconciling, validating, superseding, archiving, and closing PRDs, Architecture documents, ADRs, Specs, Plans, Runbooks, user-authored Ideas, and Backlog items. Use this skill when the user explicitly requests documentation governance or any of these document-lifecycle operations, when an adopted Runbook is being checked or used to guide an operation, when the user wants to persist one of their own ideas as project documentation, or proactively when there is clear evidence that governed project documentation has drifted out of sync with the project's current state. Do not use this skill for ordinary code or documentation edits that do not require documentation governance or lifecycle management, casual brainstorming with no intent to persist the outcome, or routine project-status or progress reporting."
 metadata:
-  version: "2026.11.16-2"
+  version: "2026.11.25-1"
 ---
 # document-governance
 
@@ -22,12 +22,60 @@ This skill governs only project documentation that has explicitly adopted its ru
 * Run `scripts/validate_docs.py` to validate the project. To keep Markdown that is not project documentation
   (for example generated evaluation reports) out of validation, list its paths in `docs/.governance-exclude`;
   `references/validation-rules.md` gives the rules.
+* Run `scripts/doc_coverage.py` for the `covers:` / `verified_at:` checks: `changed --base <ref>` for the soft
+  pull-request reminder, `audit` for the on-demand drift audit, and `stamp` to record a passed check.
 * Run `scripts/idea_backlog.py` for deterministic Idea/Backlog file operations.
   Do not create manually maintained indexes.
 * Run `scripts/runbook.py check` before using an active Runbook. It checks structure only; compare the Runbook
   with its current sources yourself.
 * Delete closed documents instead of archiving them; version control keeps the history. In a repository that
-  keeps `docs/archive/`, move documents there only with `scripts/archive_doc.py`. Never use it for ADRs.
+  keeps `docs/archive/`, move documents there only with `scripts/archive_doc.py`. Never use it for ADRs:
+  superseded or stale ADRs are deleted, not archived.
+
+## Core Principle: Keep Agent Context Clean
+
+The repository holds only documents that are true now. History lives only in version control. Any document a
+coding agent can read is treated as current instructions, so a stale document is a defect, not a record.
+
+* Supersede by deletion: when a new ADR replaces an old one, delete the old ADR in the same change set. The new
+  ADR links to the old one by a pinned commit permalink (not a local path). There is no lingering
+  "superseded but kept" state. If only part of an ADR is replaced, rewrite or remove the stale part in the same
+  change set so the remaining text matches the code.
+* Code is the source of truth: when a document (any status, including accepted/active) no longer matches the
+  code, fix it if most of it is still the current design, otherwise delete it. Exception: a newly accepted design
+  that is still being implemented is not stale just because the code has not caught up; mark it as in progress.
+* Docs travel with code: a change set that alters a behavior also updates or deletes every document that
+  describes that behavior.
+* Each governed document declares the code it describes in frontmatter (`covers:` with repository paths or
+  globs) and the commit it was last checked against (`verified_at:`).
+* Hard CI gate (blocking): any file path, symbol, command, or config key a document references must exist in
+  the current tree. Keep its false positives near zero by listing references that are not about this
+  repository in the ignore file described below.
+* Soft CI check (warning, not blocking): when a pull request changes code under a document's `covers:` paths
+  without changing that document, post a reminder. Promote it to blocking only after its false-positive rate
+  has been observed to be low.
+* Short-lived documents (Specs, Plans, handoff notes, drafts) are deleted in the same change set that merges
+  the work.
+* Drift audit on demand, not on a calendar: at the end of each major feature, compute mechanically which
+  documents have `covers:` code changed since their `verified_at`, and have the agent check only those against
+  the code. Unchanged documents are not re-read. Update `verified_at` for documents that pass; fix or delete the
+  rest.
+
+How the tooling maps to these rules:
+
+* Mark a design that is still being implemented with `implementation: in_progress` in its frontmatter and
+  remove the field once the code matches. While it is set, missing references are warnings, not errors.
+* `covers:` is one comma-separated line of repository paths or globs; an empty value means the document
+  describes no code. `verified_at:` is a commit hash. Templates for long-lived documents include both.
+* The hard gate is `scripts/validate_docs.py --strict`. It checks inline-code paths, call-form symbols
+  (`name()`), environment-style and camelCase dotted config keys, package scripts, make targets, and
+  script paths in fenced commands, against the files the repository tracks. Specs, Plans, Ideas, Backlog
+  records, and archives are not checked. A reference that is not about this repository (an upstream
+  project's path, a platform API) goes on its own line in `docs/.governance-references-ignore`.
+* The soft check is `scripts/doc_coverage.py changed --base <ref> --format github`; it always exits 0.
+* The drift audit is `scripts/doc_coverage.py audit`. A commit that changed a document together with its
+  covered code counts as a check of that document. After checking a listed document, fix or delete it, then
+  run `scripts/doc_coverage.py stamp <document>`.
 
 ## Required Workflow
 
@@ -61,7 +109,8 @@ This skill governs only project documentation that has explicitly adopted its ru
 5. Classify the work and read only the reference sections that match it.
 6. Preserve answer-only or review-only scope. Once editing is authorized, keep affected code and documentation
    consistent within the same change set.
-7. Supersede ADRs in place within `docs/adr/`; never delete or archive ADRs. Delete a Spec in the change set
+7. Supersede an ADR by writing the new ADR and deleting the old one in the same change set (see Core
+   Principle); never archive ADRs. Delete a Spec in the change set
    that completes or abandons its work, following Closing by Deletion in `references/workflows.md`. Do not
    create Plan documents; delete legacy Plans with their Spec. Keep only active Runbooks in `docs/runbooks/`
    and delete a Runbook when it is retired or replaced.
@@ -75,10 +124,11 @@ This skill governs only project documentation that has explicitly adopted its ru
    invoke them by absolute path, for example `python3 <skill-dir>/scripts/validate_docs.py <project-root> --strict`.
 9. Use a migration-friendly validation mode for audits during initial adoption of this system. Use `--strict` for governed projects,
    CI, and completion checks; resolve all errors before claiming that structural validation has passed.
-10. Deliver the change to the repository on the branch it was read from. Commit according to the repository's
-    conventions. Pushing, opening a pull request, or merging requires the user's explicit decision: after
-    committing, ask. When the working copy will not outlive the session, the work is not complete until the user
-    has decided whether to push; say so instead of reporting completion.
+10. Deliver the change to the repository on the branch it was read from. Commit, push, open pull requests, and
+    merge according to the project's rules and standing authorizations. Where the project has no rule for a step,
+    ask the user before pushing, opening a pull request, or merging. When the working copy will not outlive the
+    session, the work is not complete until it is pushed or the user has decided not to push; say so instead of
+    reporting completion.
 11. Report which documents were updated and intentionally left unchanged, which documents were deleted or archived, which checks
     were skipped, any unresolved drift, and any required ADR follow-up work.
 12. When a Runbook guides an operation, apply all three execution gates from
@@ -101,9 +151,10 @@ conflict, and ask the user to decide. Do not pick a side silently.
   repository and target state.
 * Treat `execution_risk` as a minimum protection level. Actual commands and
   live targets can raise risk, never lower it; unknown risk is critical.
-* Do not silently rewrite decisions, context, options, or consequences already recorded in an ADR. Follow the
-  supersession workflow in `references/workflows.md`. Keep superseded ADRs in `docs/adr/`, keep lifecycle fields
-  consistent, and maintain bidirectional `supersedes` / `superseded_by` links.
+* Do not silently change a recorded decision: a changed decision gets a new ADR that states what it replaces,
+  and the replaced ADR is deleted in the same change set, linked from the new ADR by a pinned commit
+  permalink. Correcting stale wording so an ADR matches the code it still governs is allowed and is not a
+  decision change.
 * Restrict local SOURCE references to the target project's `docs/` tree.
 * Do not create or maintain a separate project-root state cache. Derive state from the current repository,
   documentation, tests, artifacts, and runtime evidence.
@@ -132,7 +183,7 @@ say which default you departed from.
   records progress. A repository may keep writing Plans; existing Plans stay valid and archivable either way.
 * Closed documents are deleted, not archived: a closed Spec, a legacy Plan, a retired or replaced Runbook, and a
   terminal Idea or Backlog record. Version control is the archive. A repository may keep `docs/archive/`
-  instead; existing archives stay valid either way. Superseded ADRs are never deleted.
+  instead; existing archives stay valid either way. Superseded or stale ADRs are deleted, never kept or archived.
 * Ideas that need to be persisted live under `docs/ideas/` and future work under `docs/backlog/`.
 * `docs/lessons.md` records only mistakes that coding agents make frequently or repeatedly, along with explicit
   rules that prevent the same class of mistake from recurring. Do not record one-off issues, project state, or

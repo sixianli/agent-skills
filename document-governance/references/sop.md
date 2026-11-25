@@ -19,9 +19,14 @@ ADR supersession, and SOURCE-path rules.
 2. Keep code and current-truth documents consistent.
 3. Separate stable truth from temporary execution artifacts.
 4. Separate design from implementation sequencing.
-5. Delete closed Specs, Plans, Runbooks, and terminal Idea/Backlog records;
-   version control keeps their history. Retain ADR decision history in place.
-6. Follow user scope and repository instructions before this default taxonomy,
+5. Keep only documents that are true now; version control holds the history.
+   Delete closed Specs, Plans, Runbooks, terminal Idea/Backlog records, and
+   replaced or stale ADRs (see `SKILL.md`, Core Principle).
+6. Treat the code as the source of truth. A document that no longer matches the
+   code is fixed when most of it is still the current design, otherwise
+   deleted. A design still being implemented carries
+   `implementation: in_progress` until the code catches up.
+7. Follow user scope and repository instructions before this default taxonomy,
    within the Rule Layers in `SKILL.md`: they override Default Conventions only.
 
 ## Document Layers
@@ -48,8 +53,8 @@ project status, general knowledge, one-off incidents, or future work there. Give
 lesson one heading that states the mistake itself, so an agent can choose relevant
 lessons from the headings alone.
 
-Recognize existing `docs/archive/adr/` documents for backward compatibility,
-but do not move new or superseded ADRs there.
+ADRs are never archived. A legacy `docs/archive/adr/` directory is reported by
+the validator; delete its files.
 
 Do not create Plan documents. A coding agent plans execution order itself,
 and the project's task tracker and change history record progress; a Plan
@@ -67,18 +72,39 @@ Required fields:
 ```yaml
 ---
 status: active          # active | superseded | archived
-supersedes: ""          # repo-relative path or comma-separated paths
-superseded_by: ""       # repo-relative path or comma-separated paths
+supersedes: ""          # repo-relative path(s); for an ADR, pinned commit permalink(s)
+superseded_by: ""       # repo-relative path(s); not used by ADRs
 date: "YYYY-MM-DD"
 ---
 ```
+
+An ADR does not need `superseded_by`; if present it must be empty, because a
+replaced ADR is deleted.
+
+Code-tracking fields, for documents that describe code (Architecture, ADR,
+Runbook, and any other long-lived document):
+
+```yaml
+covers: "src/inbox/**, scripts/deploy.sh"  # repo paths or globs, one line; "" = describes no code
+verified_at: "0123abc"                      # commit the document was last checked against
+implementation: in_progress                 # only while a new design is being implemented
+```
+
+- `covers` entries are repository-relative, without `..` or URLs. `*`
+  matches within one path segment, `**` across segments, and a plain path
+  covers everything below it. Every entry must match a file in the current
+  tree, except while `implementation: in_progress`.
+- `verified_at` is required once `covers` is non-empty. Set it with
+  `scripts/doc_coverage.py stamp`, never by hand-copying a date.
+- Documents without `covers` are reported by `scripts/doc_coverage.py audit`
+  so they can be given one; missing `covers` does not fail validation.
 
 Type-specific fields:
 
 ```yaml
 document_type: spec        # prd | architecture | adr | spec | plan | runbook | idea | backlog | lessons
 version: "X.Y"             # PRD/Architecture only
-decision_status: accepted  # ADR only: proposed | accepted | superseded
+decision_status: accepted  # ADR only: proposed | accepted
 execution_risk: critical   # Active Runbook only: standard | high | critical
 record_id: IDEA-YYYYMMDD-xxxxxx  # 6 random chars; legacy -NNN stays valid
 record_state: captured      # State set depends on document_type
@@ -90,20 +116,17 @@ item_type: enhancement      # Backlog only: non-empty project-defined label
 Use the lifecycle fields consistently:
 
 - `active`: current truth or open execution work.
-- `superseded`: replaced by a named successor. ADRs retain this state in
-  `docs/adr/`; non-executable Runbook history is represented as `archived`
-  under `docs/archive/runbooks/`, not left in the active directory.
+- `superseded`: replaced by a named successor. Not valid for ADRs, which are
+  deleted when replaced; non-executable Runbook history is represented as
+  `archived` under `docs/archive/runbooks/`, not left in the active directory.
 - `archived`: a closed Spec/Plan, a historical/retired Runbook, or a terminal
   Idea/Backlog record under its matching `docs/archive/` directory. An archived
   Idea/Backlog keeps the `record_state` it had when archived.
-- For a superseded ADR, set both `status: superseded` and
-  `decision_status: superseded`, keep it in `docs/adr/`, and populate
-  `superseded_by`.
-- For the replacement ADR, set `status: active`, set `supersedes`, and accept
-  it before marking the old ADR superseded.
-- When a superseded ADR itself replaced an earlier one, keep each `supersedes`
-  field and the predecessor's `superseded_by` field unchanged; the validator
-  follows the `superseded_by` chain to the final active, accepted ADR.
+- When an ADR is replaced, the replacement sets `status: active` and
+  `supersedes` to a permalink pinned to the last commit that had the old ADR;
+  the old ADR is deleted in the same change set once the replacement is
+  accepted. While the replacement is only `proposed`, `supersedes` may name the
+  old ADR's local path, and the old ADR stays in force.
 - Keep only `status: active` Runbooks under `docs/runbooks/`. Historical
   snapshots, superseded Runbooks, and retired Runbooks use `status: archived`
   under `docs/archive/runbooks/`.
@@ -140,8 +163,10 @@ Rules:
   to the record fields `promoted_to`, `source_idea`, `supersedes`, and
   `superseded_by`. Resolve a missing legacy active Runbook path to an
   exact undated archive or one unambiguous dated archive; otherwise require an
-  exact archive path. Preserve legacy ADR links similarly, but do not archive
-  ADRs going forward.
+  exact archive path. A link to a deleted document, including a deleted ADR,
+  becomes a permalink pinned to the last commit that had it.
+- Inline-code paths, symbols, commands, and config keys in current documents
+  must exist in the current tree; see `references/validation-rules.md`.
 
 ## ADR Rules
 
@@ -159,11 +184,13 @@ Rules:
   consequences. Put detailed design in a Spec and link it instead of growing
   the ADR.
 - Record exactly one durable decision per ADR.
-- Do not rewrite an ADR's recorded decision, context, options, or consequences.
-  Permit only typo, formatting, broken-link, and cross-reference repairs that
-  do not change the historical decision.
-- When a decision changes, follow the in-place supersession workflow in
-  `references/workflows.md`; do not run the archive script on an ADR.
+- Do not change an ADR's recorded decision. A changed decision gets a new ADR,
+  and the old one is deleted in the same change set (Supersede by Deletion in
+  `references/workflows.md`); do not run the archive script on an ADR.
+- Keep an ADR's text true to the code it still governs. When only part of it
+  is replaced or no longer matches the code, rewrite or remove that part in the
+  same change set; this is not a decision change. When most of it is stale,
+  delete it.
 - Keep Architecture aligned with current behavior. ADRs explain rationale;
   Architecture describes the current system.
 - Keep implementation inventory and task checklists in Architecture, Specs, or
@@ -175,7 +202,8 @@ Resolve conflicts in this order:
 
 1. PRD for product scope and business rules.
 2. Architecture for current technical behavior.
-3. ADR for decision rationale and trade-offs.
+3. ADR for decision rationale and trade-offs (every ADR in the repository is
+   current; replaced ones are deleted).
 4. Spec for confirmed design of one change.
 5. Legacy Plan for the execution sequence of earlier work.
 6. Runbook for operation and troubleshooting.
@@ -215,8 +243,8 @@ docs/
 ```
 
 Keep only pending or executing work in `docs/execution/specs/`. Delete a
-Spec, and any legacy Plan that belongs to it, in the same change set that
-completes or abandons its work; see Spec and Plan Closure and Closing by
+Spec, and any legacy Plan or handoff note that belongs to it, in the same
+change set that merges, completes, or abandons its work; see Spec and Plan Closure and Closing by
 Deletion in `references/workflows.md`. A Spec is a point-in-time record: it is
 not updated to match later code. `docs/execution/plans/` exists only in
 projects that hold legacy Plans.

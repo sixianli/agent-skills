@@ -1,7 +1,3 @@
-"""Source integrity and persisted forward-trial document contracts.
-
-These tests do not emulate the model or prove implicit skill selection.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -51,7 +47,6 @@ class SourceContracts(unittest.TestCase):
 
 class CapturedDocumentContracts(unittest.TestCase):
     def test_live_capture_is_strictly_valid(self):
-        # Empty governed directories are runtime scaffolding, not tracked files.
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp) / 'project'
             shutil.copytree(PACKAGE / 'tests/captured-project', project)
@@ -67,10 +62,16 @@ class CapturedDocumentContracts(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertTrue(json.loads(result.stdout)['ok'])
 
-    def test_supersession_keeps_original_decision_body(self):
-        seed = (PACKAGE / 'tests/seed-adr.md').read_text()
-        captured = (PACKAGE / 'tests/captured-project/docs/adr/0001-storage.md').read_text()
-        self.assertEqual(seed.split('---', 2)[2], captured.split('---', 2)[2])
+    def test_supersession_deletes_replaced_adr_and_pins_its_last_version(self):
+        adr_dir = PACKAGE / 'tests/captured-project/docs/adr'
+        self.assertTrue((PACKAGE / 'tests/seed-adr.md').is_file())
+        self.assertFalse((adr_dir / '0001-storage.md').exists())
+        replacement = (adr_dir / '0002-postgresql-storage.md').read_text()
+        self.assertRegex(
+            replacement,
+            r'supersedes: "https://\S+/[0-9a-f]{40}/docs/adr/0001-storage\.md"',
+        )
+        self.assertNotIn('superseded_by', replacement)
 
 
 if __name__ == '__main__':
