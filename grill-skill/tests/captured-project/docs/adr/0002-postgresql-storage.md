@@ -2,8 +2,7 @@
 status: active
 document_type: adr
 decision_status: accepted
-supersedes: docs/adr/0001-storage.md
-superseded_by: ""
+supersedes: "https://example.com/team/orders/blob/0123456789abcdef0123456789abcdef01234567/docs/adr/0001-storage.md"
 date: "2026-09-21"
 ---
 
@@ -37,4 +36,4 @@ date: "2026-09-21"
 
 ## Links
 
-- [SOURCE: docs/adr/0001-storage.md]
+- [被取代的 ADR 0001（固定提交版本）](https://example.com/team/orders/blob/0123456789abcdef0123456789abcdef01234567/docs/adr/0001-storage.md)

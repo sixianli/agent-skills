@@ -67,7 +67,10 @@
             "-m",
             "py_compile",
             "document-governance/scripts/archive_doc.py",
+            "document-governance/scripts/doc_coverage.py",
+            "document-governance/scripts/doc_references.py",
             "document-governance/scripts/idea_backlog.py",
+            "document-governance/scripts/repo_index.py",
             "document-governance/scripts/runbook.py",
             "document-governance/scripts/validate_docs.py"
           ]

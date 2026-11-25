@@ -3,7 +3,8 @@ status: active
 document_type: adr
 decision_status: proposed
 supersedes: ""
-superseded_by: ""
+covers: ""
+verified_at: ""
 date: "YYYY-MM-DD"
 ---
 

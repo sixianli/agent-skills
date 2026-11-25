@@ -38,10 +38,11 @@ For ADRs, use its template and all required frontmatter, including
 `decision_status`. Keep proposed choices distinct from accepted decisions; a
 recommendation is not acceptance. Do not record planned behavior as implemented.
 
-If a recorded decision changes, preserve the old ADR's context, options,
-decision, and consequences. Create a replacement ADR, get that decision
-accepted, and let Document Governance update the reciprocal `supersedes` and
-`superseded_by` links and lifecycle fields. Never rewrite or archive old ADRs.
+If a recorded decision changes, do not edit the old ADR's decision. Create a
+replacement ADR and get that decision accepted; Document Governance then
+deletes the old ADR in the same change set and records it in the replacement's
+`supersedes` field as a permalink pinned to the last commit that had it. Never
+archive ADRs and never keep a replaced one beside its replacement.
 
 ## Verification and return to interview
 

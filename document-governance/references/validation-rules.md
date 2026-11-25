@@ -24,6 +24,7 @@ These conditions fail in every mode:
 - An archived document has `status: active`.
 - An active Spec or Plan has `status: archived`.
 - A local SOURCE target is absolute or contains `..` path traversal.
+- A `covers` entry is absolute, starts with `~`, contains `..`, or is a URL.
 - A governed Markdown file or SOURCE compatibility target resolves through a
   symbolic link outside the project's `docs/` directory.
 - The supplied project root does not exist or is not a directory.
@@ -42,7 +43,8 @@ These conditions fail in every mode:
 - A governed Markdown document has missing, unterminated, malformed, nested,
   duplicate, or multiline frontmatter.
 - Frontmatter lacks `status`, `supersedes`, `superseded_by`, or `date`; an
-  empty `status` or `date` counts as missing.
+  empty `status` or `date` counts as missing. ADRs do not need
+  `superseded_by`.
 - `date` is not `YYYY-MM-DD`.
 - A document in archive is not marked `status: archived`.
 - An active Spec or Plan is marked `status: superseded` instead of being
@@ -69,10 +71,20 @@ These conditions fail in every mode:
 - A promoted/converted record lacks a valid `promoted_to`; a deferred Backlog
   lacks `review_after` or `reason`; or a terminal record lacks its required
   result, reason, or successor.
-- An ADR lacks `decision_status`, uses an invalid decision status, or has
-  inconsistent `status`, `decision_status`, and supersession links, including a
-  `superseded_by` chain that loops or ends at an ADR that is not active and
-  accepted.
+- An ADR lacks `decision_status` or uses one other than `proposed` or
+  `accepted`.
+- An ADR is marked `status: superseded` or `decision_status: superseded`, sets
+  a non-empty `superseded_by`, or lives under `docs/archive/adr/`: replaced and
+  stale ADRs are deleted.
+- An accepted ADR's `supersedes` names a local ADR that still exists, names a
+  local path that no longer exists, or is a URL without a commit hash (7-40
+  hex characters) as a path segment. A replaced ADR is linked by a permalink
+  pinned to a commit. A `proposed` ADR may name an existing local ADR, which
+  stays in force until the replacement is accepted.
+- `implementation` has a value other than `in_progress`.
+- `verified_at` is not a 7-40 character lowercase hex commit hash, or `covers`
+  is non-empty and `verified_at` is missing.
+- Code references (the hard gate, below) are missing from the current tree.
 - A legacy Plan has neither a heading matching `#+ Source Spec` nor a SOURCE
   reference into `docs/execution/specs/` or `docs/archive/specs/`.
 - A SOURCE target does not exist under `docs/`; when the missing target
@@ -96,6 +108,42 @@ document. The validator reports it once as a warning in every mode, including
 these files and must not delete them, so their presence must not block strict
 validation. Offer to migrate their items into Backlog records.
 
+## Code References (Hard Gate)
+
+Every active document under `docs/` that is not a Spec, Plan, Idea, Backlog
+record, or archived file is checked against the current tree. The tree is the
+files `git ls-files --cached --others --exclude-standard` lists, or every file
+outside `.git`, `node_modules`, and virtual environments when the project is
+not a git working copy. Missing references are migration warnings and strict
+errors, except in a document with `implementation: in_progress`, where they are
+always warnings.
+
+- Each `covers` entry must match at least one file or directory.
+- Inline code in prose (not fenced blocks):
+  - A path with a `/` is checked when it starts with `./`, its first segment
+    is a top-level entry of the project, or its extension is one the project
+    uses. It passes when it exists, when a glob matches, or when a tracked path
+    ends with it (paths relative to a sub-package). Line suffixes such as
+    `:12` or `#L5` are ignored. Home-directory, absolute, URL, and
+    placeholder paths, hidden directories that are not in the project, and
+    paths git ignores (build output) are skipped.
+  - A call such as `renderPage()` or `api.client.send()` must name an
+    identifier that appears in a non-Markdown file outside `docs/`.
+  - An environment-style key such as `API_TOKEN_NAME` must appear the same way.
+  - A dotted key that starts lowercase and has a camelCase segment, such as
+    `runPolicy.inbox`, must have every segment appear the same way. A dotted
+    name ending in a project file extension is treated as a file name.
+  - `npm|pnpm|bun|yarn run <script>` must name a script in some
+    `package.json`; `make <target>` must name a target when the project has a
+    Makefile; `python3|node|bash|... <path>` checks the path.
+- Each line of a fenced block is checked only as a command, as above.
+- `docs/.governance-references-ignore` lists, one per line, exact references or
+  `fnmatch` patterns to skip, such as an upstream project's file paths or
+  platform API names. Blank lines and `#` lines are ignored.
+
+The gate cannot tell whether a sentence about an existing file is still true;
+the drift audit covers that.
+
 ## SOURCE Resolution
 
 - Resolve `docs/...` from the project root.
@@ -109,8 +157,7 @@ validation. Offer to migrate their items into Backlog records.
   undated archive match or exactly one dated archive match, keeping the
   subpath under `runbooks/` (a date prefix applies to the filename only). Multiple dated
   matches are ambiguous and require an exact archive SOURCE path.
-- Recognize legacy ADR paths whose files already live in `docs/archive/adr/`,
-  but do not archive ADRs going forward.
+- Do not map ADR paths to `docs/archive/adr/`; ADRs are deleted, not archived.
 - Skip external HTTP(S) URLs after enforcing local path-boundary rules.
   Placeholder-looking targets are not skipped: they pass when the file
   exists and are otherwise reported as unfilled template placeholders.
@@ -146,6 +193,22 @@ validation. Offer to migrate their items into Backlog records.
   validate historical location, status, type, and relationships.
 - There is no date-based Runbook expiration. Backlog `review_after` remains a
   work-state field and is not a Runbook trust signal.
+
+## Coverage Tracking
+
+`scripts/doc_coverage.py` reads `covers` and `verified_at`; it never fails a
+build.
+
+- `changed --base <ref> [--head <ref>] [--format text|json|github]` lists
+  documents whose covered code changed in `<base>...<head>` while the document
+  did not. It always exits 0.
+- `audit [--format text|json]` lists documents whose covered code changed since
+  `verified_at`, counting committed and uncommitted changes but not changes in
+  a commit that also changed the document. It lists documents without `covers`
+  separately, and reports a `verified_at` that is not in local history (for
+  example in a shallow clone).
+- `stamp <document>... [--commit <ref>]` writes the full commit hash into
+  `verified_at`.
 
 ## What the Validator Cannot Prove
 

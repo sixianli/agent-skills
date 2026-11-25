@@ -4,6 +4,8 @@ document_type: runbook
 execution_risk: critical
 supersedes: ""
 superseded_by: ""
+covers: ""
+verified_at: ""
 date: "YYYY-MM-DD"
 ---
 

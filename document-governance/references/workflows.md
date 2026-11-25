@@ -7,7 +7,8 @@ rollback, and conflict handling.
 
 - [New Feature Workflow](#new-feature-workflow)
 - [Drift Reconciliation](#drift-reconciliation)
-- [ADR Supersession](#adr-supersession)
+- [Supersede by Deletion](#supersede-by-deletion)
+- [Drift Audit](#drift-audit)
 - [Spec and Plan Closure](#spec-and-plan-closure)
 - [Runbook Lifecycle and Execution](#runbook-lifecycle-and-execution)
 - [Rollback](#rollback)
@@ -30,10 +31,21 @@ rollback, and conflict handling.
    outlive a session, for example one part must ship before another, record
    it in the Spec's `Delivery Order` section.
 6. Implement and verify the change.
-7. Reconcile affected long-lived and operational documents.
-8. Delete the Spec in the change set that completes the work.
+7. In the same change set, update or delete every document whose described
+   behavior the change alters (docs travel with code). A design written before
+   its code carries `implementation: in_progress`; remove the field in the
+   change set that makes the code match it.
+8. Delete the Spec, and any handoff notes or drafts for the work, in the change
+   set that merges the work.
+9. When a major feature is finished, run the [Drift Audit](#drift-audit).
 
 ## Drift Reconciliation
+
+The code is the source of truth. When a document of any status, including an
+accepted ADR or active Architecture, no longer matches the code, fix it if most
+of it is still the current design, otherwise delete it (see Closing by
+Deletion). A design still being implemented is not stale; it carries
+`implementation: in_progress`.
 
 Use this mapping after inspecting the actual diff or changed configuration:
 
@@ -50,43 +62,59 @@ Use this mapping after inspecting the actual diff or changed configuration:
   PRD scope and record durable choices in an ADR.
 - Operational procedure: update the Runbook; update other layers only when the
   procedure changes product or architectural truth.
-- Architectural shift, technology replacement, or durable trade-off: create a
-  superseding ADR and update Architecture.
+- Architectural shift, technology replacement, or durable trade-off: write the
+  replacing ADR, delete the replaced one, and update Architecture.
 
 Update affected documents in the same authorized change set. If future work
 remains, record it in Backlog. If current evidence cannot resolve a material
 conflict, report the uncertainty and request human direction instead of
 inventing project state. Report intentionally unchanged documents and why.
 
-## ADR Supersession
+## Supersede by Deletion
 
-Do not archive ADRs. Supersede them in place:
+An ADR in the repository is a current decision. A replaced ADR is deleted, not
+kept or archived; version control keeps it.
 
-1. Create the replacement ADR under `docs/adr/` with `status: active`, a valid
-   `decision_status`, and `supersedes: docs/adr/<old-adr>.md`.
-2. Review and accept the replacement decision before changing the old ADR.
-3. Update the old ADR in place to `status: superseded`,
-   `decision_status: superseded`, and
-   `superseded_by: docs/adr/<new-adr>.md`.
-4. When the superseded ADR itself superseded an older one, keep its
-   `supersedes` field and the older ADR's `superseded_by` field unchanged;
-   record each link exactly once. The validator follows `superseded_by` until
-   it reaches an `active`, `accepted` ADR, and fails when the chain loops or
-   ends anywhere else.
-5. Preserve the old ADR's recorded context, options, decision, and
-   consequences; change only lifecycle metadata and cross-references.
-6. Update Architecture to describe the new current behavior.
-7. Validate both directions of the relationship and all affected SOURCE links.
+1. Write the replacement ADR under `docs/adr/` with `status: active` and
+   `decision_status: proposed`. While it is proposed, its `supersedes` may name
+   the old ADR's local path, and the old ADR stays in force.
+2. Get the replacement accepted.
+3. In the change set that marks it `accepted`:
+   * set its `supersedes` to a permalink pinned to the last commit that had the
+     old ADR (a URL with the full commit hash in its path, for example
+     `https://<host>/<owner>/<repo>/blob/<commit>/docs/adr/<old-adr>.md`);
+   * delete the old ADR with the version-control remove command;
+   * point every other reference to the old ADR at the new ADR, or at the
+     pinned permalink when the reader needs the old text;
+   * update Architecture to describe the new current behavior.
+4. Run strict validation. It fails while the old ADR still exists, while
+   `supersedes` is a local path to a deleted file, or while it is a link to a
+   branch instead of a commit.
 
-A three-ADR chain records one link per pair:
+When only part of an ADR is replaced or no longer matches the code, rewrite or
+remove that part in the same change set so the remaining text is true. When
+most of it is stale and no replacement is needed, delete it and fix its
+references the same way.
 
-- `docs/adr/0001-old.md`: `status: superseded`,
-  `decision_status: superseded`, `superseded_by: docs/adr/0002-middle.md`
-- `docs/adr/0002-middle.md`: `status: superseded`,
-  `decision_status: superseded`, `supersedes: docs/adr/0001-old.md`,
-  `superseded_by: docs/adr/0003-new.md`
-- `docs/adr/0003-new.md`: `status: active`, `decision_status: accepted`,
-  `supersedes: docs/adr/0002-middle.md`
+## Drift Audit
+
+Run it on demand, at the end of each major feature, not on a calendar:
+
+1. Run `scripts/doc_coverage.py audit <project-root>`. It lists the documents
+   whose `covers:` code changed since their `verified_at`, skipping changes
+   made in a commit that also changed the document. It also lists documents
+   that have no `covers:` yet.
+2. Check only the listed documents against the code. Do not re-read the others.
+3. Fix or delete each stale document. Give each listed document without
+   `covers:` a `covers:` value (empty when it describes no code).
+4. Run `scripts/doc_coverage.py stamp <document>...` for every document that
+   now matches the code, and commit the result.
+
+The pull-request side of the same data is a soft check: run
+`scripts/doc_coverage.py changed --base <base-ref> --format github` in CI. It
+prints a warning for each document whose covered code changed without the
+document changing, and always exits 0. Make it blocking only after its
+reminders have been observed to be mostly right.
 
 ## Spec and Plan Closure
 
@@ -128,9 +156,9 @@ default is to delete:
 5. Run strict validation and state in the commit message what was deleted and
    why.
 
-Never delete an ADR: supersede it in place so the decision history stays
-readable. Never delete a document only because it is old; delete it because
-it is closed.
+Delete a replaced or stale ADR the same way; see Supersede by Deletion. Never
+delete a document only because it is old; delete it because it is closed or
+no longer true.
 
 A repository may keep `docs/archive/` instead of deleting. Then use
 `scripts/archive_doc.py` for every move, run strict validation after it, and
@@ -181,8 +209,9 @@ Live-State Preflight, evidence, mutation-boundary, and archive rules.
 - Correct current-truth documents so they do not claim reverted behavior still
   exists.
 - Describe the exact remaining behavior after a partial rollback.
-- Preserve ADR history; create a new ADR when rollback represents a new durable
-  decision rather than rewriting an earlier ADR.
+- When the rollback restores an earlier decision, write a new ADR for it and
+  delete the ADR the rollback undid; link the earlier version by a pinned
+  permalink. Fix an ADR whose text no longer matches the code.
 - Add or reopen a Backlog item when rollback creates future work.
 
 ## Ideas and Backlog
@@ -220,7 +249,8 @@ in Backlog instead.
    Layers in `SKILL.md`: follow the repository for Default Conventions, keep
    Skill Policy and tell the user, and stop and ask for Safety Invariants.
 3. Apply the authority order in `references/sop.md` to the document domains.
-4. Treat ADRs as decision history rather than current implementation inventory.
+4. Treat ADRs as the reasons for current decisions, not as an implementation
+   inventory; an ADR that disagrees with the code is fixed or deleted.
 5. Reconcile stale current-truth documents with verified implementation.
 6. Stop and request human direction only when available evidence cannot resolve
    a material product or decision conflict.
